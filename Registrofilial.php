@@ -1,0 +1,58 @@
+<?php
+include ("Conexion.php");
+$cnx=conectar();
+?>
+<html>
+<head>
+    <meta name="description" content="Solor-RJFJ" />
+    <link rel="shortcut icon" type="image/png" href="img/voto.png"/>
+	<script src="cssalert/sweetalert.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="cssalert/sweetalert.css">
+</head>
+<body>
+<?php 
+/*variables*/
+$apellidopat = $_POST['apellidopat'];
+$apellidomat = $_POST['apellidomat'];
+$nombre = $_POST['nombre'];
+$ci = $_POST['ci'];
+$edad = $_POST['edad'];
+$cel = $_POST['cel'];
+$apellidopat=strtoupper($apellidopat);
+$apellidomat=strtoupper($apellidomat);
+$nombre=strtoupper($nombre);
+$a=substr("$apellidopat",0,1);
+$b=substr("$apellidomat",0,1);
+$c=substr("$nombre",0,1);
+$n=rand(10,201);
+if ($n<100) {
+	$n="0".$n;
+}
+$usr=$a.$b.$c.$n;
+$psw=md5("$cel");
+/*variables*/
+
+/*Registro*/
+$filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo) VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F');");	
+	if ($filial)
+	{		
+
+	echo "<META HTTP-EQUIV='Refresh' CONTENT ='2; URL=Formulariofilial.php'>";
+	?>
+	<script type="text/javascript">
+	sweetAlert("Perfecto!","El Filial fue registrado correctamente","success");
+	</script>
+	<?php
+	}
+	else
+		{
+		echo "<META HTTP-EQUIV='Refresh' CONTENT ='2; URL=Formulariofilial.php'>";
+			?>
+		<script type="text/javascript">
+				sweetAlert("Oops!","Ocurrio un error en el registro","error");
+				</script>
+		<?php
+		}
+?>
+</body>
+</html>
