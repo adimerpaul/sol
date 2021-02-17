@@ -1,7 +1,7 @@
 <?php
 function conectar()
 {
-$conex= mysqli_connect("localhost","id16001660_root","Reynaldo.jesus1289")or die ("Falla de conexion");
-mysqli_select_db($conex,"id16001660_bdeleccion");
+$conex= mysqli_connect("localhost","example_user","password")or die ("Falla de conexion");
+mysqli_select_db($conex,"example_database");
 return $conex;
 };
