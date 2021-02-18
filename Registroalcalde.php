@@ -93,49 +93,13 @@ while ($fp=mysqli_fetch_array($candidaturas)) {
 			};
 		};
 
+  echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Formulariofoto.php?nv=$nv&idrecinto=$idrecinto'>";
+  exit;
+
 ?>
 <script type="text/javascript">
 sweetAlert("Exito!","Registro de votos correctamentes","success");
 </script>
-<script type="application/javascript">
-jQuery('input[type=file]').change(function(){
- var filename = jQuery(this).val().split('\\').pop();
- var idname = jQuery(this).attr('id');
- console.log(jQuery(this));
- console.log(filename);
- console.log(idname);
- jQuery('span.'+idname).next().find('span').html(filename);
-});
-</script>
-<div id="noticias" class="modal fade" role="dialog">
-  <div class="modal-dialog">
-
-    <!-- Modal content-->
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title">Suba una foto/imagen de esta votación</h4>
-      </div>
-      <div class="modal-body">
-        <form action="Registrofoto.php" method="POST" class="form-horizontal form-label-left"  enctype="multipart/form-data">
-        <center>
-            <input type='hidden' name='idvotacion' value='<?php echo $nv;?>'>
-            <input type='hidden' name='idrecinto' value='<?php echo $idrecinto;?>'>
-
-            <div class="custom-input-file">
-                <br><br>
-            <input type="file" id="fichero-tarifas" class="input-file" name="archivo" value="Elegir imagen..." accept="image/*" capture="camera" required/>
-            <i class="fa fa-camera" aria-hidden="true"></i>
-            <br><h3>PASO 1</h3>
-            </div>
-    
-            <br><br>
-        <input type='Submit' value='PASO 2: SUBIR FOTO/IMAGEN' name='ok' class="btn btn-lg btn-danger">
-        </center>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 </body>
 </html>
 
