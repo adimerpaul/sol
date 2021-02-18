@@ -13,53 +13,8 @@ $cnx=conectar();
 <script src="js/custom.js"></script>
   <script src="1/jquery.min.js"></script>
   <script src="1/bootstrap.min.js"></script>
-   <style>
-  .custom-input-file {
-  background-color: #0000FF;
-  color: #fff;
-  cursor: pointer;
-  font-size: 25px;
-  font-weight: bold;
-  margin: 0 auto 0;
-  min-height: 15px;
-  overflow: hidden;
-  padding: 10px;
-  position: relative;
-  text-align: center;
-  width: 250px;
-  height: 250px;
-  border-radius: 250px;
-}
-
-.custom-input-file .input-file {
- border: 10000px solid transparent;
- cursor: pointer;
- font-size: 10000px;
- margin: 0;
- opacity: 0;
- outline: 0 none;
- padding: 0;
- position: absolute;
- right: -1000px;
- top: -1000px;
- border-radius: 10px;
-}
-      
-  </style>
-<script> 
-   $(document).ready(function()
-   {
-      $("#noticias").modal("show");
-   });
-</script>
-<script>
-  function ShowModal(){
-     $('#noticias').modal('show')
-  }
-</script>
 </head>
 <body OnLoad="NoBack();">
-    <center><button onclick="ShowModal()" class="btn btn-primary">Mostrar Subir Imagen</button></center>
 <?php
 
 $usuario=$_SESSION['usr'];

@@ -12,53 +12,9 @@ $cnx=conectar();
 <link rel="stylesheet" href="1/bootstrap.min.css">
   <script src="1/jquery.min.js"></script>
   <script src="1/bootstrap.min.js"></script>
-   <style>
-  .custom-input-file {
-  background-color: #0000FF;
-  color: #fff;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0 auto 0;
-  min-height: 15px;
-  overflow: hidden;
-  padding: 10px;
-  position: relative;
-  text-align: center;
-  width: 250px;
-  height: 250px;
-  border-radius: 250px;
-}
 
-.custom-input-file .input-file {
- border: 10000px solid transparent;
- cursor: pointer;
- font-size: 10000px;
- margin: 0;
- opacity: 0;
- outline: 0 none;
- padding: 0;
- position: absolute;
- right: -1000px;
- top: -1000px;
- border-radius: 10px;
-}
-      
-  </style>
-<script> 
-   $(document).ready(function()
-   {
-      $("#noticias").modal("show");
-   });
-</script>
-<script>
-  function ShowModal(){
-     $('#noticias').modal('show')
-  }
-</script>
 </head>
 <body OnLoad="NoBack();">
-    <center><button onclick="ShowModal()" class="btn btn-primary">Mostrar Subir Imagen</button></center>
 <?php
 
 $usuario=$_SESSION['usr'];
@@ -91,50 +47,12 @@ while ($fp=mysqli_fetch_array($candidaturas)) {
 				};
 			};
 		};
-
+  echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Formulariofoto.php?nv=$nv&idrecinto=$idrecinto'>";
+  exit;
 ?>
 <script type="text/javascript">
 sweetAlert("Exito!","Registro de votos correctamentes","success");
 </script>
-<script type="application/javascript">
-jQuery('input[type=file]').change(function(){
- var filename = jQuery(this).val().split('\\').pop();
- var idname = jQuery(this).attr('id');
- console.log(jQuery(this));
- console.log(filename);
- console.log(idname);
- jQuery('span.'+idname).next().find('span').html(filename);
-});
-</script>
-<div id="noticias" class="modal fade" role="dialog">
-  <div class="modal-dialog">
-
-    <!-- Modal content-->
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title">Suba una foto/imagen de esta votación</h4>
-      </div>
-      <div class="modal-body">
-        <form action="Registrofoto.php" method="POST" class="form-horizontal form-label-left" enctype="multipart/form-data">
-        <center>
-            <input type='hidden' name='idvotacion' value='<?php echo $nv;?>'>
-            <input type='hidden' name='idrecinto' value='<?php echo $idrecinto;?>'>
-
-            <div class="custom-input-file">
-                <br><br>
-            <input type="file" id="fichero-tarifas" class="input-file" name="archivo" value="Elegir imagen..." accept="image/*" capture="camera" required/>
-            <i class="fa fa-camera" aria-hidden="true"></i>
-            <br><h3>PASO 1</h3>
-            </div>
-    
-            <br><br>
-        <input type='Submit' value='PASO 2: SUBIR FOTO/IMAGEN' name='ok' class="btn btn-lg btn-danger">
-        </center>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 </body>
 </html>
 

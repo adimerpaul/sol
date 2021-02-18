@@ -59,6 +59,10 @@ if($_SESSION['usr']!="")
 <script type="text/javascript">
 
 function mostrar(id) {
+    $('.cant').text('0');
+    $('.inputd').each(function(){
+            $(this).val(0);
+    });
 
     if (id == "3") {
 
@@ -257,7 +261,7 @@ function checknum(e) {
     $fmesa=mysqli_fetch_array($mesa);
 
     $numeromesa=$fmesa[2];
-
+    $votosmax=$fmesa[3];
     ?>
 
     <center>
@@ -342,6 +346,9 @@ function checknum(e) {
                         <input type='hidden' name='idmesaasamble' value='<?php echo $idmesa;?>'>
                         <center><h2 style="color:#d9232d;"><i><u>REGISTRO DE VOTOS PARA ASAMBLEISTA</u></i></h2></center>
                         <hr class="colorgraph">
+                        <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
+                        <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
+                        <hr class="colorgraph">
                         <table class="table responsive-utilities table-bordered table-hover">
 
                         <tr>
@@ -383,7 +390,8 @@ function checknum(e) {
                                 
                                 <td width=100><img style='max-width: 100%; height: auto;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
     
-                                <td id='th2'><input class='form-control input-lg' type='tel' name='v$c' id='input' onkeypress='return checknum(event)' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
+                                <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
+                                onkeyup='sumar()' value='0' id='input$c-c' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
     
                                 </tr>";
 
@@ -438,6 +446,9 @@ function checknum(e) {
                         <input type='hidden' name='idmesagober' value='<?php echo $idmesa;?>'>
                         <center><h2 style="color:#d9232d;"><i><u>REGISTRO DE VOTOS PARA GOBERNADOR</u></i></h2></center> 
                         <hr class="colorgraph">
+                        <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
+                        <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
+                        <hr class="colorgraph">
                         <table class="table responsive-utilities table-bordered table-hover">
     
                         <tr>
@@ -479,7 +490,8 @@ function checknum(e) {
                                 
                                 <td width=100><img style='max-width: 100%; height: auto;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
     
-                                <td id='th2'><input class='form-control input-lg' type='tel' name='v$c' id='input' onkeypress='return checknum(event)' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
+                                <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
+                                    onkeyup='sumar()' value='0' tabindex='$c' id='input$c-c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
     
                                 </tr>";
     
@@ -544,7 +556,30 @@ function checknum(e) {
 <script src="js/animate.js"></script>
 
 <script src="js/custom.js"></script>
-
+<script type="text/javascript">
+    var votosmax=<?=$votosmax?>;
+    function sumar(){
+        //console.log('as');
+        var sum = 0;
+        $('.inputd').each(function(){
+            //console.log($(this).val());
+            sum += parseFloat($(this).val());  // Or this.innerHTML, this.innerText
+        });    
+        if (sum<=votosmax) {
+            if (isNaN(sum)) {
+                $('.cant').text('Un valor vacio!');    
+            }else{
+                $('.cant').text(sum);
+            }
+            $('.btnenviar').show();
+        }else{
+            $('.cant').text('Cantidad excedida!');
+            $('.btnenviar').hide();    
+        }
+        //console.log(sum);
+        //return false;
+    }
+</script>
 <?php
 
 }
