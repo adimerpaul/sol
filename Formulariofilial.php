@@ -146,6 +146,24 @@ if($_SESSION['usr']!="")
 								</div>
 							</div>
 						</div>
+						<div class='row'>
+							<div class="col-xs-12 col-sm-6 col-md-6">
+								<div class='form-group'>
+								<select name="recinto" id="recinto" class='form-control input-lg' required>
+									<option value="">Seleccione recinto</option>
+									<?php 
+									$result= mysqli_query($cnx,"SELECT * from recinto order by recinto asc"); 
+									while($row=mysqli_fetch_assoc($result)){
+										
+										echo '<option value="'.$row['idrecinto'].'">'.$row['recinto'].'</option>';
+									}
+									
+									?>
+								</select>	
+								</div>
+							</div>
+
+						</div>
 						<hr class="colorgraph">
 						<div class="row">
 							<div class="col-xs-12 col-md-6"><input type="submit" value="REGISTRAR" class="btn btn-theme btn-block btn-lg" tabindex="7"></div>

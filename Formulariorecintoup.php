@@ -77,6 +77,7 @@ xmlhttp.send(cadenaParametros); // Envio de parámetros usando POST
                                 <li><a href="Formulariorecinto.php" class=" btn btn-round btn-danger"><h5>Nuevo Recinto</h5></a></li>
                                 <li><a href="Formulariofilial.php" class=" btn btn-round btn-danger"><h5>Nuevo Filial</h5></a></li>
                                 <li><a href="Formulariovotacion.php" class=" btn btn-round btn-danger"><h5>Nueva Votación</h5></a></li>
+                                <li><a href="Formulariorecintoup.php" class=" btn btn-round btn-danger"><h5>Mod Mesa</h5></a></li>
                             </ul>
                         </li>
                         <li>

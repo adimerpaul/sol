@@ -18,17 +18,18 @@ $nombre = $_POST['nombre'];
 $ci = $_POST['ci'];
 $edad = $_POST['edad'];
 $cel = $_POST['cel'];
+$recinto = $_POST['recinto'];
 $apellidopat=strtoupper($apellidopat);
 $apellidomat=strtoupper($apellidomat);
 $nombre=strtoupper($nombre);
 $a=substr("$apellidopat",0,1);
 $b=substr("$apellidomat",0,1);
 $c=substr("$nombre",0,1);
-$n=rand(10,201);
+$n=rand(10,901);
 if ($n<100) {
 	$n="0".$n;
 }
-$usr=$a.$b.$c.$n;
+$usr=$a.$b.$c.$n.$edad;
 $psw=md5("$cel");
 /*variables*/
 
@@ -36,7 +37,7 @@ $psw=md5("$cel");
 $filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo) VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F');");	
 	if ($filial)
 	{		
-
+		mysqli_query($cnx,"UPDATE recinto set filial='$usr' where idrecinto='$recinto' ");
 	echo "<META HTTP-EQUIV='Refresh' CONTENT ='2; URL=Formulariofilial.php'>";
 	?>
 	<script type="text/javascript">
