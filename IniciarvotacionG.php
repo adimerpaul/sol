@@ -64,22 +64,20 @@ function mostrar(id) {
             $(this).val(0);
     });
 
-    if (id == "3") {
-
-        $("#asambleista").show();
-
-        $("#gobernador").hide();
-
-    }
-
-
-
-    if (id == "5") {
-
+    if (id == "2") {
+        $("#asambleistap").show();
         $("#asambleista").hide();
-
+        $("#gobernador").hide();
+    }
+    if (id == "3") {
+        $("#asambleistap").hide();
+        $("#asambleista").show();
+        $("#gobernador").hide();
+    }
+    if (id == "5") {
+        $("#asambleistap").hide();
+        $("#asambleista").hide();
         $("#gobernador").show();
-
     }
 
 }
@@ -501,6 +499,99 @@ function checknum(e) {
                     </form>
 
                 </div>
+                <div id="asambleistap" style="display: none;" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
+
+                <form action="Registrogobernadorp.php" method="GET" class="form-horizontal form-label-left" enctype="multipart/form-data" validate>
+
+                    <?php
+
+                    $consultagobernador=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=5");
+
+                    $fconsultagobernador=mysqli_fetch_array($consultagobernador);
+
+                    $numconsultagobernador=mysqli_num_rows($consultagobernador);
+
+                    if ($numconsultagobernador>0) {
+
+                        echo "<h5>LA VOTACION PARA ESTA MESA EN ESTE RECINTO YA HA SIDO REALIZADA</h5>";
+
+                        echo "<a class='btn btn-primary' href='Vervotaciongobernador.php?idvotacion=$fconsultagobernador[0]&idmesa=$idmesa&idrecinto=$idrecinto&tipo=5'>VER VOTACION</a>";
+
+                    }
+
+                    else
+
+                    {
+
+                        ?>
+
+                        <input type='hidden' name='idtipocandidaturagober' value='5'>
+
+                        <input type='hidden' name='idrecintogober' value='<?php echo $idrecinto;?>'>
+
+                        <input type='hidden' name='idmesagober' value='<?php echo $idmesa;?>'>
+                        <center><h2 style="color:#d9232d;"><i><u>REGISTRO DE VOTOS PARA GOBERNADOR DE POBLACION</u></i></h2></center>
+                        <hr class="colorgraph">
+                        <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
+                        <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
+                        <hr class="colorgraph">
+                        <table class="table responsive-utilities table-bordered table-hover">
+
+                            <tr>
+
+                                <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
+
+                            </tr>
+
+                            <?php
+
+                            $c=0;
+                            $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
+
+                                        FROM recinto r, municipio m, candidatura c, partidopolitico pp
+
+                                        WHERE r.idmunicipio = m.idmunicipio
+
+                                        AND c.idmunicipio = m.idmunicipio
+
+                                        AND pp.idpartido = c.idpartido
+
+                                        AND c.idtipocandidatura=5
+
+                                        AND r.idrecinto=$idrecinto
+                                        
+                                        ORDER BY pp.idpartido
+
+                                        ");
+
+                            while ($fp=mysqli_fetch_array($candidaturas)) {
+
+                                $c++;
+
+                                echo "<tr style='background-color: $fp[3];'>
+                                <td><input type='checkbox' name='$fp[0]' checked></td>
+                                <th id='t'>$fp[1]</th>
+                                <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
+                                <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
+                                onkeyup='sumar()' value='0' id='input$c-c' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
+                                </tr>";
+                            }
+
+                            ?>
+
+                        </table>
+
+                        <input type='Submit' value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger">
+
+                        <?php
+
+                    };
+
+                    ?>
+
+                </form>
+
+            </div>
 
         </div>
 
