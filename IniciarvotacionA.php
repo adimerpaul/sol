@@ -388,7 +388,7 @@ function checknum(e) {
     
                                 <th><p style='font-size: 30px;color: black'>$fp[1]</p></th>
                                 
-                                <td><img width='150' style='height: auto;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
+                                <td width=100><img style='max-width: 80%; height: auto;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
     
                                 <td><input class='form-control input-lg' style='color: black;font-weight: bold;font-size: 30px' type='tel' value='0' name='v$c' id='input$c' onkeypress='return checknum(event)' onkeyup='sumar()' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
     
