@@ -348,20 +348,21 @@ function checknum(e) {
                         <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
                         <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
                         <hr class="colorgraph">
-                        <table class="table responsive-utilities table-bordered table-hover">
+                            <div class="table-responsive">
+                                <table class="table responsive-utilities table-bordered table-hover">
 
-                        <tr>
+                                    <tr>
 
-                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO DE VOTOS</th>
+                                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO DE VOTOS</th>
 
 
-                        </tr>
+                                    </tr>
 
-                        <?php
+                                    <?php
 
-                            $c=0;
-    
-                            $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
+                                    $c=0;
+
+                                    $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
 
                                         FROM recinto r, municipio m, candidatura c, partidopolitico pp
 
@@ -377,11 +378,11 @@ function checknum(e) {
                                         
                                         ORDER BY pp.idpartido");
 
-                            while ($fp=mysqli_fetch_array($candidaturas)) {
+                                    while ($fp=mysqli_fetch_array($candidaturas)) {
 
-                                $c++;
+                                        $c++;
 
-                                echo "<tr style='background-color: $fp[3];'>
+                                        echo "<tr style='background-color: $fp[3];'>
     
                                 <td id='th2'><input type='checkbox' name='$fp[0]' checked></td>
     
@@ -393,11 +394,13 @@ function checknum(e) {
     
                                 </tr>";
 
-                            }
+                                    }
 
-                        ?>
+                                    ?>
 
-                        </table>
+                                </table>
+                            </div>
+
 
                         <input type='Submit' value='SUBIR VOTACION'  name='ok' class="btn btn-lg btn-danger btnenviar">
 
@@ -447,18 +450,19 @@ function checknum(e) {
                         <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
                         <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
                         <hr class="colorgraph">
-                        <table class="table responsive-utilities table-bordered table-hover">
-    
-                        <tr>
-    
-                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO DE VOTOS</th>
-    
-                        </tr>
-    
-                        <?php
+                            <div class="table-responsive">
+                                <table class="table responsive-utilities table-bordered table-hover">
 
-                            $c=0;
-                            $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
+                                    <tr>
+
+                                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO DE VOTOS</th>
+
+                                    </tr>
+
+                                    <?php
+
+                                    $c=0;
+                                    $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
 
                                         FROM recinto r, municipio m, candidatura c, partidopolitico pp
 
@@ -473,12 +477,12 @@ function checknum(e) {
                                         AND r.idrecinto=$idrecinto
                                         
                                         ORDER BY pp.idpartido");
-    
-                            while ($fp=mysqli_fetch_array($candidaturas)) {
-    
-                                $c++;
-    
-                            echo "<tr style='background-color: $fp[3];'>
+
+                                    while ($fp=mysqli_fetch_array($candidaturas)) {
+
+                                        $c++;
+
+                                        echo "<tr style='background-color: $fp[3];'>
     
                                 <td id='th2'><input type='checkbox' name='$fp[0]' checked></td>
     
@@ -490,12 +494,14 @@ function checknum(e) {
                                 onkeyup='sumar()' value='0' maxlength='3' max='200' min='0' autocomplete='off' required></td>
     
                                 </tr>";
-    
-                            }
-    
-                        ?>
-    
-                        </table>
+
+                                    }
+
+                                    ?>
+
+                                </table>
+                            </div>
+
     
                         <input type='Submit' value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger btnenviar">
     
