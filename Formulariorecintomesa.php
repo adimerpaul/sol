@@ -22,30 +22,6 @@ if($_SESSION['usr']!="")
 <link id="t-colors" href="skins/default.css" rel="stylesheet" />
 <!-- boxed bg -->
 <link id="bodybg" href="bodybg/bg1.css" rel="stylesheet" type="text/css" />
-<style type="text/css">
-#busqueda{
-        color:black;
-        text-align: center;
-        font-size: 20px;
-        font-weight: bold;
-        width:400px;
-        height: 40px;
-    }
-
-</style>
-<script>
-function buscar() {
-    var textoBusqueda = $("input#busqueda").val();
-    
-    if (textoBusqueda != "") {
-        $.post("busrecinto.php", {valorBusqueda: textoBusqueda}, function(mensaje) {
-            $("#resultadoBusqueda").html(mensaje);
-        }); 
-    } else { 
-        ("#resultadoBusqueda").html('<p>No hay nada que mostrar</p>');
-    };
-};
-</script>
 </head>
 <div id="wrapper">
   <!-- start header -->
@@ -157,13 +133,6 @@ function buscar() {
     <div class="container">
       <form>
         <h2><label>Por favor realíce la búsqueda</label> <small>del recinto electoral.</small></h2>
-        <div class="row">
-
-              <center>
-              <h3>Escriba el nombre de su recinto <i class="fa fa-angle-down"></i></h3> <input type="text" name="busqueda" id="busqueda" value="" placeholder="" maxlength="50" class="form-control " style="text-transform:uppercase;" autocomplete="off" onKeyUp="buscar();"/>
-              </center>
-
-        </div>
         <hr class="colorgraph">
         <div class="row" id="resultadoBusqueda">
           <?php

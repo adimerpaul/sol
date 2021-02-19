@@ -26,6 +26,23 @@ if($_SESSION['usr']!="")
 <link id="t-colors" href="skins/default.css" rel="stylesheet" />
 <!-- boxed bg -->
 <link id="bodybg" href="bodybg/bg1.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+    #th2{
+        vertical-align:middle;
+        color:black;
+        text-align: center;
+        font-size:15px;
+        font-weight: bold;
+    }
+    #t{
+        vertical-align:middle;
+        color:black;
+        text-align: center;
+        font-size:30px;
+        font-weight: bold;
+    }
+
+</style>
 </head>
 <body>
 <div id="wrapper">
@@ -101,7 +118,7 @@ if($_SESSION['usr']!="")
                 <ul class="breadcrumb">
                     <li><a href="index.php"><i class="fa fa-home"></i></a><i class="icon-angle-right"></i></li>
                     <li><a href="#">Sistema</a><i class="icon-angle-right"></i></li>
-                    <li class="active">Vista Votacion General Concejal</li>
+                    <li class="active">Vista Resumén Votación Concejal</li>
                 </ul>
             </div>
         </div>
@@ -131,22 +148,22 @@ if($_SESSION['usr']!="")
                     <?php
                     $consultaconcejal=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=4");
                      $fconsultaconcejal=mysqli_fetch_array($consultaconcejal);
-                        $votos=mysqli_query($cnx,"SELECT pp.descripcion,pp.logo,dv.cantidadvoto FROM votacion v,detallevotacion dv, partidopolitico pp
+                        $votos=mysqli_query($cnx,"SELECT pp.descripcion,pp.logo,dv.cantidadvoto,pp.color FROM votacion v,detallevotacion dv, partidopolitico pp
                                 WHERE v.idvotacion=dv.idvotacion
                                 AND dv.idpartido=pp.idpartido
                                 AND v.idvotacion=$fconsultaconcejal[0]");
                             ?>
                     <label><strong><big>Detalle de votos para CONCEJAL(A)<strong></big></label>
-                    <table class="table responsive-utilities table-bordered table-hover">
+                    <table class="table responsive-utilities table-bordered">
                     <tr>
-                        <th id='th2'>PARTIDO POLITICO</th><th id='th2'>LOGO</th><th id='th2'>CANTIDAD DE VOTOS</th>
+                        <th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
                     </tr>
                     <?php  
                         while ($fvotos=mysqli_fetch_array($votos)) {
-                            echo "<tr>
-                                <th id='th'>$fvotos[0]</th>
-                                <td width=100><img style='max-width: 80%; height: auto;' src='imgpp/$fvotos[1]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
-                                <td id='th' align='right'>$fvotos[2] votos</td>
+                           echo "<tr style='background-color: $fvotos[3];'>
+                                <th id='t'>$fvotos[0]</th>
+                                <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fvotos[1]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
+                                <td id='t' align='right'>$fvotos[2] votos</td>
                                 </tr>";
                     };
                     ?>
