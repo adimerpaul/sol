@@ -160,7 +160,7 @@ jQuery('input[type=file]').change(function(){
 
             <div class="custom-input-file">
                 <br><br>
-            <input type="file" id="fichero-tarifas" class="input-file" name="archivo" value="Elegir imagen..." accept="image/*" capture="camera" required/>
+            <input type="file" id="fichero-tarifas" class="input-file" name="archivo" value="Elegir imagen..." required/>
             <i class="fa fa-camera" aria-hidden="true"></i>
             <br><h3>PASO 1</h3>
             </div>
