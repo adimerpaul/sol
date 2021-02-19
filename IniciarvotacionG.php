@@ -20,7 +20,7 @@ if($_SESSION['usr']!="")
 
 <meta charset="utf-8">
 
-<title>Solor-Inicio de Registro de Votos</title>
+<title>Solor-Inicio de Registro de Votos Gobernador</title>
 
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
@@ -118,25 +118,31 @@ function checknum(e) {
 
         color:black;
         text-align: center;
-        font-size: 40px;
+        font-size: 38px;
         font-weight: bold;
-        letter-spacing: 2rem;
-        width:250px;
+        letter-spacing: 0.1rem;
+        width:100px;
         height: 90px;
 
     }
     #select{
-
         color:black;
         text-align: center;
         font-weight: bold;
 
     }
     #th2{
-
+        vertical-align:middle;
         color:black;
         text-align: center;
-        font-size:30px;
+        font-size:15px;
+        font-weight: bold;
+    }
+    #t{
+        vertical-align:middle;
+        color:black;
+        text-align: center;
+        font-size:20px;
         font-weight: bold;
     }
 
@@ -232,7 +238,7 @@ function checknum(e) {
 
                     <li class="active">Nueva Votación</li>
 
-                    <li class="active">Seleccion de Mesa de Votación</li>
+                    <li class="active">Seleccion de Mesa de Votación Gobernador/Asambleista</li>
 
                 </ul>
 
@@ -316,8 +322,6 @@ function checknum(e) {
                 <div id="asambleista" style="display: none;" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
                         <?php
                         
-                        //echo"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1";
-                        
                         $consultaasamble=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=3");
 
                         $numconsultaasamble=mysqli_num_rows($consultaasamble);
@@ -353,7 +357,7 @@ function checknum(e) {
 
                         <tr>
 
-                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO DE VOTOS</th>
+                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
 
                         </tr>
 
@@ -378,23 +382,14 @@ function checknum(e) {
                                         ORDER BY pp.idpartido");
 
                             while ($fp=mysqli_fetch_array($candidaturas)) {
-
-
                                 $c++;
-
                             echo "<tr style='background-color: $fp[3];'>
-    
-                                <td id='th2'><input type='checkbox' name='$fp[0]' checked></td>
-    
-                                <th id='th2'>$fp[1]</th>
-                                
-                                <td width=100><img style='max-width: 100%; height: auto;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
-    
+                                <td><input type='checkbox' name='$fp[0]' checked></td>
+                                <th id='t'>$fp[1]</th>
+                                <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
                                 <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
                                 onkeyup='sumar()' value='0' id='input$c-c' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
-    
                                 </tr>";
-
                             }
 
                         ?>
@@ -453,7 +448,7 @@ function checknum(e) {
     
                         <tr>
     
-                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO DE VOTOS</th>
+                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
     
                         </tr>
     
@@ -483,18 +478,12 @@ function checknum(e) {
                                 $c++;
     
                             echo "<tr style='background-color: $fp[3];'>
-    
-                                <td id='th2'><input type='checkbox' name='$fp[0]' checked></td>
-    
-                                <th id='th2'>$fp[1]</th>
-                                
-                                <td width=100><img style='max-width: 100%; height: auto;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
-    
+                                <td><input type='checkbox' name='$fp[0]' checked></td>
+                                <th id='t'>$fp[1]</th>
+                                <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
                                 <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
-                                    onkeyup='sumar()' value='0' tabindex='$c' id='input$c-c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
-    
+                                onkeyup='sumar()' value='0' id='input$c-c' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
                                 </tr>";
-    
                             }
     
                         ?>

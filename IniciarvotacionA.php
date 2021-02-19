@@ -20,7 +20,7 @@ if($_SESSION['usr']!="")
 
 <meta charset="utf-8">
 
-<title>Solor-Inicio de Registro de Votos</title>
+<title>Solor-Inicio de Registro de Votos Gobernador</title>
 
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
@@ -113,29 +113,35 @@ function checknum(e) {
 
 <style type="text/css">
 
-    .inputd{
+    #input{
 
         color:black;
         text-align: center;
-        font-size: 40px;
+        font-size: 38px;
         font-weight: bold;
-        letter-spacing: 2rem;
-        width:250px;
+        letter-spacing: 0.1rem;
+        width:100px;
         height: 90px;
 
     }
     #select{
-
         color:black;
         text-align: center;
         font-weight: bold;
 
     }
     #th2{
-
+        vertical-align:middle;
         color:black;
         text-align: center;
-        font-size:30px;
+        font-size:15px;
+        font-weight: bold;
+    }
+    #t{
+        vertical-align:middle;
+        color:black;
+        text-align: center;
+        font-size:20px;
         font-weight: bold;
     }
 
@@ -231,7 +237,7 @@ function checknum(e) {
 
                     <li class="active">Nueva Votación</li>
 
-                    <li class="active">Seleccion de Mesa de Votación</li>
+                    <li class="active">Seleccion de Mesa de Votación Gobernador/Asambleista</li>
 
                 </ul>
 
@@ -261,7 +267,6 @@ function checknum(e) {
 
     $numeromesa=$fmesa[2];
     $votosmax=$fmesa[3];
-
     ?>
 
     <center>
@@ -305,7 +310,6 @@ function checknum(e) {
                 </div>
 
             </div>
-
         </div>
 
     <!--RECINTOS-->
@@ -317,7 +321,7 @@ function checknum(e) {
                 <div id="alcalde" style="display: none;" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
                         <?php
                         
-                        $consultaalcalde=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1");
+                         $consultaalcalde=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1");
 
                         $numconsultaalcalde=mysqli_num_rows($consultaalcalde);
 
@@ -336,7 +340,7 @@ function checknum(e) {
                         {
 
                         ?>
-                        <form action="Registroalcalde.php" method="GET" class="form-horizontal form-label-left" enctype="multipart/form-data">
+                    <form action="Registroalcalde.php" method="GET" class="form-horizontal form-label-left" enctype="multipart/form-data">
 
                         <input type='hidden' name='idtipocandidaturaalca' value='1'>
 
@@ -348,58 +352,48 @@ function checknum(e) {
                         <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
                         <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
                         <hr class="colorgraph">
-                            <div class="table-responsive">
-                                <table class="table">
+                            <table class="table responsive-utilities table-bordered table-hover">
+                                <tr>
+                                <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
+                                </tr>
 
-                                    <tr>
+                                            <?php
 
-                                        <th></th><th >Partido</th><th >Logo</th><th >Num votos</th>
+                                            $c=0;
 
+                                            $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
 
-                                    </tr>
+                                                FROM recinto r, municipio m, candidatura c, partidopolitico pp
 
-                                    <?php
+                                                WHERE r.idmunicipio = m.idmunicipio
 
-                                    $c=0;
+                                                AND c.idmunicipio = m.idmunicipio
 
-                                    $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
+                                                AND pp.idpartido = c.idpartido
 
-                                        FROM recinto r, municipio m, candidatura c, partidopolitico pp
+                                                AND c.idtipocandidatura=1
 
-                                        WHERE r.idmunicipio = m.idmunicipio
+                                                AND r.idrecinto=$idrecinto
+                                                
+                                                ORDER BY pp.idpartido");
 
-                                        AND c.idmunicipio = m.idmunicipio
+                                            while ($fp=mysqli_fetch_array($candidaturas)) {
 
-                                        AND pp.idpartido = c.idpartido
-
-                                        AND c.idtipocandidatura=1
-
-                                        AND r.idrecinto=$idrecinto
-                                        
-                                        ORDER BY pp.idpartido");
-
-                                    while ($fp=mysqli_fetch_array($candidaturas)) {
-
-                                        $c++;
+                                                $c++;
 
                                         echo "<tr style='background-color: $fp[3];'>
-    
-                                <td><input type='checkbox' name='$fp[0]' checked></td>
-    
-                                <th style='font-size: 20px;color: black'>$fp[1]</th>
-                                
-                                <td width=150><img style='max-width: 120%; height: auto;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/>ss</td>
-    
-                                <td><input class='form-control input-lg' style='color: black; font-weight: bold;font-size: 30px text-align: center; letter-spacing: 2rem;' type='tel' value='0' name='v$c' id='input$c' onkeypress='return checknum(event)' onkeyup='sumar()' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
-                                </tr>";
+                                        <td><input type='checkbox' name='$fp[0]' checked></td>
+                                        <th id='t'>$fp[1]</th>
+                                        <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
+                                        <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
+                                        onkeyup='sumar()' value='0' id='input$c-c' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
+                                        </tr>";
 
-                                    }
+                                            }
 
-                                    ?>
+                                            ?>
 
-                                </table>
-                            </div>
-
+                            </table>
 
                         <input type='Submit' value='SUBIR VOTACION'  name='ok' class="btn btn-lg btn-danger btnenviar">
 
@@ -415,7 +409,7 @@ function checknum(e) {
 
                 <div id="concejal" style="display: none;" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
 
-                    <form action="Registroconcejal.php" method="GET" class="form-horizontal form-label-left" enctype="multipart/form-data">
+                   <form action="Registroconcejal.php" method="GET" class="form-horizontal form-label-left" enctype="multipart/form-data">
     
                         <?php
                         
@@ -449,62 +443,35 @@ function checknum(e) {
                         <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
                         <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
                         <hr class="colorgraph">
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <tr>
-                                        <th></th><th >Partido</th><th >Logo</th><th >Num votos</th>
-                                    </tr>
-
-                                    <?php
-
-                                    $c=0;
-                                    $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
-
-                                        FROM recinto r, municipio m, candidatura c, partidopolitico pp
-
-                                        WHERE r.idmunicipio = m.idmunicipio
-
-                                        AND c.idmunicipio = m.idmunicipio
-
-                                        AND pp.idpartido = c.idpartido
-
-                                        AND c.idtipocandidatura=4
-
-                                        AND r.idrecinto=$idrecinto
-                                        
-                                        ORDER BY pp.idpartido");
-
-                                    while ($fp=mysqli_fetch_array($candidaturas)) {
-
-                                        $c++;
-
-                                        echo "<tr style='background-color: $fp[3];'>
-    
-                                <td><input type='checkbox' name='$fp[0]' checked></td>
-    
-                                <th><p style='font-size: 30px;color: black'>$fp[1]</p></th>
-                                
-                                <td><img width='150' style='height: auto;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
-    
-                                <td><input class='form-control input-lg' style='color: black;font-weight: bold;font-size: 30px' type='tel' name='v$c' id='input$c-c' onkeypress='return checknum(event)' tabindex='$c'
-                                onkeyup='sumar()' value='0' maxlength='3' max='200' min='0' autocomplete='off' required></td>
-    
-                                </tr>";
-
-                                    }
-
-                                    ?>
-
-                                </table>
-                            </div>
-
-    
+                        <table class="table responsive-utilities table-bordered table-hover">
+                        <tr>
+                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
+                        </tr>
+                                <?php
+                                $c=0;
+                                $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion,pp.logo,pp.color
+                                    FROM recinto r, municipio m, candidatura c, partidopolitico pp
+                                    WHERE r.idmunicipio = m.idmunicipio
+                                    AND c.idmunicipio = m.idmunicipio
+                                    AND pp.idpartido = c.idpartido
+                                    AND c.idtipocandidatura=4
+                                    AND r.idrecinto=$idrecinto
+                                    ORDER BY pp.idpartido");
+                                while ($fp=mysqli_fetch_array($candidaturas)) {
+                                    $c++;
+                            echo "<tr style='background-color: $fp[3];'>
+                            <td><input type='checkbox' name='$fp[0]' checked></td>
+                            <th id='t'>$fp[1]</th>
+                            <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
+                            <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
+                            onkeyup='sumar()' value='0' id='input$c-c' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
+                            </tr>";
+                                }
+                                ?>
+                        </table>
                         <input type='Submit' value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger btnenviar">
-    
                         <?php
-    
                         };
-    
                         ?>
     
                     </form>
@@ -557,6 +524,7 @@ function checknum(e) {
 <script type="text/javascript">
     var votosmax=<?=$votosmax?>;
     function sumar(){
+        //console.log('as');
         var sum = 0;
         $('.inputd').each(function(){
             //console.log($(this).val());
