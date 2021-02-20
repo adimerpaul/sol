@@ -118,7 +118,7 @@ if($_SESSION['usr']!="")
                 <ul class="breadcrumb">
                     <li><a href="index.php"><i class="fa fa-home"></i></a><i class="icon-angle-right"></i></li>
                     <li><a href="#">Sistema</a><i class="icon-angle-right"></i></li>
-                    <li class="active">Vista Resumén Votación Asambleista Territorio</li>
+                    <li class="active">Vista Resumén Votación Asambleista Poblacion</li>
                 </ul>
             </div>
         </div>
@@ -154,7 +154,7 @@ if($_SESSION['usr']!="")
                             AND v.idvotacion=$fconsultaasamble[0]
                             ORDER BY dv.iddetallevoto");
                             ?>
-                    <label><strong><big>Detalle de votos para ASAMBLEISTA POR TERRITORIO<strong></big></label>
+                    <label><strong><big>Detalle de votos para ASAMBLEISTA POR POBLACION<strong></big></label>
                     <table class="table responsive-utilities table-bordered">
                     <tr>
                         <th id='th2'>PARTIDO POLITICO</th><th id='th2'>LOGO</th><th id='th2'>CANTIDAD VOTOS</th>
@@ -173,7 +173,7 @@ if($_SESSION['usr']!="")
         if ($_SESSION['usr']=='FJR065') {
         ?>
                     <div class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3" >
-                    <a <?php echo "href='grafics/GraficoAsambleMesa.php?idmesa=$idmesa'";?> class="btn btn-large btn-success"> <i class="fa fa-signal"></i> Ver Gráfico Estadístico</a>
+                    <a <?php echo "href='grafics/GraficoAsamblePMesa.php?idmesa=$idmesa'";?> class="btn btn-large btn-success"> <i class="fa fa-signal"></i> Ver Gráfico Estadístico</a>
                     </div>
         <?php
         }

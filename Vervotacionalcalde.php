@@ -151,7 +151,8 @@ if($_SESSION['usr']!="")
                         $votos=mysqli_query($cnx,"SELECT pp.descripcion,pp.logo,dv.cantidadvoto,pp.color FROM votacion v,detallevotacion dv, partidopolitico pp
                             WHERE v.idvotacion=dv.idvotacion
                             AND dv.idpartido=pp.idpartido
-                            AND v.idvotacion=$fconsultaalcalde[0]");
+                            AND v.idvotacion=$fconsultaalcalde[0]
+                            ORDER BY dv.iddetallevoto");
                             ?>
                     <label><strong><big>Detalle de votos para ALCADE(SA)<strong></big></label>
                     <table class="table responsive-utilities table-bordered ">

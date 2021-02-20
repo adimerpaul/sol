@@ -20,9 +20,8 @@ $usuario=$_SESSION['usr'];
 $idmesa=$_GET['idmesaconce'];
 $idrecinto=$_GET['idrecintoconce'];
 $idtipocandidatura=$_GET['idtipocandidaturaconce'];
-$fecha=date("Y-m-d");
-$hora=date("H:i:s");
-mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','P','NULL')");
+
+mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,usuario,estado,imagen) VALUES($idmesa,$idrecinto,$idtipocandidatura,'$usuario','P','NULL')");
 	$nv=mysqli_insert_id($cnx);
 $c=0;
 $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
@@ -32,8 +31,7 @@ $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
                     AND pp.idpartido = c.idpartido
                     AND c.idtipocandidatura=$idtipocandidatura
                     AND r.idrecinto=$idrecinto
-                    ORDER BY pp.idpartido");
-                    
+                    ORDER BY c.posicion");                   
 while ($fp=mysqli_fetch_array($candidaturas)) {
 			$c++;
 			$valor=$_GET["v".$c];

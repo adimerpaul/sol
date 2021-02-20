@@ -124,7 +124,8 @@ if($_SESSION['usr']!="")
         <h3>GRÁFICOS TOTALES ESTADÍSTICOS DE ESTE RECINTO</h3>
         <a <?php echo "href='grafics/GraficoAlcaldeRecinto.php?idrecinto=$idrecinto'";?> class="btn btn-large btn-primary"> <i class="fa fa-signal"></i> Ver Gráfico de Alcalde</a>
         <a <?php echo "href='grafics/GraficoConcejalRecinto.php?idrecinto=$idrecinto'";?> class="btn btn-large btn-primary"> <i class="fa fa-signal"></i> Ver Gráfico de Concejal</a>
-        <a <?php echo "href='grafics/GraficoAsambleRecinto.php?idrecinto=$idrecinto'";?> class="btn btn-large btn-primary"> <i class="fa fa-signal"></i> Ver Gráfico de Asambleista</a>
+        <a <?php echo "href='grafics/GraficoAsambleRecinto.php?idrecinto=$idrecinto'";?> class="btn btn-large btn-primary"> <i class="fa fa-signal"></i> Ver Gráfico de A. Territorio</a>
+        <a <?php echo "href='grafics/GraficoAsamblePRecinto.php?idrecinto=$idrecinto'";?> class="btn btn-large btn-primary"> <i class="fa fa-signal"></i> Ver Gráfico de A. Población</a>
         <a <?php echo "href='grafics/GraficoGoberRecinto.php?idrecinto=$idrecinto'";?> class="btn btn-large btn-primary"> <i class="fa fa-signal"></i> Ver Gráfico de Gobernador</a>
         </center><br>
         <?php

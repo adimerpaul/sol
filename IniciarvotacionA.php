@@ -20,7 +20,7 @@ if($_SESSION['usr']!="")
 
 <meta charset="utf-8">
 
-<title>Solor-Inicio de Registro de Votos Gobernador</title>
+<title>Solor-Inicio de Registro de Votos Alcalde-Concejal</title>
 
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
@@ -350,11 +350,11 @@ function checknum(e) {
                         <center><h2 style="color:#d9232d;"><i><u>REGISTRO DE VOTOS PARA ALCALDE</u></i></h2></center>
                         <hr class="colorgraph">
                         <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
-                        <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
+                        <h2>Cantidad ingresada: <big class="cant">0</big></h2>
                         <hr class="colorgraph">
                             <table class="table responsive-utilities table-bordered table-hover">
                                 <tr>
-                                <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
+                                <th id="th2">CASILLA N°</th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
                                 </tr>
 
                                             <?php
@@ -382,7 +382,8 @@ function checknum(e) {
                                                 $c++;
 
                                         echo "<tr style='background-color: $fp[3];'>
-                                        <td><input type='checkbox' name='$fp[0]' checked></td>
+                                        <td style='display: none;'><input type='checkbox' name='$fp[0]'checked></td>
+                                        <th id='t'>$c</th>
                                         <th id='t'>$fp[1]</th>
                                         <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
                                         <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
@@ -441,11 +442,11 @@ function checknum(e) {
                         <center><h2 style="color:#d9232d;"><i><u>REGISTRO DE VOTOS PARA CONCEJAL</u></i></h2></center>
                         <hr class="colorgraph">
                         <h3>Cantidad maxima de electores: <big><?=$votosmax?></big></h3>
-                        <h2>Cantidad Ingresada: <big class="cant">0</big></h2>
+                        <h2>Cantidad ingresada: <big class="cant">0</big></h2>
                         <hr class="colorgraph">
                         <table class="table responsive-utilities table-bordered table-hover">
                         <tr>
-                        <th></th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
+                        <th id="th2">CASILLA N°</th><th id="th2">PARTIDO POLITICO</th><th id="th2">LOGO</th><th id="th2">REGISTRO VOTOS</th>
                         </tr>
                                 <?php
                                 $c=0;
@@ -460,7 +461,8 @@ function checknum(e) {
                                 while ($fp=mysqli_fetch_array($candidaturas)) {
                                     $c++;
                             echo "<tr style='background-color: $fp[3];'>
-                            <td><input type='checkbox' name='$fp[0]' checked></td>
+                            <td style='display: none;'><input type='checkbox' name='$fp[0]'checked></td>
+                            <th id='t'>$c</th>
                             <th id='t'>$fp[1]</th>
                             <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
                             <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'

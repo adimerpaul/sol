@@ -123,7 +123,8 @@ if($_SESSION['usr']!="")
         <h3>GRÁFICOS TOTALES ESTADÍSTICOS DE ESTE MUNICIPIO</h3>
         <a <?php echo "href='grafics/GraficoAlcaldeMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de Alcalde</a>
         <a <?php echo "href='grafics/GraficoConcejalMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de Concejal</a>
-        <a <?php echo "href='grafics/GraficoAsambleMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de Asambleista</a>
+        <a <?php echo "href='grafics/GraficoAsambleMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de A. Territorio</a>
+        <a <?php echo "href='grafics/GraficoAsamblePMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de A. Población</a>
         <a <?php echo "href='grafics/GraficoGoberMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de Gobernador</a>
         </center><br>
         <?php 
