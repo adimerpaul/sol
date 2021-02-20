@@ -33,7 +33,7 @@ $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
                     AND pp.idpartido = c.idpartido
                     AND c.idtipocandidatura=$idtipocandidatura
                     AND r.idrecinto=$idrecinto
-                    ORDER BY pp.idpartido");
+                    ORDER BY c.posicion");
                     
 while ($fp=mysqli_fetch_array($candidaturas)) {
 			$c++;

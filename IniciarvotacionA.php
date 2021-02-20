@@ -237,7 +237,7 @@ function checknum(e) {
 
                     <li class="active">Nueva Votación</li>
 
-                    <li class="active">Seleccion de Mesa de Votación Gobernador/Asambleista</li>
+                    <li class="active">Selección Votación Alcalde/Concejal</li>
 
                 </ul>
 
@@ -375,7 +375,7 @@ function checknum(e) {
 
                                                 AND r.idrecinto=$idrecinto
                                                 
-                                                ORDER BY pp.idpartido");
+                                                ORDER BY c.posicion");
 
                                             while ($fp=mysqli_fetch_array($candidaturas)) {
 
@@ -456,7 +456,7 @@ function checknum(e) {
                                     AND pp.idpartido = c.idpartido
                                     AND c.idtipocandidatura=4
                                     AND r.idrecinto=$idrecinto
-                                    ORDER BY pp.idpartido");
+                                    ORDER BY c.posicion");
                                 while ($fp=mysqli_fetch_array($candidaturas)) {
                                     $c++;
                             echo "<tr style='background-color: $fp[3];'>

@@ -238,7 +238,7 @@ function checknum(e) {
 
                     <li class="active">Nueva Votación</li>
 
-                    <li class="active">Seleccion de Mesa de Votación Gobernador/Asambleista</li>
+                    <li class="active">Selección Votación Asambleista/Gobernador</li>
 
                 </ul>
 
