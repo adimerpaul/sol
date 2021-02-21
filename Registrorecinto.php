@@ -23,13 +23,12 @@ $municipio = $_POST['municipio'];
 $ciudad = $_POST['ciudad'];
 $recinto = $_POST['recinto'];
 $cantidadmesa = $_POST['cantidadmesa'];
-$fecha=date("Y-m-d");
-$hora=date("H:i:s");
+
 /*variables*/
 $user=strtoupper($user);
 $recinto=strtoupper($recinto);
 		/*Registro*/
-		$recinto_insert=mysqli_query($cnx,"INSERT INTO `recinto`(idprovincia,idmunicipio,ciudad,recinto,cantidadmesa,fecha,hora,filial) VALUES ('$provincia','$municipio','$ciudad','$recinto','$cantidadmesa','$fecha','$hora','YO')");	
+		$recinto_insert=mysqli_query($cnx,"INSERT INTO `recinto`(idprovincia,idmunicipio,ciudad,recinto,cantidadmesa,filial) VALUES ('$provincia','$municipio','$ciudad','$recinto','$cantidadmesa','YO')");	
 			if ($recinto_insert)
 			{
 			$recinto_id=mysqli_insert_id($cnx);

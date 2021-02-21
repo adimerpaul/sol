@@ -16,12 +16,13 @@ $cnx=conectar();
 </head>
 <body OnLoad="NoBack();">
 <?php
-
+$fecha=date("Y-m-d");
+$hora=date("H:i:s");
 $usuario=$_SESSION['usr'];
 $idmesa=$_GET['idmesaalca'];
 $idrecinto=$_GET['idrecintoalca'];
 $idtipocandidatura=$_GET['idtipocandidaturaalca'];
-mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,usuario,estado,imagen) VALUES($idmesa,$idrecinto,$idtipocandidatura,'$usuario','P','NULL')");
+mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,,fecha,hora,usuario,estado,imagen) VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','P','NULL')");
 	$nv=mysqli_insert_id($cnx);
 $c=0;
 $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
