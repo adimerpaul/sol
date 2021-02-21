@@ -17,4 +17,10 @@
 <script src="js/custom.js"></script>
 <?php
 </body>
+<footer>
+<div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
+© 2021 Copyright:
+<a class="text-dark" href=" ">Ing. Flores Jaillita Reynaldo; Ing. Chambi Ajata Adimer; Ing. Lopez Gutierrez Alejandro</a>
+</div>
+</footer>
 </html>';?>

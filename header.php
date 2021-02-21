@@ -20,7 +20,6 @@ echo '
 
 <!-- Theme skin -->
 <link id="t-colors" href="skins/default.css" rel="stylesheet" />
-<script type="text/javascript" src="jquery.inputlimiter.1.3.1.min.js"></script>
 
 	<!-- boxed bg -->
     <link id="bodybg" href="bodybg/bg1.css" rel="stylesheet" type="text/css" />
@@ -73,12 +72,14 @@ xmlhttp.send(cadenaParametros); // Envio de parámetros usando POST
                         </li>
                         <li>
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="0" data-close-others="false"><h4>Registrar  <i class="fa fa-angle-down"></i></h4></a>
-                            <ul class="dropdown-menu">
-                                <li><a href="Formulariorecinto.php" class=" btn btn-round btn-danger"><h5>Nuevo Recinto</h5></a></li>
+                            <ul class="dropdown-menu">';
+                        if ($_SESSION["usr"]=="FJR065") {
+                            echo '<li><a href="Formulariorecinto.php" class=" btn btn-round btn-danger"><h5>Nuevo Recinto</h5></a></li>
                                 <li><a href="Formulariofilial.php" class=" btn btn-round btn-danger"><h5>Nuevo Filial</h5></a></li>
-                                <li><a href="Formulariovotacion.php" class=" btn btn-round btn-danger"><h5>Nueva Votación</h5></a></li>
-                                <li><a href="Formulariorecintoup.php" class=" btn btn-round btn-danger"><h5>Mod Mesa</h5></a></li>
-                            </ul>
+                                <li><a href="Formulariorecintoup.php" class=" btn btn-round btn-danger"><h5>Mod Mesa</h5></a></li>';
+                            }
+                            echo '<li><a href="Formulariovotacion.php" class=" btn btn-round btn-danger"><h5>Nueva Votación</h5></a></li>
+                                </ul>
                         </li>
                         <li>';
                         if ($_SESSION["usr"]=="FJR065") {
