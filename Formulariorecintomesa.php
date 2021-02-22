@@ -10,7 +10,7 @@ if($_SESSION['usr']!="")
           var textoBusqueda = $("input#busqueda").val();
           var municipio=<?=$idmunicipio?>;
           if (textoBusqueda != "") {
-              $.post("busrecinto.php", {valorBusqueda: textoBusqueda}, {municipio: municipio}, function(mensaje) {
+              $.post("busrecinto.php", {valorBusqueda: textoBusqueda,municipio: municipio}, function(mensaje) {
                   $("#resultadoBusqueda").html(mensaje);
               }); 
           } else { 
