@@ -47,7 +47,7 @@ $filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,ed
 	}
 	else
 		{
-		echo "<META HTTP-EQUIV='Refresh' CONTENT ='5; URL=Formulariofilial.php'>";
+		echo "<META HTTP-EQUIV='Refresh' CONTENT ='2; URL=Formulariofilial.php'>";
 			?>
 		<script type="text/javascript">
 				sweetAlert("Oops!","Ocurrio un error en el registro","error");
