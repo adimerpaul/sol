@@ -34,8 +34,7 @@ $psw=md5("$cel");
 /*variables*/
 
 /*Registro*/
-$filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo) VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F');");
-echo "INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo) VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F');";	
+$filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo) VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F');");	
 	if ($filial)
 	{		
 		mysqli_query($cnx,"UPDATE recinto set filial='$usr' where idrecinto='$recinto' ");
