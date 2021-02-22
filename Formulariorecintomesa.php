@@ -1,10 +1,11 @@
 <?php
 session_start();
 if($_SESSION['usr']!="")
+{
+ include ("header.php");
 $idmunicipio=$_GET['idmunicipio'];
 $idprovincia=$_GET['idprovincia'];
-{
- include ("header.php");?>
+ ?>
   <!-- end header -->
   <head>
     <script>
