@@ -13,7 +13,7 @@ $idprovincia=$_GET['idprovincia'];
           var textoBusqueda = $("input#busqueda").val();
           var municipio=<?=$idmunicipio?>;
           if (textoBusqueda != "") {
-              $.post("busrecinto.php", {valorBusqueda: textoBusqueda}, function(mensaje) {
+              $.post("busrecinto.php", {valorBusqueda: textoBusqueda},{municipio: idmunicipio}, function(mensaje) {
                   $("#resultadoBusqueda").html(mensaje);
               }); 
           } else { 
