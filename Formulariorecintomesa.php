@@ -65,12 +65,17 @@ $idprovincia=$_GET['idprovincia'];
     <div class="container">
       <form>
         <h2><label>Por favor realíce la búsqueda</label> <small>del recinto electoral.</small></h2>
+        <?php
+        if ($_SESSION['usr']=='FJR065') {
+        ?>
         <div class="row">
               <center>
-              <h3>Escriba el nombre de su recinto <i class="fa fa-angle-down"></i></h3> <input type="text" name="busqueda" id="busqueda" value="" placeholder="" maxlength="50" class="form-control form-group" style="text-transform:uppercase;" autocomplete="off" onKeyUp="buscar();"/>
+              <h3>Escriba el nombre de su recinto <i class="fa fa-angle-down"></i></h3> <input type="text" name="busqueda" id="busqueda" value="" placeholder="" maxlength="50" class="form-control " style="text-transform:uppercase;" autocomplete="off" onKeyUp="buscar();"/>
               </center>
-
         </div>
+        <?php
+        }
+        ?>
         <hr class="colorgraph">
         <div class="row" id="resultadoBusqueda">
           <?php
