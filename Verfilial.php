@@ -4,9 +4,7 @@ if($_SESSION['usr']!="")
 {
  include ("header.php");
 ?>
-<script>
-     $('table').stacktable();
-</script>
+
  
 <style type="text/css">
     #th{
