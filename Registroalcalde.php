@@ -23,7 +23,6 @@ $idmesa=$_GET['idmesaalca'];
 $idrecinto=$_GET['idrecintoalca'];
 $idtipocandidatura=$_GET['idtipocandidaturaalca'];
 mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','P','NULL')");
-echo "INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','P','NULL')";
 	$nv=mysqli_insert_id($cnx);
 $c=0;
 $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
@@ -47,7 +46,7 @@ while ($fp=mysqli_fetch_array($candidaturas)) {
 			};
 		};
 
-  echo "<META HTTP-EQUIV='Refresh' CONTENT ='5; URL=Formulariofoto.php?nv=$nv&idrecinto=$idrecinto'>";
+  echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Formulariofoto.php?nv=$nv&idrecinto=$idrecinto'>";
   exit;
 
 ?>
