@@ -5,7 +5,7 @@ $cnx=conectar();
 
 //Variable de búsqueda
 $consultaBusqueda = $_POST['valorBusqueda'];
-
+$idmunicipio = $_POST['municipio'];
 //Filtro anti-XSS
 $caracteres_malos = array("<", ">", "\"", "'", "/", "<", ">", "'", "/");
 $caracteres_buenos = array("&lt;", "&gt;", "&quot;", "&#x27;", "&#x2F;", "&#060;", "&#062;", "&#039;", "&#047;");
@@ -19,7 +19,7 @@ if (isset($consultaBusqueda)) {
 
 	//Selecciona todo de la tabla asociado 
 	//donde el nombre sea igual a $consultaBusqueda, 
-	$consulta = mysqli_query($cnx,"SELECT r.idrecinto,r.recinto,r.cantidadmesa FROM municipio m INNER 					JOIN recinto r ON m.idmunicipio=r.idmunicipio WHERE r.idmunicipio=3 AND 					r.recinto LIKE '%$consultaBusqueda%'");
+	$consulta = mysqli_query($cnx,"SELECT r.idrecinto,r.recinto,r.cantidadmesa FROM municipio m INNER 					JOIN recinto r ON m.idmunicipio=r.idmunicipio WHERE r.idmunicipio=$idmunicipio AND 					r.recinto LIKE '%$consultaBusqueda%'");
 	//Obtiene la cantidad de filas que hay en la consulta
 	$filas = mysqli_num_rows($consulta);
 	//Si no existe ninguna fila que sea igual a $consultaBusqueda, entonces mostramos el siguiente mensaje
