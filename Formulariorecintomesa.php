@@ -4,6 +4,22 @@ if($_SESSION['usr']!="")
 {
  include ("header.php");?>
   <!-- end header -->
+  <head>
+    <script>
+      function buscar() {
+          var textoBusqueda = $("input#busqueda").val();
+          
+          if (textoBusqueda != "") {
+              $.post("busrecinto.php", {valorBusqueda: textoBusqueda}, function(mensaje) {
+                  $("#resultadoBusqueda").html(mensaje);
+              }); 
+          } else { 
+              ("#resultadoBusqueda").html('<p>No hay nada que mostrar</p>');
+          };
+      };
+    </script>
+
+  </head>
   <section id="inner-headline">
   <div class="container">
     <div class="row">
@@ -48,6 +64,12 @@ if($_SESSION['usr']!="")
     <div class="container">
       <form>
         <h2><label>Por favor realíce la búsqueda</label> <small>del recinto electoral.</small></h2>
+        <div class="row">
+              <center>
+              <h3>Escriba el nombre de su recinto <i class="fa fa-angle-down"></i></h3> <input type="text" name="busqueda" id="busqueda" value="" placeholder="" maxlength="50" class="form-control " style="text-transform:uppercase;" autocomplete="off" onKeyUp="buscar();"/>
+              </center>
+
+        </div>
         <hr class="colorgraph">
         <div class="row" id="resultadoBusqueda">
           <?php
