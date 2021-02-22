@@ -1,6 +1,8 @@
 <?php
 session_start();
 if($_SESSION['usr']!="")
+$idmunicipio=$_GET['idmunicipio'];
+$idprovincia=$_GET['idprovincia'];
 {
  include ("header.php");?>
   <!-- end header -->
@@ -10,7 +12,7 @@ if($_SESSION['usr']!="")
           var textoBusqueda = $("input#busqueda").val();
           var municipio=<?=$idmunicipio?>;
           if (textoBusqueda != "") {
-              $.post("busrecinto.php", {valorBusqueda: textoBusqueda,municipio: municipio}, function(mensaje) {
+              $.post("busrecinto.php", {valorBusqueda: textoBusqueda}, function(mensaje) {
                   $("#resultadoBusqueda").html(mensaje);
               }); 
           } else { 
@@ -34,8 +36,6 @@ if($_SESSION['usr']!="")
   </div>
   </section>
   <?php
-    $idmunicipio=$_GET['idmunicipio'];
-    $idprovincia=$_GET['idprovincia'];
     $municipio=mysqli_query($cnx,"SELECT * FROM municipio WHERE idmunicipio=$idmunicipio");
     $fmunicipio=mysqli_fetch_array($municipio);
     $nombremunicipio=$fmunicipio[1];
