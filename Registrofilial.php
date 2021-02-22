@@ -34,7 +34,8 @@ $psw=md5("$cel");
 /*variables*/
 
 /*Registro*/
-$filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo) VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F');");	
+$filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo) VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F');");
+echo "INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo) VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F');";	
 	if ($filial)
 	{		
 		mysqli_query($cnx,"UPDATE recinto set filial='$usr' where idrecinto='$recinto' ");
@@ -47,7 +48,7 @@ $filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,ed
 	}
 	else
 		{
-		echo "<META HTTP-EQUIV='Refresh' CONTENT ='2; URL=Formulariofilial.php'>";
+		echo "<META HTTP-EQUIV='Refresh' CONTENT ='5; URL=Formulariofilial.php'>";
 			?>
 		<script type="text/javascript">
 				sweetAlert("Oops!","Ocurrio un error en el registro","error");
