@@ -80,7 +80,7 @@
 
 	function UISearch( el, options ) {	
 		this.el = el;
-		this.inputEl = el.querySelector( 'form > input.sb-search-input' );
+		//this.inputEl = el.querySelector( 'form > input.sb-search-input' );
 		this._initEvents();
 	}
 
@@ -102,10 +102,10 @@
 					}
 				}
 
-			this.el.addEventListener( 'click', initSearchFn );
-			this.el.addEventListener( 'touchstart', initSearchFn );
-			this.inputEl.addEventListener( 'click', function( ev ) { ev.stopPropagation(); });
-			this.inputEl.addEventListener( 'touchstart', function( ev ) { ev.stopPropagation(); } );
+			//this.el.addEventListener( 'click', initSearchFn );
+			//this.el.addEventListener( 'touchstart', initSearchFn );
+			//this.inputEl.addEventListener( 'click', function( ev ) { ev.stopPropagation(); });
+			//this.inputEl.addEventListener( 'touchstart', function( ev ) { ev.stopPropagation(); } );
 		},
 		open : function() {
 			var self = this;

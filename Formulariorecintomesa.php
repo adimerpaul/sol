@@ -12,12 +12,16 @@ $idprovincia=$_GET['idprovincia'];
       function buscar() {
           var textoBusqueda = $("input#busqueda").val();
           var municipio=<?=$idmunicipio?>;
-          if (textoBusqueda != "") {
-              $.post("busrecinto.php", {valorBusqueda: textoBusqueda}, function(mensaje) {
-                  $("#resultadoBusqueda").html(mensaje);
+          // console.log(textoBusqueda);
+          // return false;
+          if (textoBusqueda != '') {
+              $.post("busrecinto.php", {valorBusqueda: textoBusqueda,municipio:municipio}, function(mensaje) {
+                  if (mensaje!=''){
+                      $("#resultadoBusqueda").html(mensaje);
+                  }
               }); 
           } else { 
-              ("#resultadoBusqueda").html('<p>No hay nada que mostrar</p>');
+              $("#resultadoBusqueda").html('<p>No hay nada que mostrar</p>');
           };
       };
     </script>

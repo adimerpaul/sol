@@ -6,6 +6,10 @@ $cnx=conectar();
 //Variable de búsqueda
 $consultaBusqueda = $_POST['valorBusqueda'];
 $idmunicipio = $_POST['municipio'];
+
+
+//echo $idmunicipio;
+//exit;
 //Filtro anti-XSS
 $caracteres_malos = array("<", ">", "\"", "'", "/", "<", ">", "'", "/");
 $caracteres_buenos = array("&lt;", "&gt;", "&quot;", "&#x27;", "&#x2F;", "&#060;", "&#062;", "&#039;", "&#047;");
