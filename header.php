@@ -89,7 +89,8 @@ xmlhttp.send(cadenaParametros); // Envio de parámetros usando POST
                                 <li><a href="Verrecintos.php" class="btn btn-round btn-danger"><h5>Ver Recintos</h5></a></li>
                                 <li><a href="Verfilial.php" class="btn btn-round btn-danger"><h5>Ver Filiales</h5></a></li>
                                 <li><a href="EstadisticaprovinciaG.php" class="btn btn-round btn-danger"><h5>Ver Estadísticas de Provincia G</h5></a></li>
-                                <li><a href="EstadisticaprovinciaA.php" class="btn btn-round btn-danger"><h5>Ver Estadísticas de Provincia A</h5></a></li>
+                                <li><a href="EstadisticaprovinciaA.php" class="btn btn-round btn-danger"><h5>Ver Estadísticas de Provincia AT</h5></a></li>
+                                <li><a href="EstadisticaprovinciaAP.php" class="btn btn-round btn-danger"><h5>Ver Estadísticas de Provincia AP</h5></a></li>
                             </ul>   
                         </li>';
                         }

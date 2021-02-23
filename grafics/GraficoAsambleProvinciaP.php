@@ -30,7 +30,7 @@ $cnx=conectar();
                     }
                 },
                 title: {
-                    text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA EN ESTA MESA'
+                    text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA EN ESTA PROVINCIA'
                 },
                 subtitle: {
                     text: 'Partidos politicos participantes'
@@ -43,14 +43,17 @@ $cnx=conectar();
                 },
                     xAxis: {
                         categories: [<?php
-                        $idmesa=$_GET['idmesa'];
+                        $idprovincia=$_POST['idprovincia'];
                         $cn=mysqli_query($cnx,"SELECT pp.descripcion
-                        FROM detallevotacion dv, votacion v, partidopolitico pp
-                        WHERE v.idvotacion = dv.idvotacion
-                        AND pp.idpartido = dv.idpartido
-                        AND v.idmesa=$idmesa
-                        AND v.idtipocandidatura =3
-                        GROUP BY dv.idpartido");
+						FROM provincia p, municipio m, recinto r, votacion v, detallevotacion dv, partidopolitico pp
+						WHERE p.idprovincia=m.idprovincia 
+						AND m.idmunicipio=r.idmunicipio
+						AND r.idrecinto=v.idrecinto
+						AND v.idvotacion=dv.idvotacion
+						AND pp.idpartido=dv.idpartido
+						AND v.idtipocandidatura=2
+						AND p.idprovincia=$idprovincia
+						GROUP BY dv.idpartido");
                         $c=0;
                         while($fd=mysqli_fetch_array($cn))
                        {
@@ -68,14 +71,17 @@ $cnx=conectar();
                     colorByPoint: true,
                     data: [
                     <?php
-                    $idmesa=$_GET['idmesa'];
+                    $idprovincia=$_POST['idprovincia'];
                     $cn=mysqli_query($cnx,"SELECT pp.descripcion, SUM( dv.cantidadvoto ),pp.color
-                    FROM detallevotacion dv, votacion v, partidopolitico pp
-                    WHERE v.idvotacion = dv.idvotacion
-                    AND pp.idpartido = dv.idpartido
-                    AND v.idmesa=$idmesa
-                    AND v.idtipocandidatura =3
-                    GROUP BY dv.idpartido");
+					FROM provincia p, municipio m, recinto r, votacion v, detallevotacion dv, partidopolitico pp
+					WHERE p.idprovincia=m.idprovincia 
+					AND m.idmunicipio=r.idmunicipio
+					AND r.idrecinto=v.idrecinto
+					AND v.idvotacion=dv.idvotacion
+					AND pp.idpartido=dv.idpartido
+					AND v.idtipocandidatura=2
+					AND p.idprovincia=$idprovincia
+					GROUP BY dv.idpartido");
                     $c=0;
                     while($fd=mysqli_fetch_array($cn))
                    {
@@ -109,7 +115,7 @@ $cnx=conectar();
                         }
                         },
                     title: {
-                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA EN ESTA MESA'
+                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA EN ESTA PROVINCIA'
                       },
                       subtitle: {
                         text: 'Partidos politicos participantes'
@@ -126,14 +132,17 @@ $cnx=conectar();
                     },
                     xAxis: {
                         categories: [<?php
-                        $idmesa=$_GET['idmesa'];
+                        $idprovincia=$_POST['idprovincia'];
                         $cn=mysqli_query($cnx,"SELECT pp.descripcion
-                        FROM detallevotacion dv, votacion v, partidopolitico pp
-                        WHERE v.idvotacion = dv.idvotacion
-                        AND pp.idpartido = dv.idpartido
-                        AND v.idmesa=$idmesa
-                        AND v.idtipocandidatura =3
-                        GROUP BY dv.idpartido");
+						FROM provincia p, municipio m, recinto r, votacion v, detallevotacion dv, partidopolitico pp
+						WHERE p.idprovincia=m.idprovincia 
+						AND m.idmunicipio=r.idmunicipio
+						AND r.idrecinto=v.idrecinto
+						AND v.idvotacion=dv.idvotacion
+						AND pp.idpartido=dv.idpartido
+						AND v.idtipocandidatura=2
+						AND p.idprovincia=$idprovincia
+						GROUP BY dv.idpartido");
                         $c=0;
                         while($fd=mysqli_fetch_array($cn))
                        {
@@ -152,14 +161,17 @@ $cnx=conectar();
                     data: [
                     <?php
 
-                    $idmesa=$_GET['idmesa'];
+                    $idprovincia=$_POST['idprovincia'];
                     $cn=mysqli_query($cnx,"SELECT pp.descripcion, SUM( dv.cantidadvoto ),pp.color
-                    FROM detallevotacion dv, votacion v, partidopolitico pp
-                    WHERE v.idvotacion = dv.idvotacion
-                    AND pp.idpartido = dv.idpartido
-                    AND v.idmesa=$idmesa
-                    AND v.idtipocandidatura =3
-                    GROUP BY dv.idpartido");
+					FROM provincia p, municipio m, recinto r, votacion v, detallevotacion dv, partidopolitico pp
+					WHERE p.idprovincia=m.idprovincia 
+					AND m.idmunicipio=r.idmunicipio
+					AND r.idrecinto=v.idrecinto
+					AND v.idvotacion=dv.idvotacion
+					AND pp.idpartido=dv.idpartido
+					AND v.idtipocandidatura=2
+					AND p.idprovincia=$idprovincia
+					GROUP BY dv.idpartido");
                     $c=0;
                     while($fd=mysqli_fetch_array($cn))
                    {

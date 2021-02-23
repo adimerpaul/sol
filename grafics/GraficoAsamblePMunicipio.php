@@ -170,6 +170,12 @@ $cnx=conectar();
                     $c=0;
                     while($fd=mysqli_fetch_array($cn))
                    {
+                    if ($fd[0]=='BLANCO' || $fd[0]=='NULO') {
+                        $votosnovalidos+=$fd[1];
+                    }
+                    else{
+                        $votosvalidos+=$fd[1];
+                    }
                     echo"{
                         name: '".$fd[0]."',
                         y: ".$fd[1]." ,color: '$fd[2]'},";
@@ -193,11 +199,22 @@ $cnx=conectar();
 <div class="container">
     <figure class="highcharts-figure">
     <div id="dona"></div>
+        <center>
+        <i class="glyphicon glyphicon-ok"></i> <big>VOTOS VALIDOS: <strong><?=$votosvalidos?> VOTOS</strong></big> 
+        <br>
+        <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong><?=$votosnovalidos?> VOTOS</strong></big>
+        </center>
     </figure>
     <figure class="highcharts-figure">
     <div id="column"></div>
+        <center>
+        <i class="glyphicon glyphicon-ok"></i> <big>VOTOS VALIDOS: <strong><?=$votosvalidos?> VOTOS</strong></big> 
+        <br>
+        <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong><?=$votosnovalidos?> VOTOS</strong></big>
+        </center>
     </figure>
 </div>
+<br><br>
 <div class="row">
     <div class="col">
     <a href="../index.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
