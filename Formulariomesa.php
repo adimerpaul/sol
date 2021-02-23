@@ -53,7 +53,7 @@ if($_SESSION['usr']!="")
                         <div class="pricing-content">
                           <ul>
                           <?php
-                          $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto ORDER BY idmesa");
+                          $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto AND idmesa='".$_SESSION['ci']."' ORDER BY idmesa");
                           while ($fmesa=mysqli_fetch_array($mesa)) {
                           ?>
                             <li><i class="icon-ok"></i><h1><strong> MESA #<?php echo($fmesa[2]); ?></strong></h1>

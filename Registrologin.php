@@ -21,7 +21,9 @@ $consulta=mysqli_query($cnx,"SELECT * FROM `filial` WHERE usuario='$usuario' AND
 $nfilas=mysqli_num_rows($consulta);
 if($nfilas>0)
 	{
-		$_SESSION['usr'] = $usuario;
+        $row = $consulta->fetch_row();
+        $_SESSION['usr'] = $usuario;
+        $_SESSION['ci'] = $row['ci'];
 		//session_register("usr");
 		echo "<META HTTP-EQUIV='REFRESH' CONTENT='0; URL=index2.php'>";
 		?>
