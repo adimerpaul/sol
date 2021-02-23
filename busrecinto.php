@@ -23,7 +23,7 @@ if (isset($consultaBusqueda)) {
 
 	//Selecciona todo de la tabla asociado 
 	//donde el nombre sea igual a $consultaBusqueda, 
-	$consulta = mysqli_query($cnx,"SELECT r.idrecinto,r.recinto,r.cantidadmesa FROM municipio m INNER 					JOIN recinto r ON m.idmunicipio=r.idmunicipio WHERE r.idmunicipio=$idmunicipio AND 					r.recinto LIKE '%$consultaBusqueda%'");
+	$consulta = mysqli_query($cnx,"SELECT r.idrecinto,r.recinto,r.cantidadmesa FROM municipio m INNER JOIN recinto r ON m.idmunicipio=r.idmunicipio WHERE r.idmunicipio=$idmunicipio AND 					r.recinto LIKE '%$consultaBusqueda%'");
 	//Obtiene la cantidad de filas que hay en la consulta
 	$filas = mysqli_num_rows($consulta);
 	//Si no existe ninguna fila que sea igual a $consultaBusqueda, entonces mostramos el siguiente mensaje
