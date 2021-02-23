@@ -10,11 +10,10 @@
 <script src="js/jquery.appear.js"></script>
 <script src="js/stellar.js"></script>
 <script src="js/classie.js"></script>
-<script src="js/uisearch.js"></script>
+
 <script src="js/jquery.cubeportfolio.min.js"></script>
 <script src="js/google-code-prettify/prettify.js"></script>
 <script src="js/animate.js"></script>
-<script src="js/custom.js"></script>
 <?php
 </body>
 <footer>

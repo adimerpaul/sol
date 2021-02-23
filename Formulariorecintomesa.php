@@ -12,12 +12,16 @@ $idprovincia=$_GET['idprovincia'];
       function buscar() {
           var textoBusqueda = $("input#busqueda").val();
           var municipio=<?=$idmunicipio?>;
-          if (textoBusqueda != "") {
-              $.post("busrecinto.php", {valorBusqueda: textoBusqueda}, function(mensaje) {
-                  $("#resultadoBusqueda").html(mensaje);
+          // console.log(textoBusqueda);
+          // return false;
+          if (textoBusqueda != '') {
+              $.post("busrecinto.php", {valorBusqueda: textoBusqueda,municipio:municipio}, function(mensaje) {
+                  if (mensaje!=''){
+                      $("#resultadoBusqueda").html(mensaje);
+                  }
               }); 
           } else { 
-              ("#resultadoBusqueda").html('<p>No hay nada que mostrar</p>');
+              $("#resultadoBusqueda").html('<p>No hay nada que mostrar</p>');
           };
       };
     </script>
@@ -28,7 +32,7 @@ $idprovincia=$_GET['idprovincia'];
     <div class="row">
       <div class="col-lg-12">
         <ul class="breadcrumb">
-          <li><a href="index.php"><i class="fa fa-home"></i></a><i class="icon-angle-right"></i></li>
+          <li><a href="index2.php"><i class="fa fa-home"></i></a><i class="icon-angle-right"></i></li>
           <li><a href="#">Registro</a><i class="icon-angle-right"></i></li>
           <li class="active">Nueva Votación</li>
         </ul>
@@ -117,7 +121,7 @@ else
 ?>
 <script type="text/javascript">alert("Primero debes acceder con tu cuenta filial");</script>
 <?php
-    echo '<META HTTP-EQUIV="Refresh" CONTENT ="0; URL=Login.php">';
+    echo '<META HTTP-EQUIV="Refresh" CONTENT ="0; URL=index.php">';
 };
 include ("footer.php")
 ?>

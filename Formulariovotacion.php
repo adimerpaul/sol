@@ -37,7 +37,7 @@ if($_SESSION['usr']!="")
 		<div class="row">
 			<div class="col-lg-12">
 				<ul class="breadcrumb">
-					<li><a href="index.php"><i class="fa fa-home"></i></a><i class="icon-angle-right"></i></li>
+					<li><a href="index2.php"><i class="fa fa-home"></i></a><i class="icon-angle-right"></i></li>
 					<li><a href="#">Registro</a><i class="icon-angle-right"></i></li>
 					<li class="active">Nueva Votación</li>
 				</ul>
@@ -87,7 +87,7 @@ else
 ?>
 <script type="text/javascript">alert("Primero debes acceder con tu cuenta filial");</script>
 <?php
-    echo '<META HTTP-EQUIV="Refresh" CONTENT ="0; URL=Login.php">';
+    echo '<META HTTP-EQUIV="Refresh" CONTENT ="0; URL=index.php">';
 };
 include ("footer.php")
 ?>

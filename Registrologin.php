@@ -23,7 +23,7 @@ if($nfilas>0)
 	{
 		$_SESSION['usr'] = $usuario;
 		//session_register("usr");
-		echo "<META HTTP-EQUIV='REFRESH' CONTENT='0; URL=index.php'>";
+		echo "<META HTTP-EQUIV='REFRESH' CONTENT='0; URL=index2.php'>";
 		?>
 	 	<script type="text/javascript">
 	 	sweetAlert("Exito!","Acceso Permitido","success");
@@ -32,7 +32,7 @@ if($nfilas>0)
 	} 
 	else
 	{
-	echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Login.php'>";
+	echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=index.php'>";
 	?>
  	<script type="text/javascript">
  	sweetAlert("Oops!","Verifique sus datos","warning");
