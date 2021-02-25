@@ -132,11 +132,17 @@ if($_SESSION['usr']!="")
 					<table class="table responsive-utilities table-bordered table-hover">
                     <tr>
                         <th>#</th>
-                        <th id='th2'>NOMBRE COMPLETO</th><th id='th2'>ID FILIAL</th><th id='th2'>NUMERO CELULAR</th><th id='th2'>TIPO DE VOTACION</th><th id='th2'>IMAGEN</th><th id='th2'>ESTADO</th>
+                        <th id='th2'>NOMBRE COMPLETO</th>
+                        <th id='th2'>ID FILIAL</th>
+                        <th id='th2'>NUMERO CELULAR</th>
+                        <th id='th2'>TIPO DE VOTACION</th>
+                        <th id='th2'>IMAGEN</th>
+                        <th id='th2'>ESTADO</th>
+                        <th id='th2'>ELIMINAR</th>
                     </tr>
                     <?php
                     $c=0;
-                    $votaciones=mysqli_query($cnx,"SELECT CONCAT(f.nombre,' ',f.paterno,' ',f.materno),v.usuario,f.cel,t.descripcion,v.imagen,v.estado FROM filial f, votacion v, tipocandidatura t WHERE f.usuario=v.usuario AND t.idtipocandidatura=v.idtipocandidatura ORDER by v.idvotacion"); 
+                    $votaciones=mysqli_query($cnx,"SELECT CONCAT(f.nombre,' ',f.paterno,' ',f.materno),v.usuario,f.cel,t.descripcion,v.imagen,v.estado,v.idvotacion FROM filial f, votacion v, tipocandidatura t WHERE f.usuario=v.usuario AND t.idtipocandidatura=v.idtipocandidatura ORDER by v.idvotacion");
                     while ($fvotaciones=mysqli_fetch_array($votaciones)) {
                         $c++;
                             echo "<tr>
@@ -152,7 +158,7 @@ if($_SESSION['usr']!="")
                                 else{
                                     echo "<td id='th'>FALLÓ</td>";
                                 }
-                            echo "</tr>";
+                            echo "<td id='th'><a href='EliminarVoto.php?id=$fvotaciones[6]'>Eliminar</a></td></tr>";
                     };
                     ?>
                     </table>
