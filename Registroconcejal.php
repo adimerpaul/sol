@@ -22,7 +22,7 @@ $usuario=$_SESSION['usr'];
 $idmesa=$_GET['idmesaconce'];
 $idrecinto=$_GET['idrecintoconce'];
 $idtipocandidatura=$_GET['idtipocandidaturaconce'];
-if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario' AND idtipocandidatura='$idtipocandidatura'")) {
+if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario' AND idtipocandidatura='$idtipocandidatura' AND idmesa='$idmesa' AND idrecinto='$idrecinto'")) {
     /* determinar el número de filas del resultado */
     $row_cnt = mysqli_num_rows($result);
     if ($row_cnt == 0) {
