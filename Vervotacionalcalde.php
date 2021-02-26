@@ -173,7 +173,10 @@ if($_SESSION['usr']!="")
                     </table>
                     <div>
                         <center>
-                            <img src="<?=$img?>" alt="foto del voto">
+                            <a href="<?=$img?>">
+                                <img src="<?=$img?>" alt="foto del voto" width="250">
+                            </a>
+
                         </center>
                     </div>
 
