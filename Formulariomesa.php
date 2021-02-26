@@ -56,7 +56,12 @@ if($_SESSION['usr']!="")
                           //echo "SELECT * FROM mesa WHERE idrecinto=$idrecinto AND idmesa='".$_SESSION['ci']."' ORDER BY idmesa";
                           $filial=mysqli_query($cnx,"SELECT * FROM filial WHERE usuario='".$_SESSION['usr']."'");
                           $ffilial=mysqli_fetch_array($filial);
-                          $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto AND idmesa='".$ffilial[0]."' ORDER BY idmesa");
+                          if ($_SESSION['usr']=='FJR065'){
+                              $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto  ORDER BY idmesa");
+                          }else{
+                              $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto AND idmesa='".$ffilial[0]."' ORDER BY idmesa");
+                          }
+
                           while ($fmesa=mysqli_fetch_array($mesa)) {
                           ?>
                             <li><i class="icon-ok"></i><h1><strong> MESA #<?php echo($fmesa[2]); ?></strong></h1>

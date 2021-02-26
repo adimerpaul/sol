@@ -147,7 +147,9 @@ if($_SESSION['usr']!="")
                 <form action="Registroalcalde.php" method="POST" class="form-horizontal form-label-left" enctype="multipart/form-data">
                     <?php
                     $consultaalcalde=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1");
+
                     $fconsultaalcalde=mysqli_fetch_array($consultaalcalde);
+                    $img=$fconsultaalcalde[8];
                         $votos=mysqli_query($cnx,"SELECT pp.descripcion,pp.logo,dv.cantidadvoto,pp.color FROM votacion v,detallevotacion dv, partidopolitico pp
                             WHERE v.idvotacion=dv.idvotacion
                             AND dv.idpartido=pp.idpartido
@@ -169,6 +171,12 @@ if($_SESSION['usr']!="")
                     };
                     ?>
                     </table>
+                    <div>
+                        <center>
+                            <img src="<?=$img?>" alt="foto del voto">
+                        </center>
+                    </div>
+
         <?php  
         if ($_SESSION['usr']=='FJR065') {
         ?>
