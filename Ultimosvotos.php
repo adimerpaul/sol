@@ -198,9 +198,9 @@ if($_SESSION['usr']!="")
                             // console.log(r.imagen);
                             let ima='';
                             if (r.imagen=='NULL'){
-                                ima='';
+                                ima='Sin foto';
                             }else{
-                                ima='<a href="'+r.imagen+'" target="_blank"><img src="'+r.imagen+'" width="150" /></a>';
+                                ima='<a href="'+r.imagen+'" target="_blank">Ver foto</a>';
                             }
                             t.row.add( [
                                 r.hora,
