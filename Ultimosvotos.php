@@ -251,7 +251,7 @@ if($_SESSION['usr']!="")
                                 r.descripcion,
                                 ima,
                                 r.idvotacion,
-                                '<button class="Mybtn">Eliminar</button>'
+                                '<button class="Mybtn btn btn-danger">Eliminar <i class="fa fa-times-circle"></i></button>'
                             ] ).draw( false );
                         })
                     }

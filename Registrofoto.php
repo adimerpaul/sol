@@ -42,6 +42,7 @@ table td{ padding:5px;}
         <div class="container">
             <form role="form" class="register-form">
                 <h2><label>Proceso de votación completada</label> <small>...en un momento volvemos a selección de mesa</small></h2>
+                <center><H1 style='color:red'>ESPERA! <i class="fa fa-clock-o"></i></H1></center>
                 <hr class="colorgraph">
                 <div>
                     <center>
@@ -67,6 +68,7 @@ table td{ padding:5px;}
                     </center>
                 </div>
                 <hr class="colorgraph">
+                <center><H1 style='color:red'>ESPERA! <i class="fa fa-clock-o"></i></H1></center>
             </form>
         </div>
     </section>

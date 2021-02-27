@@ -478,7 +478,7 @@ function checknum(e) {
             }
             $('.btnenviar').show();
         }else{
-            $('.cant').text('Cantidad excedida!');
+            $('.cant').text('Cantidad NO VALIDA!');
             $('.btnenviar').hide();    
         }
         //console.log(sum);

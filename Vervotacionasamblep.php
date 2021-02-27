@@ -169,6 +169,13 @@ if($_SESSION['usr']!="")
                     };
                     ?>
                     </table>
+                     <div>
+                        <center>
+                            <a href="<?=$img?>">
+                                <img src="<?=$img?>" alt="Foto del voto" width="250">
+                            </a>
+                        </center>
+                    </div>
         <?php  
         if ($_SESSION['usr']=='FJR065') {
         ?>

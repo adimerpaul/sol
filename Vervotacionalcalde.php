@@ -111,7 +111,7 @@ if($_SESSION['usr']!="")
         </div>
     </header>
     <!-- end header -->
-    <section id="inner-headline">
+<section id="inner-headline">
     <div class="container">
         <div class="row">
             <div class="col-lg-12">
@@ -174,9 +174,8 @@ if($_SESSION['usr']!="")
                     <div>
                         <center>
                             <a href="<?=$img?>">
-                                <img src="<?=$img?>" alt="foto del voto" width="250">
+                                <img src="<?=$img?>" alt="Foto del voto" width="250">
                             </a>
-
                         </center>
                     </div>
 

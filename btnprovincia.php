@@ -16,8 +16,20 @@ if ($provincia) {
                 FROM municipio AS m, provincia AS p
                 WHERE p.idprovincia = m.idprovincia
                 AND m.idprovincia = '".$provincia."'");
+    $c=0;
 while ($fila = mysqli_fetch_array($result)){
-echo "<a class='btn btn-primary' href='Formulariorecintomesa.php?idprovincia=$provincia&idmunicipio=$fila[0]'>$fila[1]</a>    ";
+	$c++;
+	$op=$c%2;
+	if ($op==0) {
+	echo "<a class='btn btn-warning btn-lg' href='Formulariorecintomesa.php?idprovincia=$provincia&idmunicipio=$fila[0]'>$c.- $fila[1]</a>&nbsp;&nbsp;";
+	}
+
+	else
+	{
+		echo "<a class='btn btn-danger btn-lg' href='Formulariorecintomesa.php?idprovincia=$provincia&idmunicipio=$fila[0]'>$c.- $fila[1]</a> &nbsp;&nbsp;";
+	}
+
+
 }
 //Devolvemmos la cadena de respuesta
 mysqli_free_result($result);

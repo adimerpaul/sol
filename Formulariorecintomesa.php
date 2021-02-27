@@ -92,12 +92,12 @@ $idprovincia=$_GET['idprovincia'];
                             ON m.idmunicipio=r.idmunicipio
                             WHERE r.idmunicipio='".$municipio."'");
           while ($fila = mysqli_fetch_array($result)){
-          echo "<div class='col-lg-4'>
+          echo "<a href='Formulariomesa.php?idrecinto=$fila[0]'><div class='col-lg-4'>
             <div class='pricing-box-alt special'>
               <div class='pricing-heading'>
                 <h4><strong>$fila[1]</strong></h4>
               </div>
-              <a href='Formulariomesa.php?idrecinto=$fila[0]'><div class='pricing-terms'>
+              <div class='pricing-terms'>
               <h5>$fila[2] Mesas Registradas</h5>
               </div></a>
             </div>

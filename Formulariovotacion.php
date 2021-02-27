@@ -32,7 +32,14 @@ if($_SESSION['usr']!="")
 	xmlhttp.send(cadenaParametros); // Envio de parámetros usando POST
 	}
 </script>
-	<section id="inner-headline">
+<style type="text/css">
+	    #provincia{
+        color:black;
+        text-align: center;
+        font-weight: bold;
+    }
+</style>
+<section id="inner-headline">
 	<div class="container">
 		<div class="row">
 			<div class="col-lg-12">
@@ -51,7 +58,7 @@ if($_SESSION['usr']!="")
 				<h2><label>Por favor realice la búsqueda</label> <small>de la provincia.</small></h2>
 				<hr class="colorgraph">
 				<div class="row">
-					<div class="col-xs-12 col-sm-6 col-md-6">
+					<div class="col-xs-10 col-sm-4 col-md-4">
 						<div class="form-group">
 						<?php
 							$provincia =mysqli_query($cnx,"SELECT * FROM provincia");
@@ -66,7 +73,7 @@ if($_SESSION['usr']!="")
 							</select>
 						</div>
 					</div>
-					<div class="col-xs-12 col-sm-6 col-md-6">
+					<div class="col-xs-12 col-sm-8 col-md-8">
 						<div class="form-group">
 						<p>
 						<span id="txtInformacion">

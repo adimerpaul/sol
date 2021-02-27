@@ -15,7 +15,7 @@ jQuery('input[type=file]').change(function(){
 </script>
    <style>
   .custom-input-file {
-  background-color: #0000FF;
+  background-color: yellow;
   color: #fff;
   cursor: pointer;
   font-size: 25px;
@@ -74,11 +74,11 @@ jQuery('input[type=file]').change(function(){
                 <br><br>
             <input type="file" id="fichero-tarifas" class="input-file" name="archivo" value="Elegir imagen..." accept="image/*" capture="camera" required/>
             <i class="fa fa-camera" aria-hidden="true"></i>
-            <br><h3>PASO 1</h3>
+            <br><h3>PASO 1 <br>CAPTURAR FOTO</h3>
             </div>
     
             <br><br>
-        <input type='Submit' value='PASO 2: SUBIR FOTO/IMAGEN' name='ok' class="btn btn-lg btn-danger">
+        <input type='Submit' value='PASO 2: ENVIAR FOTO' name='ok' class="btn btn-lg btn-danger">
         </center>
         </form>
 				</div>
