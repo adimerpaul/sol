@@ -22,29 +22,36 @@ $usuario=$_SESSION['usr'];
 $idmesa=$_GET['idmesaconce'];
 $idrecinto=$_GET['idrecintoconce'];
 $idtipocandidatura=$_GET['idtipocandidaturaconce'];
-mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','P','NULL')");
-	$nv=mysqli_insert_id($cnx);
-$c=0;
-$candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
+if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario' AND idtipocandidatura='$idtipocandidatura' AND idmesa='$idmesa' AND idrecinto='$idrecinto'")) {
+    /* determinar el número de filas del resultado */
+    $row_cnt = mysqli_num_rows($result);
+    if ($row_cnt == 0) {
+        mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','P','NULL')");
+        $nv=mysqli_insert_id($cnx);
+        $c=0;
+        $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
                     FROM recinto r, municipio m, candidatura c, partidopolitico pp
                     WHERE r.idmunicipio = m.idmunicipio
                     AND c.idmunicipio = m.idmunicipio
                     AND pp.idpartido = c.idpartido
                     AND c.idtipocandidatura=$idtipocandidatura
                     AND r.idrecinto=$idrecinto
-                    ORDER BY c.posicion");                   
-while ($fp=mysqli_fetch_array($candidaturas)) {
-			$c++;
-			$valor=$_GET["v".$c];
-			$aux=$_GET[$fp[0]];
-			if ($aux=="on")
-			{
-			$voto=mysqli_query($cnx,"INSERT INTO detallevotacion(idvotacion,idpartido,cantidadvoto) VALUES($nv,'$fp[0]',$valor)");
-				if ($voto) {
-					mysqli_query($cnx,"UPDATE votacion SET idtipocandidatura='$idtipocandidatura', estado= 'T' WHERE idvotacion=$nv");
-				};
-			};
-		};
+                    ORDER BY c.posicion");
+        while ($fp=mysqli_fetch_array($candidaturas)) {
+            $c++;
+            $valor=$_GET["v".$c];
+            $aux=$_GET[$fp[0]];
+            if ($aux=="on")
+            {
+                $voto=mysqli_query($cnx,"INSERT INTO detallevotacion(idvotacion,idpartido,cantidadvoto) VALUES($nv,'$fp[0]',$valor)");
+                if ($voto) {
+                    mysqli_query($cnx,"UPDATE votacion SET idtipocandidatura='$idtipocandidatura', estado= 'T' WHERE idvotacion=$nv");
+                };
+            };
+        };
+    }
+}
+
     echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Formulariofoto.php?nv=$nv&idrecinto=$idrecinto'>";
   exit;
 ?>

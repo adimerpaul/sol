@@ -193,7 +193,7 @@ $cnx=conectar();
 <body>
 <div class="row">
     <div class="col">
-    <a href="../index.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
+    <a href="../index2.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
     </div>
 </div>
 <div class="container">
@@ -217,7 +217,7 @@ $cnx=conectar();
 <br><br>
 <div class="row">
     <div class="col">
-    <a href="../index.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
+    <a href="../index2.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
     </div>
 </div>
 </body>

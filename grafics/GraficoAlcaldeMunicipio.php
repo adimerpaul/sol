@@ -41,57 +41,46 @@ $cnx=conectar();
                         depth: 45
                     }
                 },
-                    xAxis: {
-                        categories: [<?php
-                        $idmunicipio=$_GET['idmunicipio'];
-                        $cn=mysqli_query($cnx,"SELECT pp.descripcion
-                                    FROM municipio m, recinto r, votacion v, detallevotacion dv, partidopolitico pp
-                                    WHERE m.idmunicipio=r.idmunicipio
-                                    AND r.idrecinto=v.idrecinto
-                                    AND v.idvotacion=dv.idvotacion
-                                    AND pp.idpartido=dv.idpartido
-                                    AND v.idtipocandidatura=1
-                                    AND m.idmunicipio=$idmunicipio
-                                    GROUP BY dv.idpartido");
-                        $c=0;
-                        while($fd=mysqli_fetch_array($cn))
-                       {
-                        echo "'".$fd[0]."',"; 
-                       };
-                         ?>],
-                        labels: {
-                            skew3d: true,
-                            style: {
-                                fontSize: '20px'
-                            }
+                xAxis: {
+                    labels: {
+                        skew3d: true,
+                        style: {
+                            fontSize: '20px'
                         }
-                    },
-                    series: [{
+                    }
+                },
+                series: [{
                     colorByPoint: true,
-                    data: [
-                    <?php
-                    $idmunicipio=$_GET['idmunicipio'];
-                    $cn=mysqli_query($cnx,"SELECT pp.descripcion, SUM( dv.cantidadvoto ),pp.color
-                                    FROM municipio m, recinto r, votacion v, detallevotacion dv, partidopolitico pp
-                                    WHERE m.idmunicipio=r.idmunicipio
-                                    AND r.idrecinto=v.idrecinto
-                                    AND v.idvotacion=dv.idvotacion
-                                    AND pp.idpartido=dv.idpartido
-                                    AND v.idtipocandidatura=1
-                                    AND m.idmunicipio=$idmunicipio
-                                    GROUP BY dv.idpartido");
-                    $c=0;
-                    while($fd=mysqli_fetch_array($cn))
-                   {
-                    echo"{
-                        name: '".$fd[0]."',
-                        y: ".$fd[1]." ,color: '$fd[2]'},";
-                   };
-                   
-                    ?>
-                    ]
+                    //data: ['http://localhost/sol/grafics/Votos.php?idmunicipio=3']
+                    // data: [10, 9, 8, 7, 6, 5, 4, 3, 2,5]
                 }]
             });
+            var chart1 = $('#dona').highcharts();
+            function myFunction() {
+                setInterval(function(){
+                    // console.log("Hello");
+
+                    $.ajax({
+                        url:'./Votos.php?idmunicipio=3',
+                        success:function (res) {
+                            let array=JSON.parse(res);
+                            let a=[];
+                            array.forEach(r=>{
+                                a.push({name: r.name, y: parseInt(r.y) , color: r.color});
+                            });
+                            console.log(a);
+                            chart1.series[0].update({
+                                data: a
+                            },false);
+                            chart1.redraw();
+                        }
+                    })
+                }, 3000);
+            }
+            myFunction();
+
+
+
         });
     });
 </script>
@@ -143,7 +132,7 @@ $cnx=conectar();
                         $c=0;
                         while($fd=mysqli_fetch_array($cn))
                        {
-                        echo "'".$fd[0]."',"; 
+                        echo "'".$fd[0]."',";
                        };
                          ?>],
                         labels: {
@@ -195,7 +184,7 @@ $cnx=conectar();
 <body>
 <div class="row">
     <div class="col">
-    <a href="../index.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
+    <a href="../index2.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
     </div>
 </div>
 <div class="container">
@@ -219,7 +208,7 @@ $cnx=conectar();
 <br><br>
 <div class="row">
     <div class="col">
-    <a href="../index.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
+    <a href="../index2.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
     </div>
 </div>
 </body>
