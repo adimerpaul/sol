@@ -61,7 +61,7 @@ if($_SESSION['usr']!="")
 						<div class='row'>
 							<div class="col-xs-12 col-sm-6 col-md-6">
 								<div class='form-group'>
-								<select name="recinto" id="recinto" class='form-control input-lg' required>
+								<select name="recinto" id="recinto" class='form-control input-lg' required tabindex="7">
 									<option value="">Seleccione recinto</option>
 									<?php 
 									$result= mysqli_query($cnx,"SELECT * from recinto order by recinto asc"); 
