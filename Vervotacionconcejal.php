@@ -173,7 +173,7 @@ if($_SESSION['usr']!="")
                     <div>
                         <center>
                             <a href="<?=$img?>">
-                                <img src="imgpadron/P-2.jpg" alt="Foto del voto" width="250">
+                                <img src="<?=$img?>" alt="Foto del voto" width="250">
                             </a>
                         </center>
                     </div>
