@@ -76,9 +76,21 @@ if($_SESSION['usr']!="")
 							</div>
 
 						</div>
+						<div class="row">
+							<div class="col-xs-12 col-sm-6 col-md-6">
+								<div class="form-group">
+									<input type="number" name="minmesa" id="minmesa" class="form-control input-lg" placeholder='ini mesa' min='1' max='20'  tabindex="8" required>
+								</div>
+							</div>
+							<div class="col-xs-12 col-sm-6 col-md-6">
+								<div class="form-group">
+									<input type="number" name="maxmesa" id="maxmesa" class="form-control input-lg" placeholder="fin mesa" tabindex="9"  required min="1" max="70" required>
+								</div>
+							</div>
+						</div>
 						<hr class="colorgraph">
 						<div class="row">
-							<div class="col-xs-12 col-md-6"><input type="submit" value="REGISTRAR" class="btn btn-theme btn-block btn-lg" tabindex="7"></div>
+							<div class="col-xs-12 col-md-6"><input type="submit" value="REGISTRAR" class="btn btn-theme btn-block btn-lg" tabindex="10"></div>
 						</div>
 					</form>
 				</div>

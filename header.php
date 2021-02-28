@@ -17,6 +17,7 @@ echo '
 <link href="css/cubeportfolio.min.css" rel="stylesheet" />
 <link href="css/style.css" rel="stylesheet" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 
 <!-- Theme skin -->
 <link id="t-colors" href="skins/default.css" rel="stylesheet" />
