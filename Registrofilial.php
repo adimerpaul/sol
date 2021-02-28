@@ -29,8 +29,8 @@ $n=rand(10,901);
 if ($n<100) {
 	$n="0".$n;
 }
-$usr=$a.$b.$c.$n.$edad;
-$psw=md5("$cel");
+$usr=$a.$b.$c.'0-'.$edad.''.$edad;
+$psw=md5("SOL@".$cel);
 /*variables*/
 
 /*Registro*/
