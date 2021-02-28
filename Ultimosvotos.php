@@ -125,6 +125,7 @@ if($_SESSION['usr']!="")
                             <thead>
                             <tr>
                                 <th>Hora</th>
+                                <th>Usuario</th>
                                 <th>Nombre</th>
                                 <th>Celular</th>
                                 <th>Recinto-Mesa</th>
@@ -180,7 +181,7 @@ if($_SESSION['usr']!="")
                 var RowIndex = $(this).closest('tr');
                 var data = t.row(RowIndex).data();
                 // alert(data[6]);
-                let id=data[6];
+                let id=data[7];
                 $.ajax({
                     url:'./Consultas.php',
                     type:'POST',
@@ -204,6 +205,7 @@ if($_SESSION['usr']!="")
                             }
                             t.row.add( [
                                 r.hora,
+                                r.usuario,
                                 r.nombre+' '+r.paterno+' '+r.materno,
                                 r.cel,
                                 r.recinto+' '+r.nummesa,
@@ -245,12 +247,13 @@ if($_SESSION['usr']!="")
                             }
                             t.row.add( [
                                 r.hora,
+                                r.usuario,
                                 r.nombre+' '+r.paterno+' '+r.materno,
                                 r.cel,
-                                r.recinto+' '+r.nummesa,
+                                r.recinto+' - Mesa #'+r.nummesa,
                                 r.descripcion,
                                 ima,
-                                r.idvotacion,
+                                'Votacion #' + r.idvotacion,
                                 '<button class="Mybtn btn btn-danger">Eliminar <i class="fa fa-times-circle"></i></button>'
                             ] ).draw( false );
                         })
