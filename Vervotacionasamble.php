@@ -148,6 +148,7 @@ if($_SESSION['usr']!="")
                     <?php
                     $consultaasamble=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=3");
                     $fconsultaasamble=mysqli_fetch_array($consultaasamble);
+                    $img=$fconsultaasamble[8];
                         $votos=mysqli_query($cnx,"SELECT pp.descripcion,pp.logo,dv.cantidadvoto,pp.color FROM votacion v,detallevotacion dv, partidopolitico pp
                             WHERE v.idvotacion=dv.idvotacion
                             AND dv.idpartido=pp.idpartido

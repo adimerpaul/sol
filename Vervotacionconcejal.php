@@ -148,6 +148,7 @@ if($_SESSION['usr']!="")
                     <?php
                     $consultaconcejal=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=4");
                      $fconsultaconcejal=mysqli_fetch_array($consultaconcejal);
+                     $img=$fconsultaconcejal[8];
                         $votos=mysqli_query($cnx,"SELECT pp.descripcion,pp.logo,dv.cantidadvoto,pp.color FROM votacion v,detallevotacion dv, partidopolitico pp
                                 WHERE v.idvotacion=dv.idvotacion
                                 AND dv.idpartido=pp.idpartido
@@ -169,10 +170,10 @@ if($_SESSION['usr']!="")
                     };
                     ?>
                     </table>
-                     <div>
+                    <div>
                         <center>
                             <a href="<?=$img?>">
-                                <img src="<?=$img?>" alt="Foto del voto" width="250">
+                                <img src="imgpadron/P-2.jpg" alt="Foto del voto" width="250">
                             </a>
                         </center>
                     </div>

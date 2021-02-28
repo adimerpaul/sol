@@ -146,8 +146,9 @@ if($_SESSION['usr']!="")
             <div id="alcalde" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
                 <form action="Registroalcalde.php" method="POST" class="form-horizontal form-label-left" enctype="multipart/form-data">
                     <?php
-                    $consultaasamble=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=3");
+                    $consultaasamble=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=2");
                     $fconsultaasamble=mysqli_fetch_array($consultaasamble);
+                    $img=$fconsultaasamble[8];
                         $votos=mysqli_query($cnx,"SELECT pp.descripcion,pp.logo,dv.cantidadvoto,pp.color FROM votacion v,detallevotacion dv, partidopolitico pp
                             WHERE v.idvotacion=dv.idvotacion
                             AND dv.idpartido=pp.idpartido
@@ -172,7 +173,7 @@ if($_SESSION['usr']!="")
                      <div>
                         <center>
                             <a href="<?=$img?>">
-                                <img src="<?=$img?>" alt="Foto del voto" width="250">
+                               <img src="<?=$img?>" alt="Foto del voto" width="250">
                             </a>
                         </center>
                     </div>
