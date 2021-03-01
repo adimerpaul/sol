@@ -62,12 +62,11 @@ if($_SESSION['usr']!="")
 							<div class="col-xs-12 col-sm-6 col-md-6">
 								<div class='form-group'>
 								<select name="recinto" id="recinto" class='form-control input-lg' required tabindex="7">
-									<option value="">Seleccione recinto</option>
+									<option value="">ASIGNAR RECINTO</option>
 									<?php 
-									$result= mysqli_query($cnx,"SELECT * from recinto order by recinto asc"); 
+									$result= mysqli_query($cnx,"SELECT * FROM recinto r, municipio m WHERE m.idmunicipio=r.idmunicipio ORDER BY m.idmunicipio ASC"); 
 									while($row=mysqli_fetch_assoc($result)){
-										
-										echo '<option value="'.$row['idrecinto'].'">'.$row['recinto'].'</option>';
+										echo '<option value="'.$row['idrecinto'].'">'.$row['nombremunicipio'].' - '.$row['recinto'].'</option>';
 									}
 									
 									?>
@@ -79,12 +78,12 @@ if($_SESSION['usr']!="")
 						<div class="row">
 							<div class="col-xs-12 col-sm-6 col-md-6">
 								<div class="form-group">
-									<input type="number" name="minmesa" id="minmesa" class="form-control input-lg" placeholder='ini mesa' min='1' max='20'  tabindex="8" required>
+									<input type="number" name="minmesa" id="minmesa" class="form-control input-lg" placeholder='MESA INICIO' min='1' max='20'  tabindex="8" required>
 								</div>
 							</div>
 							<div class="col-xs-12 col-sm-6 col-md-6">
 								<div class="form-group">
-									<input type="number" name="maxmesa" id="maxmesa" class="form-control input-lg" placeholder="fin mesa" tabindex="9"  required min="1" max="70" required>
+									<input type="number" name="maxmesa" id="maxmesa" class="form-control input-lg" placeholder="FIN MESA" tabindex="9"  min="1" max="70" required>
 								</div>
 							</div>
 						</div>

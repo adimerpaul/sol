@@ -32,7 +32,6 @@ $recinto=strtoupper($recinto);
 			if ($recinto_insert)
 			{
 			$recinto_id=mysqli_insert_id($cnx);
-			echo"$recinto_id";
 			/*Registro mesas*/
 			for ($i=1; $i <=$cantidadmesa; $i++) {
 				$mesa=mysqli_query($cnx,"INSERT INTO mesa(idrecinto,nummesa)VALUES($recinto_id,$i);");
