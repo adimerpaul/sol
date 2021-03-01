@@ -59,7 +59,7 @@ if($_SESSION['usr']!="")
                           if ($_SESSION['usr']=='FJR065'){
                               $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto ORDER BY idmesa");
                           }else{
-                              $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto AND nummesa=$ffilial[0] ORDER BY idmesa");
+                              $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto AND nummesa BETWEEN $ffilial[9] AND $ffilial[10] ORDER BY idmesa");
                           }
                           while ($fmesa=mysqli_fetch_array($mesa)) {
                           ?>

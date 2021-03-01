@@ -88,9 +88,13 @@ $idprovincia=$_GET['idprovincia'];
           $provincia=$_GET["idprovincia"];
           if ($municipio) {
           $result=mysqli_query($cnx,"SELECT r.idrecinto,r.recinto,r.cantidadmesa
-                          FROM municipio m INNER JOIN recinto r 
+                          FROM municipio m INNER JOIN recinto r INNER JOIN filial f
                             ON m.idmunicipio=r.idmunicipio
-                            WHERE r.idmunicipio=$municipio");
+                            ON r.idrecinto=f.idrecinto
+                            WHERE r.idmunicipio=$municipio
+                            AND f.usuario=".$_SESSION['usr']."'
+
+                            ");
           while ($fila = mysqli_fetch_array($result)){
           echo "<a href='Formulariomesa.php?idrecinto=$fila[0]'><div class='col-lg-4'>
             <div class='pricing-box-alt special'>
