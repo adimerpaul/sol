@@ -48,7 +48,7 @@ if($_SESSION['usr']!="")
                 <hr class="colorgraph">
                 <div class="row">
                     <div class="col-lg-12">
-                    <h4>Recintos electorales<strong> encontrados</strong></h4>
+                    <h4>Mesas de votación <strong> encontradas</strong></h4>
                         <div class="form-group">
                         <div class="pricing-content">
                           <ul>
@@ -57,11 +57,10 @@ if($_SESSION['usr']!="")
                           $filial=mysqli_query($cnx,"SELECT * FROM filial WHERE usuario='".$_SESSION['usr']."'");
                           $ffilial=mysqli_fetch_array($filial);
                           if ($_SESSION['usr']=='FJR065'){
-                              $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto  ORDER BY idmesa");
+                              $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto ORDER BY idmesa");
                           }else{
-                              $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto AND idmesa='".$ffilial[0]."' ORDER BY idmesa");
+                              $mesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idrecinto=$idrecinto AND nummesa=$ffilial[0] ORDER BY idmesa");
                           }
-
                           while ($fmesa=mysqli_fetch_array($mesa)) {
                           ?>
                             <li><i class="icon-ok"></i><h1><strong> MESA #<?php echo($fmesa[2]); ?></strong></h1>
