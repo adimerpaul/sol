@@ -102,12 +102,6 @@ $idprovincia=$_GET['idprovincia'];
                             WHERE r.idmunicipio=$municipio
                             AND f.usuario='".$_SESSION['usr']."'");
             }
-            echo "SELECT r.idrecinto,r.recinto,r.cantidadmesa
-                          FROM municipio m INNER JOIN recinto r ON m.idmunicipio=r.idmunicipio 
-                            INNER JOIN filial f                            
-                            ON r.idrecinto=f.idrecinto
-                            WHERE r.idmunicipio=$municipio
-                            AND f.usuario='".$_SESSION['usr']."'";
           while ($fila = mysqli_fetch_array($result)){
           echo "<a href='Formulariomesa.php?idrecinto=$fila[0]'><div class='col-lg-4'>
             <div class='pricing-box-alt special'>
