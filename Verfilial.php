@@ -31,49 +31,47 @@ if($_SESSION['usr']!="")
 	</div>
 	</section>
 	<section id="content">
-		<div class="container">
 			<div class="row">
 			    <div class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
 					<table class="table responsive-utilities table-bordered table-hover">
-                    <tr>
-                        <th id='th2'>#</th><th id='th2'>CARNET IDENTIDAD</th><th id='th2'>NOMBRE COMPLETO</th><th id='th2'>NUMERO CELULAR</th><th id='th2'>ID FILIAL</th>
-                        <?php 
-                        if ($_SESSION['usr']=='FJR065') {
-                         ?>
-                        <th id='th2'><i class="fa fa-trash-o" aria-hidden="true"></i></th><th id='th2'><i class="fa fa-pencil" aria-hidden="true"></i></th></tr>
+                        <tr>
+                            <th id='th2'>#</th><th id='th2'>CARNET IDENTIDAD</th><th id='th2'>NOMBRE COMPLETO</th><th id='th2'>ID FILIAL</th><th id='th2'>PSW</th>
+                            <?php 
+                            if ($_SESSION['usr']=='FJR065') {
+                             ?>
+                            <th id='th2'><i class="fa fa-trash-o" aria-hidden="true"></i></th><th id='th2'><i class="fa fa-pencil" aria-hidden="true"></i></th></tr>
+                            <?php
+                            }
+                            else
+                            {
+                            ?>
+                        </tr>
                         <?php
                         }
-                        else
-                        {
+                        $filial=mysqli_query($cnx,"SELECT ci,nombre,paterno,materno,cel,usuario FROM filial WHERE ci!=7403044"); 
+                        $n=0;
+                        while ($ffilial=mysqli_fetch_array($filial)) {
+                            $n=$n+1;
+                        	$nombrecompleto=$ffilial[1]." ".$ffilial[2]." ".$ffilial[3];
+                                echo "<tr>
+                                    <td id='th'>$n</td>
+                                    <td id='th'>$ffilial[0]</td>
+                                    <td id='th'>$nombrecompleto</td>
+                                    <td id='th'>$ffilial[5]</td>
+                                    <td id='th'>SOL@$ffilial[4]</td>";
+                                    if ($_SESSION['usr']=='FJR065') {
+                                        echo "<td id='th'><a href='Eliminarfilial.php?ci=$ffilial[0]' class='btn-danger btn-sm'>Eliminar</a></td>";
+                                        echo "<td id='th'><a href='Formularioeditarfilial.php?ci=$ffilial[0]' class='btn-success btn-sm'>Editar</a></td></tr>";
+                                    }
+                                    else{
+                                        echo"</tr>";
+                                    }
+                                    
+                        };
                         ?>
-                    </tr>
-                    <?php
-                    }
-                    $filial=mysqli_query($cnx,"SELECT ci,nombre,paterno,materno,cel,usuario FROM filial WHERE ci!=7403044"); 
-                    $n=0;
-                    while ($ffilial=mysqli_fetch_array($filial)) {
-                        $n=$n+1;
-                    	$nombrecompleto=$ffilial[1]." ".$ffilial[2]." ".$ffilial[3];
-                            echo "<tr>
-                                <td id='th'>$n</td>
-                                <td id='th'>$ffilial[0]</td>
-                                <td id='th'>$nombrecompleto</td>
-                                <td id='th'>$ffilial[4]</td>
-                                <td id='th'>$ffilial[5]</td>";
-                                if ($_SESSION['usr']=='FJR065') {
-                                    echo "<td id='th'><a href='Eliminarfilial.php?ci=$ffilial[0]' class='btn-danger btn-sm'>Eliminar</a></td>";
-                                    echo "<td id='th'><a href='Formularioeditarfilial.php?ci=$ffilial[0]' class='btn-success btn-sm'>Editar</a></td></tr>";
-                                }
-                                else{
-                                    echo"</tr>";
-                                }
-                                
-                    };
-                    ?>
                     </table>
 				</div>
 			</div>
-		</div>
 	</section>
 </div>
 <?php }
