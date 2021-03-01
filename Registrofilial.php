@@ -36,11 +36,10 @@ $psw=md5("SOL@".$cel);
 /*variables*/
 
 /*Registro*/
-$filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,tipo,minmesa,maxmesa)
- VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','F','$minmesa','$maxmesa');");	
+$filial=mysqli_query($cnx,"INSERT INTO `filial`(ci,paterno,materno,nombre,cel,edad,usuario,psw,idrecinto,minmesa,maxmesa)
+ VALUES ('$ci','$apellidopat','$apellidomat','$nombre','$cel','$edad','$usr','$psw','$recinto','$minmesa','$maxmesa');");	
 	if ($filial)
 	{		
-		mysqli_query($cnx,"UPDATE recinto set filial='$usr' where idrecinto='$recinto' ");
 	echo "<META HTTP-EQUIV='Refresh' CONTENT ='2; URL=Formulariofilial.php'>";
 	?>
 	<script type="text/javascript">
