@@ -168,6 +168,8 @@ $cnx=conectar();
                                     AND m.idmunicipio=$idmunicipio
                                     GROUP BY dv.idpartido");
                     $c=0;
+                    $votosnovalidos=0;
+                    $votosvalidos=0;
                     while($fd=mysqli_fetch_array($cn))
                    {
                     if ($fd[0]=='BLANCO' || $fd[0]=='NULO') {
@@ -185,6 +187,45 @@ $cnx=conectar();
                     ]
                 }]
             });
+            var chart1 = $('#dona').highcharts();
+            var column1 = $('#column').highcharts();
+            var idmunicipio=<?=$idmunicipio?>;
+            function myFunction() {
+                setInterval(function(){
+                    // console.log("Hello");
+
+                    $.ajax({
+                        url:'./Votos.php?idmunicipio='+idmunicipio+'&func=territorio',
+                        success:function (res) {
+                            let array=JSON.parse(res);
+                            let a=[];
+                            let votosvalidos=0;
+                            let votosnovalidos=0;
+                            array.forEach(r=>{
+                                // console.log(r.color);
+                                a.push({name: r.name, y: parseInt(r.y) , color: r.color});
+                                if (r.name=='BLANCO' || r.name=='NULO'){
+                                    votosnovalidos+=parseInt(r.y);
+                                }else{
+                                    votosvalidos+=parseInt(r.y);
+                                }
+                            });
+                            $('.votosvalidos').html(votosvalidos+' VOTOS');
+                            $('.votosnovalidos').html(votosnovalidos+' VOTOS');
+                            console.log(a);
+                            chart1.series[0].update({
+                                data: a
+                            },false);
+                            column1.series[0].update({
+                                data: a
+                            },false);
+                            chart1.redraw();
+                            column1.redraw();
+                        }
+                    })
+                }, 3000);
+            }
+            myFunction();
         });
     });
 </script>
@@ -200,17 +241,17 @@ $cnx=conectar();
     <figure class="highcharts-figure">
     <div id="dona"></div>
         <center>
-        <i class="glyphicon glyphicon-ok"></i> <big>VOTOS VALIDOS: <strong><?=$votosvalidos?> VOTOS</strong></big> 
-        <br>
-        <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong><?=$votosnovalidos?> VOTOS</strong></big>
+            <i class="glyphicon glyphicon-ok"></i> <big>VOTOS VALIDOS: <strong class="votosvalidos"><?=$votosvalidos?> VOTOS</strong></big>
+            <br>
+            <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong class="votosnovalidos"><?=$votosnovalidos?> VOTOS</strong></big>
         </center>
     </figure>
     <figure class="highcharts-figure">
     <div id="column"></div>
         <center>
-        <i class="glyphicon glyphicon-ok"></i> <big>VOTOS VALIDOS: <strong><?=$votosvalidos?> VOTOS</strong></big> 
-        <br>
-        <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong><?=$votosnovalidos?> VOTOS</strong></big>
+            <i class="glyphicon glyphicon-ok"></i> <big>VOTOS VALIDOS: <strong class="votosvalidos"><?=$votosvalidos?> VOTOS</strong></big>
+            <br>
+            <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong class="votosnovalidos"><?=$votosnovalidos?> VOTOS</strong></big>
         </center>
     </figure>
 </div>
