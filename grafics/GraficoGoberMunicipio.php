@@ -23,6 +23,9 @@ $cnx=conectar();
             // Build the chart
             $('#dona').highcharts({
                 chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
                     type: 'pie',
                     options3d: {
                         enabled: true,
@@ -30,21 +33,48 @@ $cnx=conectar();
                     }
                 },
                 title: {
-                    text: 'TOTAL ACUMULADO CANDIDATO GOBERNADOR(A) EN ESTE MUNICIPIO'
+                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO'
+                },
+                tooltip: {
+                    pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
                 },
                 subtitle: {
                     text: 'Partidos politicos participantes'
                 },
+                // plotOptions: {
+                //     pie: {
+                //         innerSize: 100,
+                //         depth: 45
+                //     }
+                // },
                 plotOptions: {
                     pie: {
                         innerSize: 100,
-                        depth: 45
+                        depth: 45,
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.percentage:.1f} %'
+                        }
                     }
                 },
-                    xAxis: {
-                        categories: [<?php
+                xAxis: {
+                    labels: {
+                        skew3d: true,
+                        style: {
+                            fontSize: '20px'
+                        }
+                    }
+                },
+                series: [{
+                    colorByPoint: true,
+                    //data: ['http://localhost/sol/grafics/Votos.php?idmunicipio=3']
+                    // data: [10, 9, 8, 7, 6, 5, 4, 3, 2,5]
+                    data: [
+                        <?php
                         $idmunicipio=$_GET['idmunicipio'];
-                        $cn=mysqli_query($cnx,"SELECT pp.descripcion
+                        $cn=mysqli_query($cnx,"SELECT pp.descripcion, SUM( dv.cantidadvoto ),pp.color
                                     FROM municipio m, recinto r, votacion v, detallevotacion dv, partidopolitico pp
                                     WHERE m.idmunicipio=r.idmunicipio
                                     AND r.idrecinto=v.idrecinto
@@ -55,43 +85,20 @@ $cnx=conectar();
                                     GROUP BY dv.idpartido");
                         $c=0;
                         while($fd=mysqli_fetch_array($cn))
-                       {
-                        echo "'".$fd[0]."',"; 
-                       };
-                         ?>],
-                        labels: {
-                            skew3d: true,
-                            style: {
-                                fontSize: '20px'
-                            }
-                        }
-                    },
-                    series: [{
-                    colorByPoint: true,
-                    data: [
-                    <?php
-                    $idmunicipio=$_GET['idmunicipio'];
-                    $cn=mysqli_query($cnx,"SELECT pp.descripcion, SUM( dv.cantidadvoto ),pp.color
-                                    FROM municipio m, recinto r, votacion v, detallevotacion dv, partidopolitico pp
-                                    WHERE m.idmunicipio=r.idmunicipio
-                                    AND r.idrecinto=v.idrecinto
-                                    AND v.idvotacion=dv.idvotacion
-                                    AND pp.idpartido=dv.idpartido
-                                    AND v.idtipocandidatura=5
-                                    AND m.idmunicipio=$idmunicipio
-                                    GROUP BY dv.idpartido");
-                    $c=0;
-                    while($fd=mysqli_fetch_array($cn))
-                   {
-                    echo"{
+                        {
+                            echo"{
                         name: '".$fd[0]."',
                         y: ".$fd[1]." ,color: '$fd[2]'},";
-                   };
-                   
-                    ?>
+                        };
+
+                        ?>
                     ]
                 }]
             });
+
+
+
+
         });
     });
 </script>

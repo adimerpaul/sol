@@ -252,7 +252,7 @@ function checknum(e) {
 
                         </table>
 
-                        <input type='Submit' value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger">
+                        <input type='Submit' value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger btnenviar">
 
                         <?php
 
@@ -345,7 +345,7 @@ function checknum(e) {
     
                         </table>
     
-                        <input type='Submit' value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger">
+                        <input type='Submit' value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger SUBIR VOTACION">
     
                         <?php
     
@@ -437,7 +437,7 @@ function checknum(e) {
 
                         </table>
 
-                        <input type='Submit' value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger">
+                        <input type='Submit'  value='SUBIR VOTACION' name='ok' class="btn btn-lg btn-danger btnenviar">
 
                         <?php
 
