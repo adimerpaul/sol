@@ -66,7 +66,7 @@ if($_SESSION['usr']!="")
 									<?php 
 									$result= mysqli_query($cnx,"SELECT * FROM recinto r, municipio m WHERE m.idmunicipio=r.idmunicipio AND r.idmunicipio=3 ORDER BY m.idmunicipio ASC"); 
 									while($row=mysqli_fetch_assoc($result)){
-										echo '<option value="'.$row['idrecinto'].'">'.$row['nombremunicipio'].' - '.$row['recinto'].'</option>';
+										echo '<option value="'.$row['idrecinto'].'">'.$row['recinto'].'</option>';
 									}
 									
 									?>
