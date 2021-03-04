@@ -31,8 +31,8 @@ $n=rand(10,901);
 if ($n<100) {
 	$n="0".$n;
 }
-$usr=$a.$b.$c.'0-'.$edad.''.$edad;
-$psw=md5("SOL@".$cel);
+$usr=$c.$a.$b.'-'.'04032021';
+$psw=md5("SOLORURO");
 /*variables*/
 
 /*Registro*/
