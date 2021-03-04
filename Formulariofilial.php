@@ -64,7 +64,7 @@ if($_SESSION['usr']!="")
 								<select name="recinto" id="recinto" class='form-control input-lg' required tabindex="7">
 									<option value="">ASIGNAR RECINTO</option>
 									<?php 
-									$result= mysqli_query($cnx,"SELECT * FROM recinto r, municipio m WHERE m.idmunicipio=r.idmunicipio AND r.idmunicipio=3 ORDER BY m.idmunicipio ASC"); 
+									$result= mysqli_query($cnx,"SELECT * FROM recinto r, municipio m WHERE m.idmunicipio=r.idmunicipio AND r.idmunicipio=3 ORDER BY r.recinto ASC"); 
 									while($row=mysqli_fetch_assoc($result)){
 										echo '<option value="'.$row['idrecinto'].'">'.$row['recinto'].'</option>';
 									}
