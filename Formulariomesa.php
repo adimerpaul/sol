@@ -64,8 +64,8 @@ if($_SESSION['usr']!="")
                           while ($fmesa=mysqli_fetch_array($mesa)) {
                           ?>
                             <li><i class="icon-ok"></i><h1><strong> MESA #<?php echo($fmesa[2]); ?></strong></h1>
-                            <a <?php echo("href='IniciarvotacionA.php?idmesa=$fmesa[0]&idrecinto=$idrecinto&tipo=A'"); ?>  class="btn btn-mini btn-warning"><i class="icon-bolt"></i> Registrar Votos Alcaldes/Concejales</a>
-                            <a <?php echo("href='IniciarvotacionG.php?idmesa=$fmesa[0]&idrecinto=$idrecinto&tipo=G'"); ?>  class="btn btn-mini btn-theme"><i class="icon-bolt"></i> Registrar Votos Gobernadores/Asambleistas</a>
+                            <a <?php echo("href='IniciarvotacionA.php?idmesa=$fmesa[0]&idrecinto=$idrecinto&tipo=A'"); ?>  class="btn btn-lg btn-warning"><i class="icon-bolt"></i> Registrar Votos Alcaldes/Concejales</a><br>
+                            <a <?php echo("href='IniciarvotacionG.php?idmesa=$fmesa[0]&idrecinto=$idrecinto&tipo=G'"); ?>  class="btn btn-lg btn-theme"><i class="icon-bolt"></i> Registrar Votos Gobernadores/Asambleistas</a>
                             <?php  
                           }
                             ?>
