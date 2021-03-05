@@ -40,6 +40,7 @@ function checknum(e) {
         color:black;
         text-align: center;
         font-size: 32px;
+        font-weight: bold;
         letter-spacing: 0.1rem;
         width:100px;
         height: 90px;
