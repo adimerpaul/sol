@@ -39,7 +39,7 @@ function checknum(e) {
     #input{
         color:black;
         text-align: center;
-        font-size: 38px;
+        font-size: 36px;
         font-weight: bold;
         letter-spacing: 0.1rem;
         width:100px;
