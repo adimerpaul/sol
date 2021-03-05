@@ -47,8 +47,11 @@ if($_SESSION['usr']!="")
     ?>
     <center>
             <br>
-    <a <?echo " href='Formulariomesa.php?idrecinto=$idrecinto'";  ?> class="btn btn-danger btn-lg"><i class="fa fa-arrow-left"></i> VOLVER ATRAS <i class="fa fa-arrow-left"></i></a>
-    <section id="content">
+            <?php
+        echo "
+        <a href=Formulariomesa.php?idrecinto=$idrecinto class='btn btn-danger btn-lg'><i class='fa fa-arrow-left'></i> VOLVER ATRAS <i class='fa fa-arrow-left'></i></a>
+        ";
+        ?> <section id="content">
         <div class="container">
             <h2><label>Recinto : <?php echo($nombrerecinto) ?></label> <small>Número de mesa : <?php echo($numeromesa) ?></small></h2>
             <hr class="colorgraph">
@@ -105,8 +108,11 @@ if($_SESSION['usr']!="")
         <hr class="colorgraph">
     </section>
         <br>
-    <a <?echo " href='Formulariomesa.php?idrecinto=$idrecinto'";  ?> class="btn btn-danger btn-lg"><i class="fa fa-arrow-left"></i> VOLVER ATRAS <i class="fa fa-arrow-left"></i></a>
-    </center>
+            <?php
+        echo "
+        <a href=Formulariomesa.php?idrecinto=$idrecinto class='btn btn-danger btn-lg'><i class='fa fa-arrow-left'></i> VOLVER ATRAS <i class='fa fa-arrow-left'></i></a>
+        ";
+        ?></center>
 </div>
 <?php }
 else

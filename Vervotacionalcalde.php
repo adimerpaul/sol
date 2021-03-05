@@ -109,7 +109,11 @@ if($_SESSION['usr']!="")
         </div>
         <hr class="colorgraph">
     </section>
-    <a <?echo " href='Formulariomesa.php?idrecinto=$idrecinto'";  ?> class="btn btn-danger btn-lg"><i class="fa fa-arrow-left"></i> VOLVER ATRAS <i class="fa fa-arrow-left"></i></a>
+        <?php
+        echo "
+        <a href=Formulariomesa.php?idrecinto=$idrecinto class='btn btn-danger btn-lg'><i class='fa fa-arrow-left'></i> VOLVER ATRAS <i class='fa fa-arrow-left'></i></a>
+        ";
+        ?>
     </center>
 </div>
 <?php }
