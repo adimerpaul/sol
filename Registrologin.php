@@ -10,7 +10,7 @@ $cnx=conectar();
     <script src="cssalert/sweetalert.min.js"></script>
     <link rel="stylesheet" type="text/css" href="cssalert/sweetalert.css">
 </head>
-<body>
+<body OnLoad="NoBack();">
 <?php
 $contrase = $_POST['contrase'];
 $usuario = $_POST['usuario'];
