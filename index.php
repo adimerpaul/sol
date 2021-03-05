@@ -37,7 +37,7 @@ function validacion()
 </script> 
 
 </head>
-<body>
+<body OnLoad="NoBack();">
 
 <div id="wrapper">
 	<!-- start header -->
