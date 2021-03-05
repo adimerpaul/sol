@@ -46,6 +46,8 @@ if($_SESSION['usr']!="")
     $numeromesa=$fmesa[2];
     ?>
     <center>
+            <br>
+    <a <?echo " href='Formulariomesa.php?idrecinto=$idrecinto'";  ?> class="btn btn-danger btn-lg"><i class="fa fa-arrow-left"></i> VOLVER ATRAS <i class="fa fa-arrow-left"></i></a>
     <section id="content">
         <div class="container">
             <h2><label>Recinto : <?php echo($nombrerecinto) ?></label> <small>Número de mesa : <?php echo($numeromesa) ?></small></h2>
@@ -102,6 +104,8 @@ if($_SESSION['usr']!="")
         </div>
         <hr class="colorgraph">
     </section>
+        <br>
+    <a <?echo " href='Formulariomesa.php?idrecinto=$idrecinto'";  ?> class="btn btn-danger btn-lg"><i class="fa fa-arrow-left"></i> VOLVER ATRAS <i class="fa fa-arrow-left"></i></a>
     </center>
 </div>
 <?php }

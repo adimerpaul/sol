@@ -13,6 +13,9 @@ jQuery('input[type=file]').change(function(){
  jQuery('span.'+idname).next().find('span').html(filename);
 });
 </script>
+<SCRIPT LANGUAGE="JavaScript">
+history.forward()
+</SCRIPT>
    <style>
   .custom-input-file {
   background-color: yellow;
@@ -72,13 +75,15 @@ jQuery('input[type=file]').change(function(){
 
             <div class="custom-input-file">
                 <br><br>
-            <input type="file" id="fichero-tarifas" class="input-file" name="archivo" value="Elegir imagen..." accept="image/*" capture="camera" required/>
+            <input type="file" id="seleccionArchivos" class="input-file" name="archivo" value="Elegir imagen..." accept="image/*" required/>
             <i class="fa fa-camera" aria-hidden="true"></i>
-            <br><h3>PASO 1 <br>CAPTURAR FOTO</h3>
+            <br><h3>PASO 1 <br>SELECCIONAR FOTO</h3>
+            <i class="fa fa-search"></i>
             </div>
-    
             <br><br>
-        <input type='Submit' value='PASO 2: ENVIAR FOTO' name='ok' class="btn btn-lg btn-danger">
+                     <img id="imagenPrevisualizacion" width=450px>
+            <br><br>
+        <button type='Submit' name='ok' class="btn btn-lg btn-danger"><i class="fa fa-paper-plane"></i> PASO 2: ENVIAR FOTO</button>
         </center>
         </form>
 				</div>
@@ -86,6 +91,30 @@ jQuery('input[type=file]').change(function(){
 		</div>
 	</section>
 </div>
+
+    <script>
+        // Obtener referencia al input y a la imagen
+
+const $seleccionArchivos = document.querySelector("#seleccionArchivos"),
+  $imagenPrevisualizacion = document.querySelector("#imagenPrevisualizacion");
+
+// Escuchar cuando cambie
+$seleccionArchivos.addEventListener("change", () => {
+  // Los archivos seleccionados, pueden ser muchos o uno
+  const archivos = $seleccionArchivos.files;
+  // Si no hay archivos salimos de la función y quitamos la imagen
+  if (!archivos || !archivos.length) {
+    $imagenPrevisualizacion.src = "";
+    return;
+  }
+  // Ahora tomamos el primer archivo, el cual vamos a previsualizar
+  const primerArchivo = archivos[0];
+  // Lo convertimos a un objeto de tipo objectURL
+  const objectURL = URL.createObjectURL(primerArchivo);
+  // Y a la fuente de la imagen le ponemos el objectURL
+  $imagenPrevisualizacion.src = objectURL;
+});
+    </script>
 <?php }
 else
 {

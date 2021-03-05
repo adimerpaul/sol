@@ -45,6 +45,8 @@ if($_SESSION['usr']!="")
     $numeromesa=$fmesa[2];
     ?>
     <center>
+        <br>
+    <a <?echo " href='Formulariomesa.php?idrecinto=$idrecinto'";  ?> class="btn btn-danger btn-lg"><i class="fa fa-arrow-left"></i> VOLVER ATRAS <i class="fa fa-arrow-left"></i></a>
     <section id="content">
         <div class="container">
             <h2><label>Recinto : <?php echo($nombrerecinto) ?></label> <small>Número de mesa : <?php echo($numeromesa) ?></small></h2>
@@ -54,7 +56,7 @@ if($_SESSION['usr']!="")
                 <h4>Votacion electoral<strong> encontrada</strong></h4>
             </div>
             <div id="alcalde" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
-                <form action="Registroalcalde.php" method="POST" class="form-horizontal form-label-left" enctype="multipart/form-data">
+                <form method="POST" class="form-horizontal form-label-left" enctype="multipart/form-data">
                     <?php
                     $consultaalcalde=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1");
 
@@ -103,6 +105,7 @@ if($_SESSION['usr']!="")
         </div>
         <hr class="colorgraph">
     </section>
+    <a <?echo " href='Formulariomesa.php?idrecinto=$idrecinto'";  ?> class="btn btn-danger btn-lg"><i class="fa fa-arrow-left"></i> VOLVER ATRAS <i class="fa fa-arrow-left"></i></a>
     </center>
 </div>
 <?php }
