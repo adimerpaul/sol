@@ -34,13 +34,13 @@ if($_SESSION['usr']!="")
             $frecinto=mysqli_fetch_array($recinto);
     ?>
 	<section id="content">
-			<div class="row">
-			    <div class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
+			<div class="col-sm-offset-1 col-md-offset-1">
+			    <div>
                     <h1>Recinto : <?php echo($frecinto[4]) ?></h1>
                     <center><h3>Orden de llenado de votación <big>--></big></h3></center>
 					<table class="table responsive-utilities table-bordered table-hover">
                         <tr>
-                            <th id='th2'>NÚMERO DE MESA</th><th id='th2'>VOTACION 1</th><th id='th2'>VOTACION 2</th><th id='th2'>VOTACION 3</th><th id='th2'> VOTACION 4</th><th id='th2'>VOTACION 5</th>
+                            <th id='th2'>#</th><th id='th2'>VOTACION 1</th><th id='th2'>VOTACION 2</th><th id='th2'>VOTACION 3</th><th id='th2'> VOTACION 4</th><th id='th2'>VOTACION 5</th>
                         </tr>
                         <?php
                         $n=0;
@@ -57,7 +57,7 @@ if($_SESSION['usr']!="")
                             WHERE t.idtipocandidatura = v.idtipocandidatura AND idmesa=$row[0]
                             )");
                             while ($fmesa=mysqli_fetch_array($mesavotada)) {
-                            echo "<td id='th'><a href=>$fmesa[1]</a></td>";
+                            echo "<td id='th'><a class='btn btn-sm btn-success'>$fmesa[1]</a></td>";
                             };
                         echo"</tr>";
                         };

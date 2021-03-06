@@ -41,21 +41,7 @@ $idprovincia=$_GET['idprovincia'];
   </section>
   <section id="content">
     <div class="container">
-        <h1>Provincia : <?php echo($nombreprovincia) ?> - Municipio : <?php echo($nombremunicipio) ?></h1>
-        <?php  
-        if ($_SESSION['usr']=='FJR065') {
-        ?>
-        <center>
-        <h3>GRÁFICOS TOTALES ESTADÍSTICOS DE ESTE MUNICIPIO</h3>
-        <a <?php echo "href='grafics/GraficoAlcaldeMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de Alcalde</a>
-        <a <?php echo "href='grafics/GraficoConcejalMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de Concejal</a>
-        <a <?php echo "href='grafics/GraficoAsambleMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de A. Territorio</a>
-        <a <?php echo "href='grafics/GraficoAsamblePMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de A. Población</a>
-        <a <?php echo "href='grafics/GraficoGoberMunicipio.php?idmunicipio=$idmunicipio'";?> class="btn btn-large btn-info"> <i class="fa fa-signal"></i> Ver Gráfico de Gobernador</a>
-        </center><br>
-        <?php 
-        }
-        ?>
+        <h1>MESAS CON VOTACIONES CONCLUIDAS POR RECINTOS</h1>
     </div>
     <div class="container">
       <form>

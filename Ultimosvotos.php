@@ -65,10 +65,12 @@ if($_SESSION['usr']!="")
                             <ul class="dropdown-menu">
                                 <li><a href="Verrecintos.php" class="btn btn-round btn-danger"><h5>Ver Recintos</h5></a></li>
                                 <li><a href="Verfilial.php" class="btn btn-round btn-danger"><h5>Ver Filiales</h5></a></li>
-                                <li><a href="Vervotaciones.php" class="btn btn-round btn-danger"><h5>Ver Votaciones</h5></a></li>
+                                <li><a href="Ultimosvotos.php" class="btn btn-round btn-danger"><h5>Ver Votaciones</h5></a></li>
+                                <li><a href="Formulariomesacomputada.php" class="btn btn-round btn-danger"><h5>Ver Mesas Computadas</h5></a></li>
                                 <li><a href="EstadisticaprovinciaG.php" class="btn btn-round btn-danger"><h5>Ver Estadísticas de Provincia G</h5></a></li>
-                                <li><a href="EstadisticaprovinciaA.php" class="btn btn-round btn-danger"><h5>Ver Estadísticas de Provincia A</h5></a></li>
-                            </ul>
+                                <li><a href="EstadisticaprovinciaA.php" class="btn btn-round btn-danger"><h5>Ver Estadísticas de Provincia AT</h5></a></li>
+                                <li><a href="EstadisticaprovinciaAP.php" class="btn btn-round btn-danger"><h5>Ver Estadísticas de Provincia AP</h5></a></li>
+                            </ul>  
                         </li>
                         <?php
                         }
