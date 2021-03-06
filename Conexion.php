@@ -2,7 +2,7 @@
 function conectar()
 {
     date_default_timezone_set('America/La_Paz');
-    $conex= mysqli_connect("localhost","root","123")or die ("Falla de conexion");
-    mysqli_select_db($conex,"bdeleccion");
+    $conex= mysqli_connect("localhost","root","sol123Sol")or die ("Falla de conexion");
+    mysqli_select_db($conex,"example_database");
 return $conex;
 };
