@@ -118,6 +118,10 @@ if($_SESSION['usr']!="")
             <div class="row">
                 <div class="col-xs-12">
                     <div class="table-responsive">
+                        <div >
+                            <img id="imagen" src="" width="300" alt="">
+                            <pre id="datos"></pre>
+                        </div>
                         <form action="">
                             <label for="">Cantidad de muestra: </label><input id="cantidad" type="text" value="10">
                         </form>
@@ -131,7 +135,8 @@ if($_SESSION['usr']!="")
                                 <th>Recinto-Mesa</th>
                                 <th>Tipo votacion</th>
                                 <th>Imagen</th>
-                                <th>Id</th> 
+                                <th>Id</th>
+                                <th>Tipo de votacion</th>
                                 <th>Opciones</th>
                             </tr>
                             </thead>
@@ -176,6 +181,33 @@ if($_SESSION['usr']!="")
             "order": [[ 0, "desc" ]],
             "pageLength":50
         });
+        $('#example').on('click', '.ver', function () {
+            // if (confirm('Seguro de eliminar?')) {
+                var RowIndex = $(this).closest('tr');
+                var data = t.row(RowIndex).data();
+                // alert(data[6]);
+                let id = data[7];
+                let tipo = data[8];
+                $.ajax({
+                    url:'./Consultas.php',
+                    type:'POST',
+                    data:{fun:'ver',id,tipo},
+                    success:function (res) {
+                        let array=JSON.parse(res);
+                         //console.log(array);
+                         let imagen=array[0].imagen;
+                         // console.log(imagen);
+                         $('#imagen').prop('src',imagen);
+                         // console.log()
+                        let  t='';
+                        array.forEach(r=>{
+                            t+=r.descripcion+' '+r.cantidadvoto+'<br>';
+                        })
+                        $('#datos').html(t);
+                    }
+                });
+            // }
+        });
         $('#example').on('click', '.Mybtn', function () {
             if (confirm('Seguro de eliminar?')){
                 var RowIndex = $(this).closest('tr');
@@ -208,12 +240,13 @@ if($_SESSION['usr']!="")
                                 r.usuario,
                                 r.nombre+' '+r.paterno+' '+r.materno,
                                 r.cel,
-                                r.recinto+' '+r.nummesa,
+                                r.recinto+' - Mesa #'+r.nummesa,
                                 r.descripcion,
-                                '',
+                                ima,
                                 r.idvotacion,
+                                r.idtipocandidatura,
                                 '<button class="Mybtn btn btn-danger">Eliminar <i class="fa fa-times-circle"></i></button>'+
-                                '<a class="btn btn-primary" href="Vervotacionalcalde.php?idvotacion=$fconsultaalcalde[0]&idmesa=$idmesa&idrecinto=$idrecinto&tipo=1">VER VOTACION</a>'
+                                '<a class=" ver btn btn-primary"  >Ver <i class="fa fa-eye"></i></a>'
                             ] ).draw( false );
                         })
                     }
@@ -253,9 +286,10 @@ if($_SESSION['usr']!="")
                                 r.recinto+' - Mesa #'+r.nummesa,
                                 r.descripcion,
                                 ima,
-                                'Votacion #' + r.idvotacion,
+                                r.idvotacion,
+                                r.idtipocandidatura,
                                 '<button class="Mybtn btn btn-danger">Eliminar <i class="fa fa-times-circle"></i></button>'+
-                                '<a class="btn btn-primary" href="Vervotacionalcalde.php?idvotacion='+r.idvotacion+'&idmesa='+r.idmesa+'&idrecinto='+r.idrecinto+'&tipo='+r.idtipocandidatura+'">VER VOTACION</a>'
+                                '<a class=" ver btn btn-primary"  >Ver <i class="fa fa-eye"></i></a>'
                             ] ).draw( false );
                         })
                     }

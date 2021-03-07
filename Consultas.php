@@ -42,4 +42,30 @@ LIMIT ".$_POST["cantidad"]."
     echo json_encode($array);
 }
 
+if ($_POST["fun"]=='ver'){
+//    echo "adimer";
+//    mysqli_query($cnx,"DELETE FROM votacion WHERE idvotacion='".$_POST["id"]."'");
+//    echo "
+//    SELECT *
+//    FROM votacion v INNER JOIN detallevotacion d ON d.idvoto=v.idvoto
+//    WHERE idvoto='".$_POST["id"]."'
+//    AND v.idtipocandidatura='".$_POST["tipo"]."'
+//";
+//    exit;
+    $cn=mysqli_query($cnx,"
+    SELECT p.descripcion,d.cantidadvoto,v.imagen
+    FROM votacion v 
+    INNER JOIN detallevotacion d ON d.idvotacion=v.idvotacion
+    INNER JOIN partidopolitico p ON p.idpartido=d.idpartido
+
+    WHERE v.idvotacion='".$_POST["id"]."'
+    AND v.idtipocandidatura='".$_POST["tipo"]."'
+");
+    $array=array();
+    while($fd=mysqli_fetch_array($cn)) {
+        $array[] = $fd;
+    };
+    echo json_encode($array);
+}
+
 ?>
