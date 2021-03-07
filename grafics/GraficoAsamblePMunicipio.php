@@ -120,7 +120,7 @@ $cnx=conectar();
                         }
                         },
                     title: {
-                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA EN ESTE MUNICIPIO'
+                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA POBLACION EN ESTE MUNICIPIO'
                       },
                       subtitle: {
                         text: 'Partidos politicos participantes'

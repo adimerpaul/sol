@@ -33,7 +33,7 @@ $cnx=conectar();
                     }
                 },
                 title: {
-                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO'
+                    text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA TERRITORIO EN ESTE MUNICIPIO'
                 },
                 tooltip: {
                     pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
@@ -120,7 +120,7 @@ $cnx=conectar();
                         }
                         },
                     title: {
-                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA EN ESTE MUNICIPIO'
+                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA TERRITORIO EN ESTE MUNICIPIO'
                       },
                       subtitle: {
                         text: 'Partidos politicos participantes'

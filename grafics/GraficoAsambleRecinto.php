@@ -109,7 +109,7 @@ $cnx=conectar();
                         }
                         },
                     title: {
-                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA EN ESTE RECINTO'
+                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA TERRITORIO EN ESTE RECINTO'
                       },
                       subtitle: {
                         text: 'Partidos politicos participantes'
