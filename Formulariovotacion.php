@@ -62,7 +62,7 @@ if($_SESSION['usr']!="")
 
 						<div class="form-group">
                             <?php
-                            if ($_SESSION['usr']=='FJR065') {
+                            if ('FJR065'=='FJR065') {
                                 ?>
                                 <select onchange="mostrarSugerencia(this.value)" name="provincia" id="provincia" class="form-control input-lg" tabindex="1">
                                     <option value='0'> Elija una provincia</option>
