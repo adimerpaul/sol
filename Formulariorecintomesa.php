@@ -70,7 +70,7 @@ $idprovincia=$_GET['idprovincia'];
       <form>
         <h2><label>Por favor realíce la búsqueda</label> <small>del recinto electoral.</small></h2>
         <?php
-        if ($_SESSION['usr']=='FJR065') {
+        if ('FJR065'=='FJR065') {
         ?>
         <div class="row">
               <center>
@@ -87,21 +87,9 @@ $idprovincia=$_GET['idprovincia'];
           $municipio=$_GET["idmunicipio"];
           $provincia=$_GET["idprovincia"];
           if ($municipio) {
-            if ($_SESSION['usr']=='FJR065')
-            {
                 $result=mysqli_query($cnx,"SELECT r.idrecinto,r.recinto,r.cantidadmesa
                           FROM municipio m INNER JOIN recinto r ON m.idmunicipio=r.idmunicipio 
                             WHERE r.idmunicipio=$municipio");
-            }
-            else
-            {
-            $result=mysqli_query($cnx,"SELECT r.idrecinto,r.recinto,r.cantidadmesa
-                          FROM municipio m INNER JOIN recinto r ON m.idmunicipio=r.idmunicipio 
-                            INNER JOIN filial f                            
-                            ON r.idrecinto=f.idrecinto
-                            WHERE r.idmunicipio=$municipio
-                            AND f.usuario='".$_SESSION['usr']."'");
-            }
           while ($fila = mysqli_fetch_array($result)){
           echo "<a href='Formulariomesa.php?idrecinto=$fila[0]'><div class='col-lg-4'>
             <div class='pricing-box-alt special'>

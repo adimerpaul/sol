@@ -34,7 +34,7 @@ if($nfilas>0)
 	} 
 	else
 	{
-	echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=index.php'>";
+	echo "<META HTTP-EQUIV='Refresh' CONTENT ='3; URL=index.php'>";
 	?>
  	<script type="text/javascript">
  	sweetAlert("Oops!","Verifique sus datos","warning");

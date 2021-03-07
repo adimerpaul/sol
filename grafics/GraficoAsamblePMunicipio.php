@@ -33,7 +33,7 @@ $cnx=conectar();
                     }
                 },
                 title: {
-                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO'
+                    text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA POBLACION EN ESTE MUNICIPIO'
                 },
                 tooltip: {
                     pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
@@ -120,7 +120,7 @@ $cnx=conectar();
                         }
                         },
                     title: {
-                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA EN ESTE MUNICIPIO'
+                        text: 'TOTAL ACUMULADO CANDIDATO ASAMBLEISTA POBLACION EN ESTE MUNICIPIO'
                       },
                       subtitle: {
                         text: 'Partidos politicos participantes'
@@ -240,11 +240,7 @@ $cnx=conectar();
 
     </head>
 <body>
-<div class="row">
-    <div class="col">
-    <a href="../index2.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
-    </div>
-</div>
+  
 <div class="container">
     <figure class="highcharts-figure">
     <div id="dona"></div>
@@ -264,10 +260,6 @@ $cnx=conectar();
     </figure>
 </div>
 <br><br>
-<div class="row">
-    <div class="col">
-    <a href="../index2.php" class="btn btn-block btn-danger"><i class="glyphicon glyphicon-circle-arrow-left"></i> VOLVER A INICIO</a>  
-    </div>
-</div>
+  
 </body>
 </html>
