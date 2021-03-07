@@ -120,7 +120,7 @@ $cnx=conectar();
                         }
                         },
                     title: {
-                        text: 'TOTAL ACUMULADO CANDIDATO CONCEJAL(A) EN ESTE MUNICIPIO'
+                        text: 'TOTAL ACUMULADO CANDIDATO CONCEJAL EN ESTE MUNICIPIO'
                       },
                       subtitle: {
                         text: 'Partidos politicos participantes'
