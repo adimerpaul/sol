@@ -35,7 +35,7 @@ if($_SESSION['usr']!="")
 			    <div class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
 					<table class="table responsive-utilities table-bordered table-hover">
                         <tr>
-                            <th id='th2'>#</th><th id='th2'>CARNET IDENTIDAD</th><th id='th2'>NOMBRE COMPLETO</th><th id='th2'>ID FILIAL</th><th id='th2'>PSW</th>
+                            <th id='th2'>#</th><th id='th2'>NOMBRE</th><th id='th2'>USUARIO</th><th id='th2'>PSW</th><th id='th2'>CEL</th>
                             <?php 
                             if ($_SESSION['usr']=='FJR065') {
                              ?>
@@ -48,7 +48,7 @@ if($_SESSION['usr']!="")
                         </tr>
                         <?php
                         }
-                        $filial=mysqli_query($cnx,"SELECT ci,nombre,paterno,materno,cel,usuario FROM filial WHERE ci!=7403044"); 
+                        $filial=mysqli_query($cnx,"SELECT f.nombre,f.usuario,f.cel,f.cel,r.recinto FROM filial f,recinto r WHERE f.idrecinto=r.idrecinto AND ci!=7403044"); 
                         $n=0;
                         while ($ffilial=mysqli_fetch_array($filial)) {
                             $n=$n+1;
@@ -56,9 +56,10 @@ if($_SESSION['usr']!="")
                                 echo "<tr>
                                     <td id='th'>$n</td>
                                     <td id='th'>$ffilial[0]</td>
-                                    <td id='th'>$nombrecompleto</td>
-                                    <td id='th'>$ffilial[5]</td>
-                                    <td id='th'>SOL@$ffilial[4]</td>";
+                                    <td id='th'>$ffilial[1]</td>
+                                    <td id='th'>SOLORURO</td>
+                                    <td id='th'>$ffilial[3]</td>
+                                    <td id='th'>$ffilial[4]</td>";
                                     if ($_SESSION['usr']=='FJR065') {
                                         echo "<td id='th'><a href='Eliminarfilial.php?ci=$ffilial[0]' class='btn-danger btn-sm'>Eliminar</a></td>";
                                         echo "<td id='th'><a href='Formularioeditarfilial.php?ci=$ffilial[0]' class='btn-success btn-sm'>Editar</a></td></tr>";
