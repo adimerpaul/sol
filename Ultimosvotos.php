@@ -131,7 +131,7 @@ if($_SESSION['usr']!="")
                                 <th>Recinto-Mesa</th>
                                 <th>Tipo votacion</th>
                                 <th>Imagen</th>
-                                <th>Id</th>
+                                <th>Id</th> 
                                 <th>Opciones</th>
                             </tr>
                             </thead>
@@ -212,7 +212,8 @@ if($_SESSION['usr']!="")
                                 r.descripcion,
                                 '',
                                 r.idvotacion,
-                                '<button class="Mybtn btn btn-danger">Eliminar <i class="fa fa-times-circle"></i></button>'
+                                '<button class="Mybtn btn btn-danger">Eliminar <i class="fa fa-times-circle"></i></button>'+
+                                '<a class="btn btn-primary" href="Vervotacionalcalde.php?idvotacion=$fconsultaalcalde[0]&idmesa=$idmesa&idrecinto=$idrecinto&tipo=1">VER VOTACION</a>'
                             ] ).draw( false );
                         })
                     }
@@ -220,7 +221,6 @@ if($_SESSION['usr']!="")
             }
 
         });
-
         function myFunction() {
             setInterval(function(){
                 // console.log("Hello");
@@ -254,7 +254,8 @@ if($_SESSION['usr']!="")
                                 r.descripcion,
                                 ima,
                                 'Votacion #' + r.idvotacion,
-                                '<button class="Mybtn btn btn-danger">Eliminar <i class="fa fa-times-circle"></i></button>'
+                                '<button class="Mybtn btn btn-danger">Eliminar <i class="fa fa-times-circle"></i></button>'+
+                                '<a class="btn btn-primary" href="Vervotacionalcalde.php?idvotacion='+r.idvotacion+'&idmesa='+r.idmesa+'&idrecinto='+r.idrecinto+'&tipo='+r.idtipocandidatura+'">VER VOTACION</a>'
                             ] ).draw( false );
                         })
                     }
