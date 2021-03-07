@@ -75,7 +75,7 @@ history.forward()
 
             <div class="custom-input-file">
                 <br><br>
-            <input type="file" id="seleccionArchivos" class="input-file" name="archivo" value="Elegir imagen..." accept="image/*" required/>
+            <input type="file" id="seleccionArchivos" class="input-file" name="archivo" value="Elegir imagen..." accept="image/*" capture required/>
             <i class="fa fa-camera" aria-hidden="true"></i>
             <br><h3>PASO 1 <br>SELECCIONAR FOTO</h3>
             <i class="fa fa-search"></i>
