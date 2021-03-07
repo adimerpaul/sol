@@ -59,18 +59,25 @@ if($_SESSION['usr']!="")
 				<hr class="colorgraph">
 				<div class="row">
 					<div class="col-xs-10 col-sm-4 col-md-4">
+
 						<div class="form-group">
-						<?php
-							$provincia =mysqli_query($cnx,"SELECT * FROM provincia");
-							?>
-							<select onchange="mostrarSugerencia(this.value)" name="provincia" id="provincia" class="form-control input-lg" tabindex="1">
-							<option value='0'> Elija una provincia</option>
-							<?php
-								    while ($fprovincia = mysqli_fetch_array($provincia)) {
-							    	echo '<option value="'.$fprovincia[0].'">'.$fprovincia[1].'</option>';
-							        };
-							?>
-							</select>
+                            <?php
+                            if ($_SESSION['usr']=='FJR065') {
+                                ?>
+                                <select onchange="mostrarSugerencia(this.value)" name="provincia" id="provincia" class="form-control input-lg" tabindex="1">
+                                    <option value='0'> Elija una provincia</option>
+                                    <?php
+                                    $provincia = mysqli_query($cnx, "SELECT * FROM provincia");
+                                    while ($fprovincia = mysqli_fetch_array($provincia)) {
+                                        echo '<option value="' . $fprovincia[0] . '">' . $fprovincia[1] . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                                <?php
+                            }else{
+                                echo "<div style='background: red;color: white'>  Porfavor las mesas de habilitaran desde medio dia</div>";
+                            }
+                            ?>
 						</div>
 					</div>
 					<div class="col-xs-12 col-sm-8 col-md-8">
