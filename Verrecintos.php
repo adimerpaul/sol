@@ -60,8 +60,8 @@ if($_SESSION['usr']!="")
                                 <td id='th'>$frecintos[1]</td>
                                 <th id='th'>$frecintos[2]</th>";
                                 if ($_SESSION['usr']=='FJR065') {
-                                    echo "<td id='th'><a href='Eliminarrecinto.php?id=$frecintos[3]' class='btn-danger btn-sm'>Eliminar</a></td>";
-                                    echo "<td id='th'><a href='Formularioeditarrecinto.php?id=$frecintos[3]' class='btn-success btn-sm'>Editar</a></td></tr>";
+//                                    echo "<td id='th'><a href='Eliminarrecinto.php?id=$frecintos[3]' class='btn-danger btn-sm'>Eliminar</a></td>";
+//                                    echo "<td id='th'><a href='Formularioeditarrecinto.php?id=$frecintos[3]' class='btn-success btn-sm'>Editar</a></td></tr>";
                                 }
                                 else{
                                     echo"</tr>";

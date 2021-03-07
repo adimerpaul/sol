@@ -61,8 +61,8 @@ if($_SESSION['usr']!="")
                                     <td id='th'>$ffilial[3]</td>
                                     <td id='th'>$ffilial[4]</td>";
                                     if ($_SESSION['usr']=='FJR065') {
-                                        echo "<td id='th'><a href='Eliminarfilial.php?ci=$ffilial[0]' class='btn-danger btn-sm'>Eliminar</a></td>";
-                                        echo "<td id='th'><a href='Formularioeditarfilial.php?ci=$ffilial[0]' class='btn-success btn-sm'>Editar</a></td></tr>";
+//                                        echo "<td id='th'><a href='Eliminarfilial.php?ci=$ffilial[0]' class='btn-danger btn-sm'>Eliminar</a></td>";
+//                                        echo "<td id='th'><a href='Formularioeditarfilial.php?ci=$ffilial[0]' class='btn-success btn-sm'>Editar</a></td></tr>";
                                     }
                                     else{
                                         echo"</tr>";
