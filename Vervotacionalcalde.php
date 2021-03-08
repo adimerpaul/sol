@@ -98,6 +98,8 @@ if($_SESSION['usr']!="")
         <?php  
         if ($_SESSION['usr']=='FJR065') {
         ?>
+
+            <br>
                     <div class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3" >
                     <a <?php echo "href='grafics/GraficoAlcaldeMesa.php?idmesa=$idmesa'";?> class="btn btn-large btn-success"> <i class="fa fa-signal"></i> Ver Gráfico Estadístico</a>
                     </div>
@@ -105,6 +107,18 @@ if($_SESSION['usr']!="")
         }
         ?>
                 </form>
+                <?php
+                if ($_SESSION['usr']=='FJR065') {
+                    ?>
+                        <form action="Registrofoto.php" enctype="multipart/form-data"  method="POST">
+                            <input type='hidden' name='idvotacion' value='<?php echo $_GET['idvotacion'];?>'>
+                            <input type='hidden' name='idrecinto' value='<?php echo $_GET['idrecinto'];?>'>
+                            <input name="archivo" type="file" />
+                            <input type="submit" value="Subir archivo" />
+                        </form>
+                    <?php
+                }
+                ?>
             </div>
         </div>
         <hr class="colorgraph">
