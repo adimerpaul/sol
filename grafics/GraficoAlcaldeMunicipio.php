@@ -126,7 +126,7 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
                     }
                 },
                 title: {
-                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO AL <?=number_format ($porcentaje,2)?>'
+                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO AL <?=number_format ($porcentaje,2)?> %'
                 },
                 tooltip: {
                     pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
