@@ -16,7 +16,12 @@ $cnx=conectar();
         <link href="../css/bootstrap.min.css" rel="stylesheet" />
         <link href="../css/style.css" rel="stylesheet" />
         <link href="../css/cubeportfolio.min.css" rel="stylesheet" />
-
+<?php
+$idrecinto=$_GET['idrecinto'];
+$recinto=mysqli_query("SELECT * FROM recinto WHERE idrecinto=$idrecinto");
+$frecinto=mysqli_fetch_array($recinto);
+$nombrerecinto=$frecinto[4];
+?>
 <script type="text/javascript">
     $(function () {
         $(document).ready(function () {
@@ -30,7 +35,7 @@ $cnx=conectar();
                     }
                 },
                 title: {
-                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE RECINTO'
+                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN EL RECINTO: "<?=$nombrerecinto?>" '
                 },
                 subtitle: {
                     text: 'Partidos politicos participantes'
@@ -43,7 +48,7 @@ $cnx=conectar();
                 },
                     xAxis: {
                         categories: [<?php
-                        $idrecinto=$_GET['idrecinto'];
+                        
                         $cn=mysqli_query($cnx,"SELECT pp.descripcion
                         FROM detallevotacion dv, votacion v, partidopolitico pp
                         WHERE v.idvotacion = dv.idvotacion
