@@ -18,7 +18,7 @@ $cnx=conectar();
         <link href="../css/cubeportfolio.min.css" rel="stylesheet" />
 <?php
 $idrecinto=$_GET['idrecinto'];
-$recinto=mysqli_query("SELECT * FROM recinto WHERE idrecinto=$idrecinto");
+$recinto=mysqli_query($cnx,"SELECT * FROM recinto WHERE idrecinto=$idrecinto");
 $frecinto=mysqli_fetch_array($recinto);
 $nombrerecinto=$frecinto[4];
 ?>

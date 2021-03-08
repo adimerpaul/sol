@@ -16,7 +16,12 @@ $cnx=conectar();
         <link href="../css/bootstrap.min.css" rel="stylesheet" />
         <link href="../css/style.css" rel="stylesheet" />
         <link href="../css/cubeportfolio.min.css" rel="stylesheet" />
-
+<?php
+$idrecinto=$_GET['idrecinto'];
+$recinto=mysqli_query($cnx,"SELECT * FROM recinto WHERE idrecinto=$idrecinto");
+$frecinto=mysqli_fetch_array($recinto);
+$nombrerecinto=$frecinto[4];
+?>
 <script type="text/javascript">
     $(function () {
         $(document).ready(function () {
