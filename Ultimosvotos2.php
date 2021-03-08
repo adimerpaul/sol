@@ -165,7 +165,7 @@ if($_SESSION['usr']!="")
                                     <td>".$fd['recinto']." #".$fd['nummesa']."</td>
                                     <td>".$fd['descripcion']."</td>
                                     <td>$foto</td>
-                                    <td>".$fd['idvotacion']."</td>
+                                    <td>id=".$fd['idvotacion']."</td>
                                     <td>".$fd['idtipocandidatura']."</td>
                                     <td><a href='EliminarVoto2.php?id=".$fd['idvotacion']."'>Eliminar</a></td>
                                 </tr>";
