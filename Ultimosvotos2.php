@@ -162,7 +162,7 @@ if($_SESSION['usr']!="")
                                     <td>".$fd['usuario']."</td>
                                     <td>".$fd['nombre']."</td>
                                     <td>".$fd['cel']."</td>
-                                    <td>".$fd['recinto']." ".$fd['nummesa']."</td>
+                                    <td>".$fd['recinto']." #".$fd['nummesa']."</td>
                                     <td>".$fd['descripcion']."</td>
                                     <td>$foto</td>
                                     <td>".$fd['idvotacion']."</td>
