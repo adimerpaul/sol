@@ -2,6 +2,36 @@
 session_start();
 include ("../Conexion.php");
 $cnx=conectar();
+
+$idmunicipio=$_GET['idmunicipio'];
+$cn=mysqli_query($cnx,"SELECT COUNT(*) as cantidad
+FROM recinto r2 INNER JOIN mesa m ON m.idrecinto =r2.idrecinto 
+WHERE r2.idmunicipio =$idmunicipio");
+$c=0;
+while($fd=mysqli_fetch_array($cn))
+{
+    $cantidadtotal=$fd[0];
+};
+$cn=mysqli_query($cnx,"SELECT COUNT(*) as cantidad
+FROM recinto r2 INNER JOIN mesa m ON m.idrecinto =r2.idrecinto 
+WHERE r2.idmunicipio =$idmunicipio");
+$c=0;
+while($fd=mysqli_fetch_array($cn))
+{
+    $cantidadtotal=$fd[0];
+};
+
+$cn=mysqli_query($cnx,"SELECT COUNT(*) as cantidad
+FROM recinto r2 INNER JOIN mesa m ON m.idrecinto =r2.idrecinto 
+WHERE r2.idmunicipio =$idmunicipio
+AND r2.idrecinto IN (SELECT idrecinto FROM votacion v WHERE v.idtipocandidatura=1)");
+$c=0;
+while($fd=mysqli_fetch_array($cn))
+{
+    $cantidadvotada=$fd[0];
+};
+$porcentaje=($cantidadvotada/$cantidadtotal)*100
+
 ?>
 <html>
     <head>
@@ -96,7 +126,7 @@ $cnx=conectar();
                     }
                 },
                 title: {
-                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO'
+                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO AL <?=number_format ($porcentaje,2)?> %'
                 },
                 tooltip: {
                     pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
