@@ -1,4 +1,4 @@
-<?php
+f<?php
 include ("Conexion.php");
 $cnx=conectar();
 ?>
