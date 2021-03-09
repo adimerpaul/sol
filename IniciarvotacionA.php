@@ -235,9 +235,15 @@ function checknum(e) {
                                         <td id='th2'><input class='form-control input-lg inputd' type='tel' name='v$c' id='input' onkeypress='return checknum(event)'
                                         onkeyup='sumar()' value='0' id='input$c-c' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
                                         </tr>";
-
                                             }
-
+                                            echo "<tr style='background-color: $fp[3];'>
+                                        <td style='display: none;'><input type='checkbox' name='$fp[0]'checked></td>
+                                        <th id='t'>$c</th>
+                                        <th id='t'>PAPELETAS DEVUELTAS</th>
+                                        <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fp[2]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
+                                        <td id='th2'><input class='form-control input-lg inputd' type='tel' name='papeleta' id='input' onkeypress='return checknum(event)'
+                                        onkeyup='sumar()' value='0' id='' tabindex='$c' maxlength='3' max='200' min='0' autocomplete='off' required></td>
+                                        </tr>";
                                             ?>
 
                             </table>
@@ -350,7 +356,7 @@ function checknum(e) {
         });    
         if (sum<=votosmax) {
             if (isNaN(sum)) {
-                $('.cant').text('Un valor vacio!');    
+                $('.cant').text('Un valor erroneo!');    
             }else{
                 $('.cant').text(sum);
             }

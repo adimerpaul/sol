@@ -16,21 +16,22 @@ $cnx=conectar();
 </head>
 <body OnLoad="NoBack();">
 <?php
+$papeleta=$_GET['papeleta'];
+echo "$papeleta";
 $fecha=date("Y-m-d");
 $hora=date("H:i:s");
 $usuario=$_SESSION['usr'];
 $idmesa=$_GET['idmesaalca'];
 $idrecinto=$_GET['idrecintoalca'];
 $idtipocandidatura=$_GET['idtipocandidaturaalca'];
-//echo "SELECT * FROM votacion where usuario='$usuario' AND idtipocandidatura='$idtipocandidatura' AND idmesa='$idmesa' AND idrecinto='$idrecinto' ";
-//echo "SELECT * FROM votacion where usuario='$usuario' AND idtipocandidatura='$idtipocandidatura'";
+$papeleta=$_GET['papeleta'];
 if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario' AND idtipocandidatura='$idtipocandidatura' AND idmesa='$idmesa' AND idrecinto='$idrecinto'")) {
     /* determinar el número de filas del resultado */
     $row_cnt = mysqli_num_rows($result);
     //echo "sdsd";
     if ($row_cnt==0){
         mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) 
-        VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','P','NULL')");
+        VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta')");
         $nv=mysqli_insert_id($cnx);
         $c=0;
         $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
@@ -58,7 +59,7 @@ if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario'
 }
 
 
-  echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Formulariofoto.php?nv=$nv&idrecinto=$idrecinto'>";
+  echo "<META HTTP-EQUIV='Refresh' CONTENT ='10; URL=Formulariomesa.php?nv=$nv&idrecinto=$idrecinto'>";
   exit;
 
 ?>
