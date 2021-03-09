@@ -247,6 +247,7 @@ function checknum(e) {
                                             ?>
 
                             </table>
+                        <h2>Cantidad ingresada: <big class="cant">0</big></h2>
 
                         <button type='Submit'   name='ok' class="btn btn-lg btn-danger btnenviar">SUBIR VOTACION <i class="fa fa-paper-plane"></i></button>
 
