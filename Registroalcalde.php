@@ -25,8 +25,6 @@ $idmesa=$_GET['idmesaalca'];
 $idrecinto=$_GET['idrecintoalca'];
 $idtipocandidatura=$_GET['idtipocandidaturaalca'];
 $papeleta=$_GET['papeleta'];
-echo "INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) 
-        VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta')";
 if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario' AND idtipocandidatura='$idtipocandidatura' AND idmesa='$idmesa' AND idrecinto='$idrecinto'")) {
     /* determinar el número de filas del resultado */
 
@@ -62,7 +60,7 @@ if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario'
 }
 
 
-  echo "<META HTTP-EQUIV='Refresh' CONTENT ='10; URL=Formulariomesa.php?nv=$nv&idrecinto=$idrecinto'>";
+  echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Formulariomesa.php?nv=$nv&idrecinto=$idrecinto'>";
   exit;
 
 ?>
