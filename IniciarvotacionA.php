@@ -9,7 +9,7 @@ function mostrar(id) {
     $('.inputd').each(function(){
             $(this).val(0);
     });
-    if (id == "1") {
+    if (id == "0") {
         $("#alcalde").show();
         $("#concejal").hide();
     }
