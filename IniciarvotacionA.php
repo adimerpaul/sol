@@ -9,7 +9,7 @@ function mostrar(id) {
     $('.inputd').each(function(){
             $(this).val(0);
     });
-    if (id == "0") {
+    if (id == "1") {
         $("#alcalde").show();
         $("#concejal").hide();
     }
@@ -164,7 +164,7 @@ function checknum(e) {
 
         <div class="row">
 
-                <div id="alcalde" style="display: none;" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
+                <div id="alcalde" style="" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
                         <?php
                         echo "SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1";
                          $consultaalcalde=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1");
