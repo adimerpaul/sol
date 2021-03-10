@@ -342,7 +342,7 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
         <br>
         <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong class="votosnovalidos"><?=$votosnovalidos?> VOTOS</strong></big>
         <?php
-        $suma=$votosnovalidos+$votosnovalidos;
+        $suma=$votosnovalidos+$votosvalidos;
         $porcentaje=$suma*100;
         $porciento=$porcentaje/223133;
         ?>
