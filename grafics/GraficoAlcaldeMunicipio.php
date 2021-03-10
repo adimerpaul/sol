@@ -224,10 +224,6 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
                           depth: 65
                         }
                       },
-                    yAxis: {
-                        title: {
-                            text: ''
-                        }
                     },
                     xAxis: {
                         categories: [<?php
