@@ -61,7 +61,7 @@ if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario'
 
 }
 
-  echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Formulariomesa.php?nv=$nv&idrecinto=$idrecinto'>";
+  echo "<META HTTP-EQUIV='Refresh' CONTENT ='10; URL=Formulariomesa.php?nv=$nv&idrecinto=$idrecinto'>";
   exit;
 
 ?>
