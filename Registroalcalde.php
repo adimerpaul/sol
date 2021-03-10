@@ -17,7 +17,6 @@ $cnx=conectar();
 <body OnLoad="NoBack();">
 <?php
 $papeleta=$_GET['papeleta'];
-echo "$papeleta";
 $fecha=date("Y-m-d");
 $hora=date("H:i:s");
 $usuario=$_SESSION['usr'];
@@ -31,7 +30,7 @@ if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario'
     $row_cnt = mysqli_num_rows($result);
     //echo "sdsd";
     echo "INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) 
-        VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta";
+        VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta')";
     if ($row_cnt==0){
         mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) 
         VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta')");
