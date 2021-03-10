@@ -30,6 +30,8 @@ if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario'
 
     $row_cnt = mysqli_num_rows($result);
     //echo "sdsd";
+    echo "INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) 
+        VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta";
     if ($row_cnt==0){
         mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) 
         VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta')");
@@ -58,7 +60,6 @@ if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario'
     }
 
 }
-
 
   echo "<META HTTP-EQUIV='Refresh' CONTENT ='0; URL=Formulariomesa.php?nv=$nv&idrecinto=$idrecinto'>";
   exit;
