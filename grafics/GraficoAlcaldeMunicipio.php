@@ -346,7 +346,7 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
         $porcentaje=$suma*100;
         $porciento=$porcentaje/223133;
         ?>
-       <br> <i class="glyphicon glyphicon-remove"></i> <big>PORCENTAJE COMPUTADO: <strong class="votosnovalidos"><?=$porciento?> VOTOS</strong></big>
+       <br> <i class="glyphicon glyphicon-remove"></i> <big>PORCENTAJE COMPUTADO: <strong class="votosnovalidos"><?=$porciento?>%</strong></big>
         </center>
     </figure>
     <figure class="highcharts-figure">
