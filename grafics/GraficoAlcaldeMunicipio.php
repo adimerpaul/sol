@@ -226,7 +226,7 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
                       },
                     yAxis: {
                         title: {
-                            text: 'Cantidad de votos de 100 en 100'
+                            text: ''
                         }
                     },
                     xAxis: {
