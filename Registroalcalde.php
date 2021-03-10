@@ -33,7 +33,7 @@ if ($result = mysqli_query($cnx,"SELECT * FROM votacion where usuario='$usuario'
         VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta')";
     if ($row_cnt==0){
         mysqli_query($cnx,"INSERT INTO votacion(idmesa,idrecinto,idtipocandidatura,fecha,hora,usuario,estado,imagen) 
-        VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','$papeleta','$papeleta')");
+        VALUES($idmesa,$idrecinto,$idtipocandidatura,'$fecha','$hora','$usuario','g','$papeleta')");
         $nv=mysqli_insert_id($cnx);
         $c=0;
         $candidaturas=mysqli_query($cnx,"SELECT pp.idpartido,pp.descripcion
