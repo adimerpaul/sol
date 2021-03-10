@@ -166,6 +166,7 @@ function checknum(e) {
 
                 <div id="alcalde" style="" class="col-xs-12 col-sm-8 col-md-6 col-sm-offset-2 col-md-offset-3">
                         <?php
+                         $consultaalcalde=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1");
 
                         $numconsultaalcalde=mysqli_num_rows($consultaalcalde);
 
