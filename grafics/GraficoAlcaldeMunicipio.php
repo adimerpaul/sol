@@ -126,7 +126,7 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
                     }
                 },
                 title: {
-                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO AL <?=number_format ($porcentaje,2)?> %'
+                    text: 'TOTAL ACUMULADO CANDIDATO ALCALDE(SA) EN ESTE MUNICIPIO'
                 },
                 tooltip: {
                     pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
@@ -342,11 +342,14 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
         <br>
         <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong class="votosnovalidos"><?=$votosnovalidos?> VOTOS</strong></big>
         <?php
-        $suma=$votosnovalidos+$votosvalidos;
-        $porcentaje=$suma*100;
-        $porciento=$porcentaje/223133;
+        $porcentaje=mysqli_query($cnx,"SELECT(cantidadvoto) FROM detallevotacion");
+         while($fd=mysqli_fetch_array($porcentaje))
+            {
+                $sum=$sum+$fd[0];
+            }
+            $sum=($sum*100)/223133;
         ?>
-       <br><br><i class="glyphicon glyphicon-remove"></i> <big>PORCENTAJE COMPUTADO: <strong class="votosnovalidos"><?=$porciento?>%</strong></big>
+       <br><br><i class="glyphicon glyphicon-signal"></i> <big>AL <?=number_format ($sum,2)?> %:</big>
         </center>
         <br><br>
     </figure>
@@ -356,6 +359,7 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
         <i class="glyphicon glyphicon-ok"></i> <big>VOTOS VALIDOS: <strong class="votosvalidos"><?=$votosvalidos?> VOTOS</strong></big>
         <br>
         <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong class="votosnovalidos"><?=$votosnovalidos?> VOTOS</strong></big>
+        <br>
         </center>
     </figure>
 </div>
