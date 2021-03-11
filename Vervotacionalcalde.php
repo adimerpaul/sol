@@ -70,7 +70,7 @@ if($_SESSION['usr']!="")
                             WHERE v.idvotacion=dv.idvotacion
                             AND dv.idpartido=pp.idpartido
                             AND v.idvotacion=$fconsultaalcalde[0]
-                            AND pp.idpartido IN (8,18)
+                           
                             ORDER BY dv.iddetallevoto");
                             ?>
                     <label><strong><big>Detalle de votos para ALCADE(SA)<strong></big></label>
