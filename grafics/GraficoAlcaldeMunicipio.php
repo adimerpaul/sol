@@ -336,7 +336,7 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
  <header>
 <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
 © 2021 Copyright:
-<a class="text-dark" href=" ">Ing. Flores Jaillita Reynaldo; Ing. Chambi Ajata Adimer; Ing. Lopez Gutierrez Alejandro</a>
+<a class="text-dark" href=" "><big>Ing. Flores Jaillita Reynaldo; Ing. Chambi Ajata Adimer; Ing. Lopez Gutierrez Alejandro</big></a>
 </div>
  </header>
 <div class="container">
@@ -362,8 +362,7 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
 <br><br>
 <footer>
 <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
-© 2021 Copyright:
-<a class="text-dark" href=" ">Ing. Flores Jaillita Reynaldo; Ing. Chambi Ajata Adimer; Ing. Lopez Gutierrez Alejandro</a>
+<a class="text-dark" href=" "><big>Ing. Flores Jaillita Reynaldo; Ing. Chambi Ajata Adimer; Ing. Lopez Gutierrez Alejandro</big></a>
 </div>
 </footer>
 </body>
