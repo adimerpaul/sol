@@ -333,7 +333,12 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
 
     </head>
 <body>
- 
+ <header>
+<div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
+© 2021 Copyright:
+<a class="text-dark" href=" ">Ing. Flores Jaillita Reynaldo; Ing. Chambi Ajata Adimer; Ing. Lopez Gutierrez Alejandro</a>
+</div>
+ </header>
 <div class="container">
     <figure class="highcharts-figure">
     <div id="dona"></div>
@@ -355,6 +360,11 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
     </figure>
 </div>
 <br><br>
- 
+<footer>
+<div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
+© 2021 Copyright:
+<a class="text-dark" href=" ">Ing. Flores Jaillita Reynaldo; Ing. Chambi Ajata Adimer; Ing. Lopez Gutierrez Alejandro</a>
+</div>
+</footer>
 </body>
 </html>
