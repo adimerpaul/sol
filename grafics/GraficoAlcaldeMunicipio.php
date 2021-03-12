@@ -337,19 +337,10 @@ $porcentaje=($cantidadvotada/$cantidadtotal)*100
 <div class="container">
     <figure class="highcharts-figure">
     <div id="dona"></div>
-        <center>
+        <center> CONTEO AL 100% DE ACTAS COMPUTADAS
         <i class="glyphicon glyphicon-ok"></i> <big>VOTOS VALIDOS: <strong class="votosvalidos"><?=$votosvalidos?> VOTOS</strong></big>
         <br>
         <i class="glyphicon glyphicon-remove"></i> <big>VOTOS NO VALIDOS: <strong class="votosnovalidos"><?=$votosnovalidos?> VOTOS</strong></big>
-        <?php
-        $porcentaje=mysqli_query($cnx,"SELECT(cantidadvoto) FROM detallevotacion");
-         while($fd=mysqli_fetch_array($porcentaje))
-            {
-                $sum=$sum+$fd[0];
-            }
-            $sum=($sum*100)/223133;
-        ?>
-       <br><br><i class="glyphicon glyphicon-signal"></i> <big>AL <?=number_format ($sum,2)?> %:</big>
         </center>
         <br><br>
     </figure>
