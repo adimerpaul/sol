@@ -94,7 +94,7 @@ if($_SESSION['usr']!="")
                             $fnum=mysqli_fetch_array($nummesa);
                             $votoemitido=$fnum[3]-$fconsultaalcalde[8];
                             ?>
-                        <h1><?php echo "$votoemitido"; ?></h1>
+                        <h1>Voto emitido: <?php echo "$votoemitido"; ?></h1>
                         </center>
                     </div>
 
