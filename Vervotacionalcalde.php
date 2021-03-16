@@ -89,7 +89,7 @@ if($_SESSION['usr']!="")
                     </table>
                     <div>
                         <center>
-                        <h1>ACTAS DEVUELTAS: <?php echo "$fconsultaalcalde[7] Actas"; ?></h1>
+                        <h1>ACTAS DEVUELTAS: <?php echo "$fconsultaalcalde[8] Actas"; ?></h1>
                         </center>
                     </div>
 
