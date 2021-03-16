@@ -89,9 +89,7 @@ if($_SESSION['usr']!="")
                     </table>
                     <div>
                         <center>
-                            <a href="<?=$img?>">
-                                <img src="<?=$img?>" alt="Foto del voto" width="250">
-                            </a>
+                        <h1>ACTAS DEVUELTAS: <?php echo "$fconsultaalcalde[7] Actas"; ?></h1>
                         </center>
                     </div>
 
