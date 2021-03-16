@@ -89,7 +89,12 @@ if($_SESSION['usr']!="")
                     </table>
                     <div>
                         <center>
-                        <h1>PAPELETAS DEVUELTAS: <?php echo "$fconsultaalcalde[8] Papeletas"; ?></h1>
+                            <?php
+                            $nummesa=mysqli_query($cnx,"SELECT * FROM mesa WHERE idmesa=$fconsultaalcalde[1]");
+                            $fnum=mysqli_fetch_array($nummesa);
+                            $votoemitido=$fnum[3]-$fconsultaalcalde[8];
+                            ?>
+                        <h1><?php echo "$votoemitido"; ?></h1>
                         </center>
                     </div>
 
