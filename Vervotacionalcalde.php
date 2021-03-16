@@ -63,7 +63,6 @@ if($_SESSION['usr']!="")
                 <form method="POST" class="form-horizontal form-label-left" enctype="multipart/form-data">
                     <?php
                     $consultaalcalde=mysqli_query($cnx,"SELECT * FROM votacion WHERE idmesa=$idmesa AND idrecinto=$idrecinto AND idtipocandidatura=1");
-
                     $fconsultaalcalde=mysqli_fetch_array($consultaalcalde);
                     $img=$fconsultaalcalde[8];
                         $votos=mysqli_query($cnx,"SELECT pp.descripcion,pp.logo,dv.cantidadvoto,pp.color FROM votacion v,detallevotacion dv, partidopolitico pp
@@ -79,6 +78,7 @@ if($_SESSION['usr']!="")
                     </tr>
                     <?php  
                         while ($fvotos=mysqli_fetch_array($votos)) {
+
                             echo "<tr style='background-color: $fvotos[3];'>
                                 <th id='t'>$fvotos[0]</th>
                                 <td><br><img style='max-width: 80px; height: 110px;' src='imgpp/$fvotos[1]' class='img-fluid img-thumbnail' alt='Responsive image'/></td>
@@ -95,6 +95,7 @@ if($_SESSION['usr']!="")
                             $votoemitido=$fnum[3]-$fconsultaalcalde[8];
                             ?>
                         <h1>Voto emitido: <?php echo "$votoemitido"; ?></h1>
+                        <h1>Papeleta devuelta: <?php echo "$fconsultaalcalde[8]"; ?></h1>
                         </center>
                     </div>
 
