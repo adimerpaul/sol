@@ -53,4 +53,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function recintos()
+    {
+        return $this->belongsToMany(\App\Models\Recinto::class, 'recinto_user')
+            ->withTimestamps();
+    }
 }

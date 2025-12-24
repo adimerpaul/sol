@@ -23,12 +23,26 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+//        $table->id();
+//        $table->string('name')->nullable();
+//        $table->string('username')->nullable();
+//        $table->string('role')->default('Usuario');
+//        $table->string('avatar')->default('default.png');
+//        $table->string('email')->nullable();
+//        $table->timestamp('email_verified_at')->nullable();
+//        $table->string('password');
+//        $table->rememberToken();
+//        $table->softDeletes();
+//        $table->timestamps();
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'username' => fake()->unique()->userName(),
+            'role' => 'Usuario',
+            'avatar' => 'default.png',
         ];
     }
 

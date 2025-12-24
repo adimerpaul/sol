@@ -10,6 +10,7 @@ use App\Http\Controllers\LocalidadController;
 use App\Http\Controllers\RecintoController;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\PartidoController;
+use App\Http\Controllers\AdminUserRecintoController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -43,5 +44,11 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('geo/options', [PaisController::class, 'options']);
 
     Route::apiResource('partidos', PartidoController::class);
+
+    Route::get('admin/users-recintos', [AdminUserRecintoController::class, 'users']);
+    Route::get('admin/recintos-oruro', [AdminUserRecintoController::class, 'recintosOruro']);
+    Route::get('admin/recintos-no-asignados', [AdminUserRecintoController::class, 'recintosNoAsignados']);
+    Route::put('admin/users/{user}/recintos', [AdminUserRecintoController::class, 'sync']);
+
 
 });

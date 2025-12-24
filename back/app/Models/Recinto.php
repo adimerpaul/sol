@@ -31,4 +31,9 @@ class Recinto extends Model
     {
         return $this->hasMany(Mesa::class, 'recinto_id');
     }
+    public function users()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'recinto_user')
+            ->withTimestamps();
+    }
 }

@@ -27,6 +27,8 @@ class DatabaseSeeder extends Seeder
             'email'    => '',
             'password' => bcrypt('admin123Admin'), // hash
         ]);
+//        crear 10 usuario falseos
+        User::factory(10)->create();
 
         // --- Permisos básicos
 //        $permisos = [
