@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('paises', function (Blueprint $table) {
             $table->id();
-            $table->integer('id_original');
+            $table->integer('id_original')->nullable();
             $table->string('nombre', 100);
 
             $table->timestamps();

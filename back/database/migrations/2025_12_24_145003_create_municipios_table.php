@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('municipios', function (Blueprint $table) {
             $table->id();
-            $table->integer('id_original');
+            $table->integer('id_original')->nullable();
             $table->foreignId('provincia_id')->constrained('provincias');
             $table->string('nombre', 100);
 
