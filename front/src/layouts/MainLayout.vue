@@ -119,6 +119,7 @@
         </q-item>
 
         <!-- Usuarios -->
+<!--        v-if="canPermission('Usuarios')"-->
         <q-item
           dense
           to="/usuarios"
@@ -127,13 +128,22 @@
           class="menu-item"
           active-class="menu-active"
           v-close-popup
-          v-if="canPermission('Usuarios')"
+
         >
           <q-item-section avatar>
             <q-icon name="people" class="text-white"/>
           </q-item-section>
           <q-item-section>
             <q-item-label class="text-white">Usuarios</q-item-label>
+          </q-item-section>
+        </q-item>
+<!--        partidos-->
+        <q-item dense to="/partidos" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+          <q-item-section avatar>
+            <q-icon name="how_to_reg" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Partidos</q-item-label>
           </q-item-section>
         </q-item>
 
