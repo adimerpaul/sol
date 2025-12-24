@@ -9,6 +9,7 @@ use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\LocalidadController;
 use App\Http\Controllers\RecintoController;
 use App\Http\Controllers\MesaController;
+use App\Http\Controllers\PartidoController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -40,4 +41,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 
 // helpers para combos (cascada)
     Route::get('geo/options', [PaisController::class, 'options']);
+
+    Route::apiResource('partidos', PartidoController::class);
+
 });

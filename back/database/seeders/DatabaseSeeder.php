@@ -64,5 +64,9 @@ class DatabaseSeeder extends Seeder
             $sql = file_get_contents($path);
             DB::unprepared($sql);
         }
+
+        $this->call([
+            PartidoSeeder::class,
+        ]);
     }
 }
