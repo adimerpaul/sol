@@ -1,22 +1,19 @@
 <?php
 
-use App\Http\Controllers\AlmacenCompraController;
-use App\Http\Controllers\AlmacenController;
-use App\Http\Controllers\AlmacenInsumoMovimientoController;
-use App\Http\Controllers\CierreCajaController;
-use App\Http\Controllers\CompraController;
-use App\Http\Controllers\ProductoController;
-use App\Http\Controllers\ReporteController;
-use App\Http\Controllers\SaleController;
-use App\Http\Controllers\VentaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PaisController;
+use App\Http\Controllers\DepartamentoController;
+use App\Http\Controllers\ProvinciaController;
+use App\Http\Controllers\MunicipioController;
+use App\Http\Controllers\LocalidadController;
+use App\Http\Controllers\RecintoController;
+use App\Http\Controllers\MesaController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
 //})->middleware('auth:sanctum');
 
-//login
 Route::post('/login', [App\Http\Controllers\UserController::class, 'login']);
 Route::middleware('auth:sanctum')->group(callback: function () {
     Route::post('/logout', [App\Http\Controllers\UserController::class, 'logout']);
@@ -33,17 +30,14 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('/users/{user}/permissions', [App\Http\Controllers\UserController::class, 'getPermissions']);
     Route::put('/users/{user}/permissions', [App\Http\Controllers\UserController::class, 'syncPermissions']);
 
-    Route::get('/tmdb/search', [\App\Http\Controllers\PeliculaController::class, 'tmdbSearch']);
-    Route::get('/tmdb/movie/{tmdbId}', [\App\Http\Controllers\PeliculaController::class, 'tmdbDetail']);
-    Route::get('/tmdb/movie/{tmdbId}/videos', [\App\Http\Controllers\PeliculaController::class, 'tmdbVideos']);
+    Route::apiResource('paises', PaisController::class);
+    Route::apiResource('departamentos', DepartamentoController::class);
+    Route::apiResource('provincias', ProvinciaController::class);
+    Route::apiResource('municipios', MunicipioController::class);
+    Route::apiResource('localidades', LocalidadController::class);
+    Route::apiResource('recintos', RecintoController::class);
+    Route::apiResource('mesas', MesaController::class);
 
-    Route::get('/peliculas', [\App\Http\Controllers\PeliculaController::class, 'index']);
-    Route::get('/peliculas/{pelicula}', [\App\Http\Controllers\PeliculaController::class, 'show']);
-    Route::post('/peliculas', [\App\Http\Controllers\PeliculaController::class, 'store']);
-    Route::put('/peliculas/{pelicula}', [\App\Http\Controllers\PeliculaController::class, 'update']);
-    Route::delete('/peliculas/{pelicula}', [\App\Http\Controllers\PeliculaController::class, 'destroy']);
-
-    // Guardar desde TMDB (seleccionas una y la guardas)
-    Route::post('/peliculas/from-tmdb', [\App\Http\Controllers\PeliculaController::class, 'storeFromTmdb']);
-
+// helpers para combos (cascada)
+    Route::get('geo/options', [PaisController::class, 'options']);
 });
