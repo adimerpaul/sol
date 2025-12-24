@@ -13,72 +13,73 @@
         </div>
       </div>
 
-      <div class="col-12 col-md-auto row items-center q-gutter-sm justify-end">
+      <div class="col-12">
         <!-- FILTROS (SELECTS) -->
-        <div v-if="selects && selects.length" class="row items-center q-gutter-sm">
-          <q-select
-            v-for="s in selects"
-            :key="s.key"
+        <div v-if="selects && selects.length" class="row q-col-gutter-sm items-center">
+          <div class="col-12 col-md-3" v-for="s in selects" :key="s.key">
+            <q-select
+              :model-value="localFilters[s.key]"
+              :options="getSelectOptions(s)"
+              :option-label="s.optionLabel || 'label'"
+              :option-value="s.optionValue || 'value'"
+              emit-value
+              map-options
+              dense
+              outlined
+              :label="s.label"
+              :disable="!!s.disable"
+              clearable
+              use-input
+              input-debounce="0"
+              @filter="(val, update, abort) => onSelectFilter(s, val, update, abort)"
+              @update:model-value="v => onSelectChange(s, v)"
+            >
+              <template v-slot:prepend>
+                <q-icon v-if="s.icon" :name="s.icon" class="text-grey-7" />
+              </template>
+            </q-select>
+          </div>
 
-            :model-value="localFilters[s.key]"
-            :options="getSelectOptions(s)"
+          <div class="col-12 col-md-3">
+            <q-input
+              v-model="search"
+              dense
+              outlined
+              debounce="400"
+              placeholder="Buscar..."
+              @update:model-value="onSearch"
+              clearable
+            >
+              <template v-slot:prepend>
+                <q-icon name="search" class="text-grey-7" />
+              </template>
+            </q-input>
+          </div>
 
-            :option-label="s.optionLabel || 'label'"
-            :option-value="s.optionValue || 'value'"
+          <div class="col-6 col-md-2">
+            <q-btn
+              outline
+              color="primary"
+              icon="refresh"
+              label="Refrescar"
+              no-caps
+              :loading="loading"
+              @click="load"
+              class="full-width"
+            />
+          </div>
 
-            emit-value
-            map-options
-            dense
-            outlined
-            :label="s.label"
-            :disable="!!s.disable"
-            style="min-width: 180px"
-
-            clearable
-            use-input
-            input-debounce="0"
-            @filter="(val, update, abort) => onSelectFilter(s, val, update, abort)"
-            @update:model-value="v => onSelectChange(s, v)"
-          >
-            <template v-slot:prepend>
-              <q-icon v-if="s.icon" :name="s.icon" class="text-grey-7" />
-            </template>
-          </q-select>
+          <div class="col-6 col-md-2">
+            <q-btn
+              color="positive"
+              icon="add"
+              label="Nuevo"
+              no-caps
+              @click="openCreate"
+              class="full-width"
+            />
+          </div>
         </div>
-
-        <!-- BUSCAR -->
-        <q-input
-          v-model="search"
-          dense
-          outlined
-          debounce="400"
-          placeholder="Buscar..."
-          style="width: 240px"
-          @update:model-value="onSearch"
-          clearable
-        >
-          <template v-slot:prepend>
-            <q-icon name="search" class="text-grey-7" />
-          </template>
-        </q-input>
-
-        <q-btn
-          outline
-          color="primary"
-          icon="refresh"
-          label="Refrescar"
-          no-caps
-          :loading="loading"
-          @click="load"
-        />
-
-        <q-btn
-          color="positive"
-          icon="add"
-          label="Nuevo"
-          no-caps
-          @click="openCreate"
-        />
       </div>
     </q-card-section>
 
@@ -115,7 +116,7 @@
 
     <q-separator />
 
-    <!-- FOOTER: perPage + pagination -->
+    <!-- FOOTER -->
     <q-card-section class="row items-center justify-between">
       <div class="row items-center q-gutter-sm">
         <q-select
@@ -125,6 +126,7 @@
           outlined
           label="Por página"
           style="width: 140px"
+          @update:model-value="onPerPage"
         />
         <div class="text-caption text-grey-7">
           Total: {{ total }}
@@ -137,6 +139,7 @@
         max-pages="8"
         boundary-numbers
         direction-links
+        @update:model-value="load"
       />
     </q-card-section>
 
@@ -168,37 +171,41 @@ export default {
   data () {
     return {
       loading: false,
+
       rows: [],
+      search: '',
+
+      // backend pagination
       page: 1,
       perPage: 10,
-      search: '',
-      localFilters: {},
+      meta: {
+        total: 0,
+        current_page: 1,
+        last_page: 1,
+        per_page: 10
+      },
 
-      // aquí guardamos las opciones filtradas por cada select (cuando escribes)
+      localFilters: {},
       filteredSelectOptions: {}
     }
   },
 
   computed: {
     total () {
-      return Array.isArray(this.rows) ? this.rows.length : 0
+      return Number(this.meta?.total || 0)
     },
 
     pages () {
-      const p = Math.ceil(this.total / this.perPage)
-      return p > 0 ? p : 1
+      return Number(this.meta?.last_page || 1) || 1
     },
 
+    // ahora ya viene paginado del backend (NO slice)
     paginatedRows () {
-      if (!Array.isArray(this.rows)) return []
-      const start = (this.page - 1) * this.perPage
-      return this.rows.slice(start, start + this.perPage)
+      return Array.isArray(this.rows) ? this.rows : []
     }
   },
 
   watch: {
-    perPage () { this.page = 1 },
-
     filters: {
       deep: true,
       immediate: true,
@@ -207,7 +214,6 @@ export default {
       }
     },
 
-    // si el padre cambia selects.options, reseteamos los filtros internos
     selects: {
       deep: true,
       handler () {
@@ -230,14 +236,17 @@ export default {
       this.load()
     },
 
-    // devuelve opciones: si hay filtradas, usa esas; si no, usa las originales
+    onPerPage () {
+      this.page = 1
+      this.load()
+    },
+
     getSelectOptions (s) {
       const key = s?.key
       if (!key) return s.options || []
       return this.filteredSelectOptions[key] || (s.options || [])
     },
 
-    // filtro real del QSelect cuando escribes
     onSelectFilter (s, val, update, abort) {
       const key = s?.key
       if (!key) return abort()
@@ -248,11 +257,8 @@ export default {
       update(() => {
         const needle = String(val || '').toLowerCase().trim()
 
-        // si está vacío, vuelve a mostrar todo
         if (!needle) {
-          this.$set
-            ? this.$set(this.filteredSelectOptions, key, options)
-            : (this.filteredSelectOptions = { ...this.filteredSelectOptions, [key]: options })
+          this.filteredSelectOptions = { ...this.filteredSelectOptions, [key]: options }
           return
         }
 
@@ -261,9 +267,7 @@ export default {
           return text.includes(needle)
         })
 
-        this.$set
-          ? this.$set(this.filteredSelectOptions, key, filtered)
-          : (this.filteredSelectOptions = { ...this.filteredSelectOptions, [key]: filtered })
+        this.filteredSelectOptions = { ...this.filteredSelectOptions, [key]: filtered }
       })
     },
 
@@ -288,18 +292,29 @@ export default {
       try {
         const params = {
           search: this.search || '',
-          ...(this.localFilters || {})
+          ...(this.localFilters || {}),
+          page: this.page,
+          per_page: this.perPage
         }
 
         const r = await this.$axios.get(this.endpoint, { params })
 
-        if (Array.isArray(r.data?.data)) this.rows = r.data.data
-        else if (Array.isArray(r.data)) this.rows = r.data
-        else this.rows = []
+        // Laravel paginate() => data + meta fields
+        this.rows = Array.isArray(r.data?.data) ? r.data.data : []
 
-        this.page = 1
+        this.meta = {
+          total: Number(r.data?.total || 0),
+          current_page: Number(r.data?.current_page || this.page || 1),
+          last_page: Number(r.data?.last_page || 1),
+          per_page: Number(r.data?.per_page || this.perPage)
+        }
+
+        // sincroniza por si el backend devuelve diferente
+        this.page = this.meta.current_page
+        this.perPage = this.meta.per_page
       } catch (e) {
         this.rows = []
+        this.meta = { total: 0, current_page: 1, last_page: 1, per_page: this.perPage }
         this.$q.notify({
           type: 'negative',
           message: e?.response?.data?.message || 'No se pudo cargar datos'
@@ -310,6 +325,20 @@ export default {
     },
 
     openCreate () {
+      // exige filtros seleccionados (pais->recinto, etc.)
+      if (this.selects && this.selects.length) {
+        for (let i = 0; i < this.selects.length; i++) {
+          const s = this.selects[i]
+          if (s.key && (!this.localFilters || !this.localFilters[s.key])) {
+            this.$q.notify({
+              type: 'warning',
+              message: `Seleccione ${s.label} antes de crear un nuevo ${this.title}`
+            })
+            return
+          }
+        }
+      }
+
       this.$q.dialog({
         title: `Nuevo ${this.title}`.trim(),
         prompt: { model: '', label: 'Nombre', isValid: v => !!String(v || '').trim() },
