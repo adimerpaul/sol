@@ -1,8 +1,8 @@
 {
   "name": "front",
   "version": "0.0.1",
-  "description": "Plaza",
-  "productName": "Plaza",
+  "description": "Resultados",
+  "productName": "Resultados",
   "author": "adimerpaul <adimer101@gmail.com>",
   "type": "module",
   "private": true,

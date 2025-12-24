@@ -55,7 +55,7 @@ export default boot(({ app, router }) => {
       return 'red'
     }
   }
-  const token = localStorage.getItem('tokenPlazaMovie')
+  const token = localStorage.getItem('tokenResultados')
   if (token) {
     app.config.globalProperties.$axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
     app.config.globalProperties.$axios.get('me').then(response => {
@@ -66,7 +66,7 @@ export default boot(({ app, router }) => {
       // useCounterStore().permissions = response.data.permissions
     }).catch(error => {
       console.log(error)
-      localStorage.removeItem('tokenPlazaMovie')
+      localStorage.removeItem('tokenResultados')
       useCounterStore().isLogged = false
       // useCounterStore().permissions = []
       useCounterStore().user = {}
