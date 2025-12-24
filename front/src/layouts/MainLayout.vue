@@ -146,6 +146,15 @@
             <q-item-label class="text-white">Partidos</q-item-label>
           </q-item-section>
         </q-item>
+<!--        { path: 'admin-user-recintos', component: () => import('pages/usuarios/AdminUserRecintos.vue'), meta: { requiresAuth: true } }-->
+        <q-item dense to="/admin-user-recintos" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+          <q-item-section avatar>
+            <q-icon name="admin_panel_settings" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Asignar Recintos</q-item-label>
+          </q-item-section>
+        </q-item>
 
         <!-- Resultados -->
         <q-item dense to="/resultados" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
