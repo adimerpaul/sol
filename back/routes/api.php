@@ -11,6 +11,7 @@ use App\Http\Controllers\RecintoController;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\PartidoController;
 use App\Http\Controllers\AdminUserRecintoController;
+use App\Http\Controllers\ResultadoMesaController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -49,6 +50,10 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('admin/recintos-oruro', [AdminUserRecintoController::class, 'recintosOruro']);
     Route::get('admin/recintos-no-asignados', [AdminUserRecintoController::class, 'recintosNoAsignados']);
     Route::put('admin/users/{user}/recintos', [AdminUserRecintoController::class, 'sync']);
+
+    Route::get('resultados/mesas-asignadas', [ResultadoMesaController::class, 'mesasAsignadas']);
+    Route::get('resultados/mesa/{mesa}', [ResultadoMesaController::class, 'showByMesa']);
+    Route::post('resultados', [ResultadoMesaController::class, 'store']);
 
 
 });

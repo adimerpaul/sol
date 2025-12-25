@@ -28,4 +28,8 @@ class Mesa extends Model
     public function municipio() { return $this->belongsTo(Municipio::class, 'municipio_id'); }
     public function localidad() { return $this->belongsTo(Localidad::class, 'localidad_id'); }
     public function recinto() { return $this->belongsTo(Recinto::class, 'recinto_id'); }
+    public function resultadoMesa()
+    {
+        return $this->hasOne(\App\Models\ResultadoMesa::class);
+    }
 }
