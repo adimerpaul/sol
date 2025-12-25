@@ -155,6 +155,15 @@
             <q-item-label class="text-white">Asignar Recintos</q-item-label>
           </q-item-section>
         </q-item>
+<!--        { path: 'resultados-mesa', component: () => import('pages/resultados/ResultadosMesa.vue'), meta: { requiresAuth: true } },-->
+        <q-item dense to="/resultados-mesa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+          <q-item-section avatar>
+            <q-icon name="assignment_turned_in" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Resultados por Mesa</q-item-label>
+          </q-item-section>
+        </q-item>
 
         <!-- Resultados -->
         <q-item dense to="/resultados" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
