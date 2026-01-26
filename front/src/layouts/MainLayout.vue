@@ -117,6 +117,15 @@
             <q-item-label class="text-white">Recintos</q-item-label>
           </q-item-section>
         </q-item>
+<!--        { path: 'admin-recintos-mapa', component: () => import('pages/geo/AdminRecintosMapa.vue'), meta: { requiresAuth: true } }-->
+        <q-item dense to="/admin-recintos-mapa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+          <q-item-section avatar>
+            <q-icon name="map" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Recintos Mapa</q-item-label>
+          </q-item-section>
+        </q-item>
 
         <!-- Usuarios -->
 <!--        v-if="canPermission('Usuarios')"-->

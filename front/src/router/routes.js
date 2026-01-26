@@ -9,7 +9,7 @@ const routes = [
       { path: 'partidos', component: () => import('pages/partidos/Partidos.vue'), meta: { requiresAuth: true } },
       { path: 'admin-user-recintos', component: () => import('pages/usuarios/AdminUserRecintos.vue'), meta: { requiresAuth: true } },
       { path: 'resultados-mesa', component: () => import('pages/resultados/ResultadosMesa.vue'), meta: { requiresAuth: true } },
-
+      { path: 'admin-recintos-mapa', component: () => import('pages/geo/AdminRecintosMapa.vue'), meta: { requiresAuth: true } }
     ]
   },
   {

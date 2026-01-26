@@ -58,6 +58,49 @@
               <template v-slot:prepend>
                 <q-icon name="table_restaurant" class="text-grey-7" />
               </template>
+<!--              tamplte option colocar color los estado relizados-->
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label :class="{'text-positive': scope.opt.label.includes('REALIZADO'), 'text-warning': scope.opt.label.includes('PENDIENTE'), 'text-grey-7': scope.opt.label.includes('SIN CARGAR')}">
+                      {{ scope.opt.label }}
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+<!--              template seleccionado-->
+<!--              <template v-slot:selected>-->
+<!--                Company:-->
+<!--                <q-chip-->
+<!--                  v-if="model"-->
+<!--                  dense-->
+<!--                  square-->
+<!--                  color="white"-->
+<!--                  text-color="primary"-->
+<!--                  class="q-my-none q-ml-xs q-mr-none"-->
+<!--                >-->
+<!--                  <q-avatar color="primary" text-color="white" :icon="model.icon" />-->
+<!--                  {{ model.label }}-->
+<!--                </q-chip>-->
+<!--                <q-badge v-else>*none*</q-badge>-->
+<!--              </template>-->
+              <template v-slot:selected>
+<!--                <q-item>-->
+<!--                  <q-item-section>-->
+<!--                    <q-item-label >-->
+<!--&lt;!&ndash;                      <pre>{{mesaId}}</pre>&ndash;&gt;-->
+<!--                    </q-item-label>-->
+<!--                  </q-item-section>-->
+<!--                </q-item>-->
+                <template v-if="mesaId" class="row items-center">
+<!--                  <q-item-section>-->
+                    <div :class="{'text-positive': mesaOptions.find(o => o.value === mesaId)?.label.includes('REALIZADO'), 'text-warning': mesaOptions.find(o => o.value === mesaId)?.label.includes('PENDIENTE'), 'text-grey-7': mesaOptions.find(o => o.value === mesaId)?.label.includes('SIN CARGAR')}">
+                      {{ mesaOptions.find(o => o.value === mesaId)?.label }}
+                    </div>
+<!--                  </q-item-section>-->
+                </template>
+<!--                <q-badge v-else>*none*</q-badge>-->
+              </template>
             </q-select>
           </div>
 
@@ -162,6 +205,14 @@
 
             <q-card v-if="foto1Preview" flat bordered class="q-mt-sm">
               <q-img :src="foto1Preview" style="height: 180px" />
+              <q-btn
+                flat
+                icon="open_in_new"
+                class="absolute-top-right q-mr-sm q-mt-sm"
+                :href="foto1Preview"
+                target="_blank"
+                rel="noopener"
+              />
             </q-card>
           </div>
 
@@ -180,6 +231,14 @@
 
             <q-card v-if="foto2Preview" flat bordered class="q-mt-sm">
               <q-img :src="foto2Preview" style="height: 180px" />
+              <q-btn
+                flat
+                icon="open_in_new"
+                class="absolute-top-right q-mr-sm q-mt-sm"
+                :href="foto2Preview"
+                target="_blank"
+                rel="noopener"
+              />
             </q-card>
           </div>
         </div>
