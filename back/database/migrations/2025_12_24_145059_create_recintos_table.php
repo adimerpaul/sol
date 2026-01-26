@@ -15,7 +15,10 @@ return new class extends Migration {
             $table->foreignId('provincia_id')->constrained('provincias');
             $table->foreignId('departamento_id')->constrained('departamentos');
             $table->foreignId('pais_id')->constrained('paises');
-
+            $table->string('distrito')->nullable();
+            $table->string('circunscripcion')->nullable();
+            $table->decimal('latitud', 10, 7)->nullable();
+            $table->decimal('longitud', 10, 7)->nullable();
             $table->string('nombre', 200);
 
             $table->timestamps();

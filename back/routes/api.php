@@ -12,6 +12,7 @@ use App\Http\Controllers\MesaController;
 use App\Http\Controllers\PartidoController;
 use App\Http\Controllers\AdminUserRecintoController;
 use App\Http\Controllers\ResultadoMesaController;
+use App\Http\Controllers\RecintoMapaController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -54,6 +55,14 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('resultados/mesas-asignadas', [ResultadoMesaController::class, 'mesasAsignadas']);
     Route::get('resultados/mesa/{mesa}', [ResultadoMesaController::class, 'showByMesa']);
     Route::post('resultados', [ResultadoMesaController::class, 'store']);
+
+    Route::get('mapas/catalogo', [RecintoMapaController::class, 'catalogo']);
+    Route::get('mapas/provincias/{provinciaId}/municipios', [RecintoMapaController::class, 'municipios']);
+    Route::get('mapas/municipios/{municipioId}/localidades', [RecintoMapaController::class, 'localidades']);
+
+    Route::get('mapas/recintos', [RecintoMapaController::class, 'recintos']);
+    Route::get('mapas/recintos/{recinto}', [RecintoMapaController::class, 'show']);
+    Route::put('mapas/recintos/{recinto}', [RecintoMapaController::class, 'update']);
 
 
 });

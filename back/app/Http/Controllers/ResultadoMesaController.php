@@ -123,9 +123,7 @@ class ResultadoMesaController extends Controller
                 $path = $actasDir . DIRECTORY_SEPARATOR . $name;
 
                 $imgManager->read($file->getPathname())
-                    ->orient()              // respeta orientación real (EXIF)
-//                        resize
-                    ->resize(600)
+                    ->scale(width: 1200)
                     ->toJpeg(85)            // solo compresión, NO tamaño
                     ->save($path);
 

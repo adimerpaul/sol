@@ -18,6 +18,10 @@ class Recinto extends Model
         'provincia_id',
         'departamento_id',
         'pais_id',
+        'distrito',
+        'circunscripcion',
+        'latitud',
+        'longitud',
         'nombre',
     ];
 
