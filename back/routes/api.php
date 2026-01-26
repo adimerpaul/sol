@@ -13,7 +13,7 @@ use App\Http\Controllers\PartidoController;
 use App\Http\Controllers\AdminUserRecintoController;
 use App\Http\Controllers\ResultadoMesaController;
 use App\Http\Controllers\RecintoMapaController;
-
+use App\Http\Controllers\EleccionesDashboardController;
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
 //})->middleware('auth:sanctum');
@@ -64,5 +64,6 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('mapas/recintos/{recinto}', [RecintoMapaController::class, 'show']);
     Route::put('mapas/recintos/{recinto}', [RecintoMapaController::class, 'update']);
 
+    Route::middleware('auth:sanctum')->get('/dashboard/elecciones/resumen', [EleccionesDashboardController::class, 'resumen']);
 
 });
