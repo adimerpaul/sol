@@ -39,7 +39,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique('mesa_id'); // UNA SOLA VEZ
+//            $table->unique('mesa_id'); // UNA SOLA VEZ
         });
     }
 
@@ -48,6 +48,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('resultado_mesas');
+        Schema::dropIfExists('resultados_mesas');
     }
 };

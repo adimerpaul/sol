@@ -51,7 +51,7 @@ class PartidoController extends Controller
                     ->orWhere('sigla', 'like', "%{$search}%")
                     ->orWhere('alcalde', 'like', "%{$search}%");
             })
-            ->orderBy('sigla')
+            ->orderBy('orden')
             ->paginate($perPage);
     }
 

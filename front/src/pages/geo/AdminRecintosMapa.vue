@@ -387,14 +387,13 @@ export default {
 
         this.$alert?.success('✅ Recinto actualizado')
         await this.loadRecintos()
+        this.saving = false
 
         // refrescar seleccionado con el nuevo data
-        const again = this.recintos.find(x => x.id === this.selected.id)
-        if (again) this.selectRecinto(again)
+        // const again = this.recintos.find(x => x.id === this.selected.id)
+        // if (again) this.selectRecinto(again)
       } catch (e) {
         this.$alert?.error(e.response?.data?.message || 'No se pudo guardar')
-      } finally {
-        this.saving = false
       }
     }
   }

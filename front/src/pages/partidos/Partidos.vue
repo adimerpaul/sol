@@ -120,7 +120,7 @@
                 />
               </div>
 
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-4">
                 <q-select
                   v-model="partido.tipo"
                   label="Tipo"
@@ -131,14 +131,14 @@
                 />
               </div>
 
-              <div class="col-12 col-md-6">
-                <q-input
-                  v-model="partido.alcalde"
-                  label="Alcalde (opcional)"
-                  dense
-                  outlined
-                />
-              </div>
+<!--              <div class="col-12 col-md-6">-->
+<!--                <q-input-->
+<!--                  v-model="partido.alcalde"-->
+<!--                  label="Alcalde (opcional)"-->
+<!--                  dense-->
+<!--                  outlined-->
+<!--                />-->
+<!--              </div>-->
 
               <!-- ICONO -->
               <div class="col-12">
@@ -225,7 +225,10 @@ export default {
         { name: 'sigla', label: 'Sigla', align: 'left', field: 'sigla' },
         { name: 'nombre', label: 'Nombre', align: 'left', field: 'nombre' },
         { name: 'tipo', label: 'Tipo', align: 'left', field: 'tipo' },
-        { name: 'alcalde', label: 'Alcalde', align: 'left', field: 'alcalde' }
+        // orden y colcoar
+        { name: 'orden', label: 'Orden', align: 'center', field: 'orden' },
+        { name: 'color', label: 'Color', align: 'center', field: 'color' }
+        // { name: 'alcalde', label: 'Alcalde', align: 'left', field: 'alcalde' }
       ]
     }
   },

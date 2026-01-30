@@ -53,13 +53,13 @@ class DatabaseSeeder extends Seeder
 //recintos_202512241454.sql
         $url = database_path('seeders/sql/');
         $files = [
-            'paises_202512241454.sql',
-            'departamentos_202512241454.sql',
-            'provincias_202512241454.sql',
-            'municipios_202512241454.sql',
-            'localidades_202512241454.sql',
-            'recintos_202512241454.sql',
-            'mesas_202512241524.sql',
+//            'paises_202512241454.sql',
+//            'departamentos_202512241454.sql',
+//            'provincias_202512241454.sql',
+//            'municipios_202512241454.sql',
+//            'localidades_202512241454.sql',
+//            'recintos_202512241454.sql',
+//            'mesas_202512241524.sql',
         ];
         foreach ($files as $file) {
             $path = $url . $file;

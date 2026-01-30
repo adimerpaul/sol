@@ -17,7 +17,9 @@ return new class extends Migration
             $table->string('nombre', 150);         // Movimiento al Socialismo
             $table->string('icono')->nullable();   // fa-solid fa-flag
             $table->string('tipo')->nullable();     // PARTIDO, AGRUPACION, INDIGENA
-            $table->string('alcalde')->nullable();
+//            $table->string('alcalde')->nullable();
+            $table->string('color', 7)->nullable(); // #FF0000
+            $table->integer('orden')->default(0);
             $table->softDeletes();
             $table->timestamps();
         });

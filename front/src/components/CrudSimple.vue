@@ -10,12 +10,14 @@
         </div>
         <div class="text-caption text-grey-7">
           Gestión y búsqueda rápida • Paginación • CRUD
+<!--          <pre>{{selects}}</pre>-->
         </div>
       </div>
 
       <div class="col-12">
         <!-- FILTROS (SELECTS) -->
         <div v-if="selects && selects.length" class="row q-col-gutter-sm items-center">
+<!--          <pre>{{selects}}</pre>-->
           <div class="col-12 col-md-3" v-for="s in selects" :key="s.key">
             <q-select
               :model-value="localFilters[s.key]"
