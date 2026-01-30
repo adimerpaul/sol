@@ -43,23 +43,9 @@
         active-color="primary"
         indicator-color="primary"
       >
-<<<<<<< HEAD
 <!--        <q-tab name="paises" icon="fa-solid fa-earth-americas" label="Países" />-->
 <!--        <q-tab name="departamentos" icon="fa-solid fa-sitemap" label="Departamentos" />-->
         <q-tab name="provincias" icon="fa-solid fa-network-wired" label="Provincias" />
-=======
-        <q-tab name="paises" icon="fa-solid fa-earth-americas" label="Países" />
-        <q-tab
-          name="departamentos"
-          icon="fa-solid fa-sitemap"
-          label="Departamentos"
-        />
-        <q-tab
-          name="provincias"
-          icon="fa-solid fa-network-wired"
-          label="Provincias"
-        />
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         <q-tab name="municipios" icon="fa-solid fa-city" label="Municipios" />
         <q-tab
           name="localidades"
@@ -88,7 +74,6 @@
 <!--        </q-tab-panel>-->
 
         <!-- ===================== DEPARTAMENTOS ===================== -->
-<<<<<<< HEAD
 <!--        <q-tab-panel name="departamentos">-->
 <!--          <crud-simple-->
 <!--            title="Departamentos"-->
@@ -101,20 +86,6 @@
 <!--            @filters-changed="() => {}"-->
 <!--          />-->
 <!--        </q-tab-panel>-->
-=======
-        <q-tab-panel name="departamentos">
-          <crud-simple
-            title="Departamentos"
-            endpoint="departamentos"
-            :columns="['ID', 'País', 'Nombre']"
-            :fields="['id', 'pais.nombre', 'nombre']"
-            :filters="departamentos.filters"
-            :selects="departamentoSelects"
-            @update:filters="(v) => (departamentos.filters = v)"
-            @filters-changed="() => {}"
-          />
-        </q-tab-panel>
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
 
         <!-- ===================== PROVINCIAS ===================== -->
         <q-tab-panel name="provincias">
@@ -199,11 +170,7 @@ export default {
 
   data() {
     return {
-<<<<<<< HEAD
       tab: 'provincias',
-=======
-      tab: "paises",
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
       loadingGeo: false,
 
       geo: {
@@ -302,7 +269,6 @@ export default {
 
     provinciaSelects() {
       return [
-<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -312,40 +278,20 @@ export default {
         //   optionValue: 'id',
         //   resets: ['departamento_id']
         // },
-=======
-        {
-          key: "pais_id",
-          label: "País",
-          icon: "fa-solid fa-earth-americas",
-          options: this.optPaises,
-          optionLabel: "nombre",
-          optionValue: "id",
-          resets: ["departamento_id"],
-        },
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         {
           key: "departamento_id",
           label: "Departamento",
           icon: "fa-solid fa-sitemap",
           options: this.optDepartamentosByPais(this.provincias.filters.pais_id),
-<<<<<<< HEAD
           optionLabel: 'nombre',
           optionValue: 'id',
           // disable: !this.provincias.filters.pais_id
         }
       ]
-=======
-          optionLabel: "nombre",
-          optionValue: "id",
-          disable: !this.provincias.filters.pais_id,
-        },
-      ];
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
     },
 
     municipioSelects() {
       return [
-<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -355,33 +301,15 @@ export default {
         //   optionValue: 'id',
         //   resets: ['departamento_id', 'provincia_id']
         // },
-=======
-        {
-          key: "pais_id",
-          label: "País",
-          icon: "fa-solid fa-earth-americas",
-          options: this.optPaises,
-          optionLabel: "nombre",
-          optionValue: "id",
-          resets: ["departamento_id", "provincia_id"],
-        },
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         {
           key: "departamento_id",
           label: "Depto",
           icon: "fa-solid fa-sitemap",
           options: this.optDepartamentosByPais(this.municipios.filters.pais_id),
-<<<<<<< HEAD
           optionLabel: 'nombre',
           optionValue: 'id',
           // disable: !this.municipios.filters.pais_id,
           resets: ['provincia_id']
-=======
-          optionLabel: "nombre",
-          optionValue: "id",
-          disable: !this.municipios.filters.pais_id,
-          resets: ["provincia_id"],
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         },
         {
           key: "provincia_id",
@@ -399,7 +327,6 @@ export default {
 
     localidadSelects() {
       return [
-<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -418,28 +345,6 @@ export default {
           optionValue: 'id',
           // disable: !this.localidades.filters.pais_id,
           resets: ['provincia_id', 'municipio_id']
-=======
-        {
-          key: "pais_id",
-          label: "País",
-          icon: "fa-solid fa-earth-americas",
-          options: this.optPaises,
-          optionLabel: "nombre",
-          optionValue: "id",
-          resets: ["departamento_id", "provincia_id", "municipio_id"],
-        },
-        {
-          key: "departamento_id",
-          label: "Depto",
-          icon: "fa-solid fa-sitemap",
-          options: this.optDepartamentosByPais(
-            this.localidades.filters.pais_id,
-          ),
-          optionLabel: "nombre",
-          optionValue: "id",
-          disable: !this.localidades.filters.pais_id,
-          resets: ["provincia_id", "municipio_id"],
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         },
         {
           key: "provincia_id",
@@ -470,7 +375,6 @@ export default {
     recintoSelects() {
       return [
         // cascada completa hasta localidad
-<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -480,38 +384,15 @@ export default {
         //   optionValue: 'id',
         //   resets: ['departamento_id', 'provincia_id', 'municipio_id', 'localidad_id']
         // },
-=======
-        {
-          key: "pais_id",
-          label: "País",
-          icon: "fa-solid fa-earth-americas",
-          options: this.optPaises,
-          optionLabel: "nombre",
-          optionValue: "id",
-          resets: [
-            "departamento_id",
-            "provincia_id",
-            "municipio_id",
-            "localidad_id",
-          ],
-        },
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         {
           key: "departamento_id",
           label: "Depto",
           icon: "fa-solid fa-sitemap",
           options: this.optDepartamentosByPais(this.recintos.filters.pais_id),
-<<<<<<< HEAD
           optionLabel: 'nombre',
           optionValue: 'id',
           // disable: !this.recintos.filters.pais_id,
           resets: ['provincia_id', 'municipio_id', 'localidad_id']
-=======
-          optionLabel: "nombre",
-          optionValue: "id",
-          disable: !this.recintos.filters.pais_id,
-          resets: ["provincia_id", "municipio_id", "localidad_id"],
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         },
         {
           key: "provincia_id",
@@ -554,7 +435,6 @@ export default {
     mesaSelects() {
       return [
         // cascada completa hasta localidad + recinto
-<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -564,44 +444,15 @@ export default {
         //   optionValue: 'id',
         //   resets: ['departamento_id', 'provincia_id', 'municipio_id', 'localidad_id', 'recinto_id']
         // },
-=======
-        {
-          key: "pais_id",
-          label: "País",
-          icon: "fa-solid fa-earth-americas",
-          options: this.optPaises,
-          optionLabel: "nombre",
-          optionValue: "id",
-          resets: [
-            "departamento_id",
-            "provincia_id",
-            "municipio_id",
-            "localidad_id",
-            "recinto_id",
-          ],
-        },
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         {
           key: "departamento_id",
           label: "Depto",
           icon: "fa-solid fa-sitemap",
           options: this.optDepartamentosByPais(this.mesas.filters.pais_id),
-<<<<<<< HEAD
           optionLabel: 'nombre',
           optionValue: 'id',
           // disable: !this.mesas.filters.pais_id,
           resets: ['provincia_id', 'municipio_id', 'localidad_id', 'recinto_id']
-=======
-          optionLabel: "nombre",
-          optionValue: "id",
-          disable: !this.mesas.filters.pais_id,
-          resets: [
-            "provincia_id",
-            "municipio_id",
-            "localidad_id",
-            "recinto_id",
-          ],
->>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         },
         {
           key: "provincia_id",
