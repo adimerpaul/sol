@@ -1,16 +1,19 @@
 <template>
   <q-page class="q-pa-sm bg-grey-2">
-
     <!-- HEADER -->
     <q-card flat bordered class="q-mb-sm">
       <q-card-section class="row items-center q-col-gutter-sm">
-        <div class="col">
+        <div class="col-12">
           <div class="text-h6 text-weight-bold">
-            <q-icon name="fa-solid fa-map-location-dot" class="q-mr-sm text-primary" />
+            <q-icon
+              name="fa-solid fa-map-location-dot"
+              class="q-mr-sm text-primary"
+            />
             Geografía Electoral
           </div>
           <div class="text-caption text-grey-7">
-            CRUD por pestañas: Países, Departamentos, Provincias, Municipios, Localidades, Recintos y Mesas.
+            CRUD por pestañas: Países, Departamentos, Provincias, Municipios,
+            Localidades, Recintos y Mesas.
           </div>
         </div>
 
@@ -40,12 +43,34 @@
         active-color="primary"
         indicator-color="primary"
       >
+<<<<<<< HEAD
 <!--        <q-tab name="paises" icon="fa-solid fa-earth-americas" label="Países" />-->
 <!--        <q-tab name="departamentos" icon="fa-solid fa-sitemap" label="Departamentos" />-->
         <q-tab name="provincias" icon="fa-solid fa-network-wired" label="Provincias" />
+=======
+        <q-tab name="paises" icon="fa-solid fa-earth-americas" label="Países" />
+        <q-tab
+          name="departamentos"
+          icon="fa-solid fa-sitemap"
+          label="Departamentos"
+        />
+        <q-tab
+          name="provincias"
+          icon="fa-solid fa-network-wired"
+          label="Provincias"
+        />
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         <q-tab name="municipios" icon="fa-solid fa-city" label="Municipios" />
-        <q-tab name="localidades" icon="fa-solid fa-location-dot" label="Localidades" />
-        <q-tab name="recintos" icon="fa-solid fa-school-flag" label="Recintos" />
+        <q-tab
+          name="localidades"
+          icon="fa-solid fa-location-dot"
+          label="Localidades"
+        />
+        <q-tab
+          name="recintos"
+          icon="fa-solid fa-school-flag"
+          label="Recintos"
+        />
         <q-tab name="mesas" icon="fa-solid fa-table" label="Mesas" />
       </q-tabs>
 
@@ -63,6 +88,7 @@
 <!--        </q-tab-panel>-->
 
         <!-- ===================== DEPARTAMENTOS ===================== -->
+<<<<<<< HEAD
 <!--        <q-tab-panel name="departamentos">-->
 <!--          <crud-simple-->
 <!--            title="Departamentos"-->
@@ -75,6 +101,20 @@
 <!--            @filters-changed="() => {}"-->
 <!--          />-->
 <!--        </q-tab-panel>-->
+=======
+        <q-tab-panel name="departamentos">
+          <crud-simple
+            title="Departamentos"
+            endpoint="departamentos"
+            :columns="['ID', 'País', 'Nombre']"
+            :fields="['id', 'pais.nombre', 'nombre']"
+            :filters="departamentos.filters"
+            :selects="departamentoSelects"
+            @update:filters="(v) => (departamentos.filters = v)"
+            @filters-changed="() => {}"
+          />
+        </q-tab-panel>
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
 
         <!-- ===================== PROVINCIAS ===================== -->
         <q-tab-panel name="provincias">
@@ -85,7 +125,7 @@
             :fields="['id', 'departamento.nombre', 'nombre']"
             :filters="provincias.filters"
             :selects="provinciaSelects"
-            @update:filters="v => (provincias.filters = v)"
+            @update:filters="(v) => (provincias.filters = v)"
             @filters-changed="() => {}"
           />
         </q-tab-panel>
@@ -99,7 +139,7 @@
             :fields="['id', 'provincia.nombre', 'nombre']"
             :filters="municipios.filters"
             :selects="municipioSelects"
-            @update:filters="v => (municipios.filters = v)"
+            @update:filters="(v) => (municipios.filters = v)"
             @filters-changed="() => {}"
           />
         </q-tab-panel>
@@ -113,7 +153,7 @@
             :fields="['id', 'municipio.nombre', 'nombre']"
             :filters="localidades.filters"
             :selects="localidadSelects"
-            @update:filters="v => (localidades.filters = v)"
+            @update:filters="(v) => (localidades.filters = v)"
             @filters-changed="() => {}"
           />
         </q-tab-panel>
@@ -127,7 +167,7 @@
             :fields="['id', 'localidad.nombre', 'nombre']"
             :filters="recintos.filters"
             :selects="recintoSelects"
-            @update:filters="v => (recintos.filters = v)"
+            @update:filters="(v) => (recintos.filters = v)"
             @filters-changed="() => {}"
           />
         </q-tab-panel>
@@ -141,7 +181,7 @@
             :fields="['id', 'recinto.nombre', 'numero_mesa']"
             :filters="mesas.filters"
             :selects="mesaSelects"
-            @update:filters="v => (mesas.filters = v)"
+            @update:filters="(v) => (mesas.filters = v)"
             @filters-changed="() => {}"
           />
         </q-tab-panel>
@@ -151,15 +191,19 @@
 </template>
 
 <script>
-import CrudSimple from 'components/CrudSimple.vue'
+import CrudSimple from "components/CrudSimple.vue";
 
 export default {
-  name: 'GeoElectoral',
+  name: "GeoElectoral",
   components: { CrudSimple },
 
-  data () {
+  data() {
     return {
+<<<<<<< HEAD
       tab: 'provincias',
+=======
+      tab: "paises",
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
       loadingGeo: false,
 
       geo: {
@@ -168,53 +212,97 @@ export default {
         provincias: [],
         municipios: [],
         localidades: [],
-        recintos: []
+        recintos: [],
       },
 
       departamentos: { filters: { pais_id: null } },
       provincias: { filters: { pais_id: null, departamento_id: null } },
-      municipios: { filters: { pais_id: null, departamento_id: null, provincia_id: null } },
-      localidades: { filters: { pais_id: null, departamento_id: null, provincia_id: null, municipio_id: null } },
-      recintos: { filters: { pais_id: null, departamento_id: null, provincia_id: null, municipio_id: null, localidad_id: null } },
-      mesas: { filters: { pais_id: null, departamento_id: null, provincia_id: null, municipio_id: null, localidad_id: null, recinto_id: null } }
-    }
+      municipios: {
+        filters: { pais_id: null, departamento_id: null, provincia_id: null },
+      },
+      localidades: {
+        filters: {
+          pais_id: null,
+          departamento_id: null,
+          provincia_id: null,
+          municipio_id: null,
+        },
+      },
+      recintos: {
+        filters: {
+          pais_id: null,
+          departamento_id: null,
+          provincia_id: null,
+          municipio_id: null,
+          localidad_id: null,
+        },
+      },
+      mesas: {
+        filters: {
+          pais_id: null,
+          departamento_id: null,
+          provincia_id: null,
+          municipio_id: null,
+          localidad_id: null,
+          recinto_id: null,
+        },
+      },
+    };
   },
 
   computed: {
-    optPaises () { return this.geo.paises || [] },
+    optPaises() {
+      return this.geo.paises || [];
+    },
 
-    optDepartamentosByPais () {
-      return (paisId) => (this.geo.departamentos || []).filter(d => !paisId || d.pais_id === paisId)
+    optDepartamentosByPais() {
+      return (paisId) =>
+        (this.geo.departamentos || []).filter(
+          (d) => !paisId || d.pais_id === paisId,
+        );
     },
-    optProvinciasByDepartamento () {
-      return (deptoId) => (this.geo.provincias || []).filter(p => !deptoId || p.departamento_id === deptoId)
+    optProvinciasByDepartamento() {
+      return (deptoId) =>
+        (this.geo.provincias || []).filter(
+          (p) => !deptoId || p.departamento_id === deptoId,
+        );
     },
-    optMunicipiosByProvincia () {
-      return (provId) => (this.geo.municipios || []).filter(m => !provId || m.provincia_id === provId)
+    optMunicipiosByProvincia() {
+      return (provId) =>
+        (this.geo.municipios || []).filter(
+          (m) => !provId || m.provincia_id === provId,
+        );
     },
-    optLocalidadesByMunicipio () {
-      return (munId) => (this.geo.localidades || []).filter(l => !munId || l.municipio_id === munId)
+    optLocalidadesByMunicipio() {
+      return (munId) =>
+        (this.geo.localidades || []).filter(
+          (l) => !munId || l.municipio_id === munId,
+        );
     },
-    optRecintosByLocalidad () {
-      return (locId) => (this.geo.recintos || []).filter(r => !locId || r.localidad_id === locId)
+    optRecintosByLocalidad() {
+      return (locId) =>
+        (this.geo.recintos || []).filter(
+          (r) => !locId || r.localidad_id === locId,
+        );
     },
 
     // Configuración de selects por tab
-    departamentoSelects () {
+    departamentoSelects() {
       return [
         {
-          key: 'pais_id',
-          label: 'País',
-          icon: 'fa-solid fa-earth-americas',
+          key: "pais_id",
+          label: "País",
+          icon: "fa-solid fa-earth-americas",
           options: this.optPaises,
-          optionLabel: 'nombre',
-          optionValue: 'id'
-        }
-      ]
+          optionLabel: "nombre",
+          optionValue: "id",
+        },
+      ];
     },
 
-    provinciaSelects () {
+    provinciaSelects() {
       return [
+<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -224,20 +312,40 @@ export default {
         //   optionValue: 'id',
         //   resets: ['departamento_id']
         // },
+=======
         {
-          key: 'departamento_id',
-          label: 'Departamento',
-          icon: 'fa-solid fa-sitemap',
+          key: "pais_id",
+          label: "País",
+          icon: "fa-solid fa-earth-americas",
+          options: this.optPaises,
+          optionLabel: "nombre",
+          optionValue: "id",
+          resets: ["departamento_id"],
+        },
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
+        {
+          key: "departamento_id",
+          label: "Departamento",
+          icon: "fa-solid fa-sitemap",
           options: this.optDepartamentosByPais(this.provincias.filters.pais_id),
+<<<<<<< HEAD
           optionLabel: 'nombre',
           optionValue: 'id',
           // disable: !this.provincias.filters.pais_id
         }
       ]
+=======
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.provincias.filters.pais_id,
+        },
+      ];
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
     },
 
-    municipioSelects () {
+    municipioSelects() {
       return [
+<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -247,30 +355,51 @@ export default {
         //   optionValue: 'id',
         //   resets: ['departamento_id', 'provincia_id']
         // },
+=======
         {
-          key: 'departamento_id',
-          label: 'Depto',
-          icon: 'fa-solid fa-sitemap',
+          key: "pais_id",
+          label: "País",
+          icon: "fa-solid fa-earth-americas",
+          options: this.optPaises,
+          optionLabel: "nombre",
+          optionValue: "id",
+          resets: ["departamento_id", "provincia_id"],
+        },
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
+        {
+          key: "departamento_id",
+          label: "Depto",
+          icon: "fa-solid fa-sitemap",
           options: this.optDepartamentosByPais(this.municipios.filters.pais_id),
+<<<<<<< HEAD
           optionLabel: 'nombre',
           optionValue: 'id',
           // disable: !this.municipios.filters.pais_id,
           resets: ['provincia_id']
+=======
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.municipios.filters.pais_id,
+          resets: ["provincia_id"],
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         },
         {
-          key: 'provincia_id',
-          label: 'Provincia',
-          icon: 'fa-solid fa-network-wired',
-          options: this.optProvinciasByDepartamento(this.municipios.filters.departamento_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
-          disable: !this.municipios.filters.departamento_id
-        }
-      ]
+          key: "provincia_id",
+          label: "Provincia",
+          icon: "fa-solid fa-network-wired",
+          options: this.optProvinciasByDepartamento(
+            this.municipios.filters.departamento_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.municipios.filters.departamento_id,
+        },
+      ];
     },
 
-    localidadSelects () {
+    localidadSelects() {
       return [
+<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -289,32 +418,59 @@ export default {
           optionValue: 'id',
           // disable: !this.localidades.filters.pais_id,
           resets: ['provincia_id', 'municipio_id']
+=======
+        {
+          key: "pais_id",
+          label: "País",
+          icon: "fa-solid fa-earth-americas",
+          options: this.optPaises,
+          optionLabel: "nombre",
+          optionValue: "id",
+          resets: ["departamento_id", "provincia_id", "municipio_id"],
         },
         {
-          key: 'provincia_id',
-          label: 'Provincia',
-          icon: 'fa-solid fa-network-wired',
-          options: this.optProvinciasByDepartamento(this.localidades.filters.departamento_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
+          key: "departamento_id",
+          label: "Depto",
+          icon: "fa-solid fa-sitemap",
+          options: this.optDepartamentosByPais(
+            this.localidades.filters.pais_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.localidades.filters.pais_id,
+          resets: ["provincia_id", "municipio_id"],
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
+        },
+        {
+          key: "provincia_id",
+          label: "Provincia",
+          icon: "fa-solid fa-network-wired",
+          options: this.optProvinciasByDepartamento(
+            this.localidades.filters.departamento_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
           disable: !this.localidades.filters.departamento_id,
-          resets: ['municipio_id']
+          resets: ["municipio_id"],
         },
         {
-          key: 'municipio_id',
-          label: 'Municipio',
-          icon: 'fa-solid fa-city',
-          options: this.optMunicipiosByProvincia(this.localidades.filters.provincia_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
-          disable: !this.localidades.filters.provincia_id
-        }
-      ]
+          key: "municipio_id",
+          label: "Municipio",
+          icon: "fa-solid fa-city",
+          options: this.optMunicipiosByProvincia(
+            this.localidades.filters.provincia_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.localidades.filters.provincia_id,
+        },
+      ];
     },
 
-    recintoSelects () {
+    recintoSelects() {
       return [
         // cascada completa hasta localidad
+<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -324,51 +480,81 @@ export default {
         //   optionValue: 'id',
         //   resets: ['departamento_id', 'provincia_id', 'municipio_id', 'localidad_id']
         // },
+=======
         {
-          key: 'departamento_id',
-          label: 'Depto',
-          icon: 'fa-solid fa-sitemap',
+          key: "pais_id",
+          label: "País",
+          icon: "fa-solid fa-earth-americas",
+          options: this.optPaises,
+          optionLabel: "nombre",
+          optionValue: "id",
+          resets: [
+            "departamento_id",
+            "provincia_id",
+            "municipio_id",
+            "localidad_id",
+          ],
+        },
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
+        {
+          key: "departamento_id",
+          label: "Depto",
+          icon: "fa-solid fa-sitemap",
           options: this.optDepartamentosByPais(this.recintos.filters.pais_id),
+<<<<<<< HEAD
           optionLabel: 'nombre',
           optionValue: 'id',
           // disable: !this.recintos.filters.pais_id,
           resets: ['provincia_id', 'municipio_id', 'localidad_id']
+=======
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.recintos.filters.pais_id,
+          resets: ["provincia_id", "municipio_id", "localidad_id"],
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         },
         {
-          key: 'provincia_id',
-          label: 'Provincia',
-          icon: 'fa-solid fa-network-wired',
-          options: this.optProvinciasByDepartamento(this.recintos.filters.departamento_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
+          key: "provincia_id",
+          label: "Provincia",
+          icon: "fa-solid fa-network-wired",
+          options: this.optProvinciasByDepartamento(
+            this.recintos.filters.departamento_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
           disable: !this.recintos.filters.departamento_id,
-          resets: ['municipio_id', 'localidad_id']
+          resets: ["municipio_id", "localidad_id"],
         },
         {
-          key: 'municipio_id',
-          label: 'Municipio',
-          icon: 'fa-solid fa-city',
-          options: this.optMunicipiosByProvincia(this.recintos.filters.provincia_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
+          key: "municipio_id",
+          label: "Municipio",
+          icon: "fa-solid fa-city",
+          options: this.optMunicipiosByProvincia(
+            this.recintos.filters.provincia_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
           disable: !this.recintos.filters.provincia_id,
-          resets: ['localidad_id']
+          resets: ["localidad_id"],
         },
         {
-          key: 'localidad_id',
-          label: 'Localidad',
-          icon: 'fa-solid fa-location-dot',
-          options: this.optLocalidadesByMunicipio(this.recintos.filters.municipio_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
-          disable: !this.recintos.filters.municipio_id
-        }
-      ]
+          key: "localidad_id",
+          label: "Localidad",
+          icon: "fa-solid fa-location-dot",
+          options: this.optLocalidadesByMunicipio(
+            this.recintos.filters.municipio_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.recintos.filters.municipio_id,
+        },
+      ];
     },
 
-    mesaSelects () {
+    mesaSelects() {
       return [
         // cascada completa hasta localidad + recinto
+<<<<<<< HEAD
         // {
         //   key: 'pais_id',
         //   label: 'País',
@@ -378,86 +564,125 @@ export default {
         //   optionValue: 'id',
         //   resets: ['departamento_id', 'provincia_id', 'municipio_id', 'localidad_id', 'recinto_id']
         // },
+=======
         {
-          key: 'departamento_id',
-          label: 'Depto',
-          icon: 'fa-solid fa-sitemap',
+          key: "pais_id",
+          label: "País",
+          icon: "fa-solid fa-earth-americas",
+          options: this.optPaises,
+          optionLabel: "nombre",
+          optionValue: "id",
+          resets: [
+            "departamento_id",
+            "provincia_id",
+            "municipio_id",
+            "localidad_id",
+            "recinto_id",
+          ],
+        },
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
+        {
+          key: "departamento_id",
+          label: "Depto",
+          icon: "fa-solid fa-sitemap",
           options: this.optDepartamentosByPais(this.mesas.filters.pais_id),
+<<<<<<< HEAD
           optionLabel: 'nombre',
           optionValue: 'id',
           // disable: !this.mesas.filters.pais_id,
           resets: ['provincia_id', 'municipio_id', 'localidad_id', 'recinto_id']
+=======
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.mesas.filters.pais_id,
+          resets: [
+            "provincia_id",
+            "municipio_id",
+            "localidad_id",
+            "recinto_id",
+          ],
+>>>>>>> 5f946c047d8ff3f6f4ec1c229702a5057aa28b9a
         },
         {
-          key: 'provincia_id',
-          label: 'Provincia',
-          icon: 'fa-solid fa-network-wired',
-          options: this.optProvinciasByDepartamento(this.mesas.filters.departamento_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
+          key: "provincia_id",
+          label: "Provincia",
+          icon: "fa-solid fa-network-wired",
+          options: this.optProvinciasByDepartamento(
+            this.mesas.filters.departamento_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
           disable: !this.mesas.filters.departamento_id,
-          resets: ['municipio_id', 'localidad_id', 'recinto_id']
+          resets: ["municipio_id", "localidad_id", "recinto_id"],
         },
         {
-          key: 'municipio_id',
-          label: 'Municipio',
-          icon: 'fa-solid fa-city',
-          options: this.optMunicipiosByProvincia(this.mesas.filters.provincia_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
+          key: "municipio_id",
+          label: "Municipio",
+          icon: "fa-solid fa-city",
+          options: this.optMunicipiosByProvincia(
+            this.mesas.filters.provincia_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
           disable: !this.mesas.filters.provincia_id,
-          resets: ['localidad_id', 'recinto_id']
+          resets: ["localidad_id", "recinto_id"],
         },
         {
-          key: 'localidad_id',
-          label: 'Localidad',
-          icon: 'fa-solid fa-location-dot',
-          options: this.optLocalidadesByMunicipio(this.mesas.filters.municipio_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
+          key: "localidad_id",
+          label: "Localidad",
+          icon: "fa-solid fa-location-dot",
+          options: this.optLocalidadesByMunicipio(
+            this.mesas.filters.municipio_id,
+          ),
+          optionLabel: "nombre",
+          optionValue: "id",
           disable: !this.mesas.filters.municipio_id,
-          resets: ['recinto_id']
+          resets: ["recinto_id"],
         },
         {
-          key: 'recinto_id',
-          label: 'Recinto',
-          icon: 'fa-solid fa-school-flag',
+          key: "recinto_id",
+          label: "Recinto",
+          icon: "fa-solid fa-school-flag",
           options: this.optRecintosByLocalidad(this.mesas.filters.localidad_id),
-          optionLabel: 'nombre',
-          optionValue: 'id',
-          disable: !this.mesas.filters.localidad_id
-        }
-      ]
-    }
+          optionLabel: "nombre",
+          optionValue: "id",
+          disable: !this.mesas.filters.localidad_id,
+        },
+      ];
+    },
   },
 
-  mounted () {
-    this.init()
+  mounted() {
+    this.init();
   },
 
   methods: {
-    async init () {
-      await this.loadGeoOptions()
+    async init() {
+      await this.loadGeoOptions();
     },
 
-    async loadGeoOptions () {
-      this.loadingGeo = true
+    async loadGeoOptions() {
+      this.loadingGeo = true;
       try {
-        const r = await this.$axios.get('geo/options')
+        const r = await this.$axios.get("geo/options");
         this.geo = {
           paises: r.data?.paises || [],
           departamentos: r.data?.departamentos || [],
           provincias: r.data?.provincias || [],
           municipios: r.data?.municipios || [],
           localidades: r.data?.localidades || [],
-          recintos: r.data?.recintos || []
-        }
+          recintos: r.data?.recintos || [],
+        };
       } catch (e) {
-        this.$q.notify({ type: 'negative', message: e?.response?.data?.message || 'No se pudo cargar geo/options' })
+        this.$q.notify({
+          type: "negative",
+          message:
+            e?.response?.data?.message || "No se pudo cargar geo/options",
+        });
       } finally {
-        this.loadingGeo = false
+        this.loadingGeo = false;
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>
