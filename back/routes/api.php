@@ -103,7 +103,13 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'resultado']);
     Route::put('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'guardarResultado']);
 
-
+});
+Route::prefix('mobile')->group(function () {
+    Route::post('/login', [\App\Http\Controllers\MobileAuthController::class, 'login']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [\App\Http\Controllers\MobileAuthController::class, 'me']);
+        Route::post('/resultados/sync', [\App\Http\Controllers\MobileResultadosController::class, 'sync']);
+    });
 });
 //Route::get(
 //    'admin/recintos/geocode',
