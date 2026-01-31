@@ -3,7 +3,7 @@
     <q-card flat bordered class="bg-white">
 
       <!-- HEADER -->
-      <q-card-section class="row items-center q-col-gutter-sm">
+      <q-card-section class="row items-center">
         <q-avatar rounded size="42px" class="bg-blue-1">
           <q-icon name="map" class="text-primary" />
         </q-avatar>
@@ -234,9 +234,9 @@ export default {
       loadingLocalidades: false,
 
       // filtros
-      provinciaId: null,
-      municipioId: null,
-      localidadId: null,
+      provinciaId: 57,
+      municipioId: 191,
+      localidadId: 1988,
       search: '',
       onlyMissing: true,
 
@@ -264,6 +264,8 @@ export default {
 
   mounted () {
     this.loadCatalogo()
+    this.loadMunicipios()
+    this.loadLocalidades()
   },
 
   methods: {

@@ -41,17 +41,29 @@
       <!-- ICONO -->
       <template v-slot:body-cell-icono="props">
         <q-td :props="props">
-          <q-avatar rounded size="40px">
+          <q-avatar
+            rounded
+            size="44px"
+            class="shadow-2"
+            :style="avatarStyle(props.row)"
+          >
             <q-img
               v-if="props.row.icono"
               :src="`${$url}/../images/partidos/${props.row.icono}`"
-              width="40px"
-              height="40px"
+              fit="contain"
+              style="background:#fff"
             />
-            <q-icon name="image" size="24px" v-else />
+            <div
+              v-else
+              class="text-white text-weight-bold flex flex-center"
+              style="width:100%; height:100%; font-size:12px; letter-spacing:.5px;"
+            >
+              {{ (props.row.sigla || '').slice(0, 6) }}
+            </div>
           </q-avatar>
         </q-td>
       </template>
+
 
       <!-- TIPO -->
       <template v-slot:body-cell-tipo="props">
@@ -130,8 +142,56 @@
                   :rules="[v => !!v || 'Requerido']"
                 />
               </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="partido.color"
+                  label="Color"
+                  dense
+                  outlined
+                  placeholder="#2E7D32"
+                  fill-mask
+                  hint="Hex: #RRGGBB"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="palette" />
+                  </template>
 
-<!--              <div class="col-12 col-md-6">-->
+                  <template v-slot:append>
+                    <q-btn
+                      flat
+                      round
+                      dense
+                      icon="colorize"
+                    >
+                      <q-popup-proxy transition-show="scale" transition-hide="scale">
+                        <q-color v-model="partido.color" format-model="hex" />
+                      </q-popup-proxy>
+                    </q-btn>
+                  </template>
+                </q-input>
+              </div>
+
+              <div class="col-12 col-md-2">
+                <div
+                  :style="`
+      width:44px;height:44px;border-radius:10px;
+      background:${partido.color || '#BDBDBD'};
+      border:2px solid rgba(0,0,0,.12);
+    `"
+                />
+              </div>
+              <div class="col-12 col-md-2">
+                <div
+                  :style="`
+      width:44px;height:44px;border-radius:10px;
+      background:${partido.color || '#BDBDBD'};
+      border:2px solid rgba(0,0,0,.12);
+    `"
+                />
+              </div>
+
+
+              <!--              <div class="col-12 col-md-6">-->
 <!--                <q-input-->
 <!--                  v-model="partido.alcalde"-->
 <!--                  label="Alcalde (opcional)"-->
@@ -238,6 +298,14 @@ export default {
   },
 
   methods: {
+    avatarStyle (row) {
+      const c = row?.color || '#BDBDBD'
+      return `
+      background:${c};
+      border:2px solid rgba(0,0,0,.12);
+      overflow:hidden;
+    `
+    },
     colorTipo (t) {
       if (t === 'PARTIDO') return 'primary'
       if (t === 'AGRUPACION') return 'orange'
@@ -311,6 +379,7 @@ export default {
       fd.append('nombre', this.partido.nombre || '')
       fd.append('tipo', this.partido.tipo || 'PARTIDO')
       fd.append('alcalde', this.partido.alcalde || '')
+      fd.append('color', this.partido.color || '')
       if (this.iconFile) fd.append('icono', this.iconFile)
 
       this.$axios.post('partidos', fd, {
@@ -336,6 +405,7 @@ export default {
       fd.append('nombre', this.partido.nombre || '')
       fd.append('tipo', this.partido.tipo || 'PARTIDO')
       fd.append('alcalde', this.partido.alcalde || '')
+      fd.append('color', this.partido.color || '')
       if (this.iconFile) fd.append('icono', this.iconFile)
 
       this.$axios.post(`partidos/${this.partido.id}`, fd, {

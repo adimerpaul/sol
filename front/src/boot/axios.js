@@ -45,8 +45,12 @@ export default boot(({ app, router }) => {
     },
     color(role) {
       if (role === 'Administrador') return 'red'
-      if (role === 'Docente') return 'green'
-      if (role === 'Estudiante') return 'blue'
+      // roles: ['Administrador', 'Supervisor', 'Jefe de recinto', 'Delegado de mesa'],
+      // if (role === 'Docente') return 'green'
+      // if (role === 'Estudiante') return 'blue'
+      if (role === 'Supervisor') return 'orange'
+      if (role === 'Jefe de recinto') return 'teal'
+      if (role === 'Delegado de mesa') return 'cyan'
       return 'grey'
     },
     colorAgencia(agencia) {
