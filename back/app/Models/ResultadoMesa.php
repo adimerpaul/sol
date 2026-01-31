@@ -9,34 +9,25 @@ class ResultadoMesa extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'resultados_mesas';
+    protected $table = 'resultados_mesa';
 
     protected $fillable = [
-        'user_id',
-        'pais_id',
-        'departamento_id',
-        'provincia_id',
-        'municipio_id',
-        'localidad_id',
-        'recinto_id',
-        'mesa_id',
-        'resultados',
-        'total_votos',
-        'foto_1',
-        'foto_2',
-        'estado',
-        'verificado',
-        'observacion',
-        'fecha_hora',
+        'mesa_id','registrado_por',
+        'aviso_antes','aviso_manana','aviso_mediodia','aviso_tarde',
+        'etapa_1','etapa_2',
+        'total_votos','total_validos','total_blancos','total_nulos',
+        'observacion'
     ];
 
     protected $casts = [
-        'resultados' => 'array',
-        'verificado' => 'boolean',
-        'fecha_hora' => 'datetime',
+        'aviso_antes' => 'boolean',
+        'aviso_manana' => 'boolean',
+        'aviso_mediodia' => 'boolean',
+        'aviso_tarde' => 'boolean',
+        'etapa_1' => 'boolean',
+        'etapa_2' => 'boolean',
     ];
 
     public function mesa()     { return $this->belongsTo(Mesa::class); }
-    public function recinto()  { return $this->belongsTo(Recinto::class); }
-    public function user()     { return $this->belongsTo(User::class); }
+    public function detalles() { return $this->hasMany(ResultadoMesaDetalle::class, 'resultado_mesa_id'); }
 }

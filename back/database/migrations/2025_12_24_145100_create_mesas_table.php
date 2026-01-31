@@ -19,6 +19,14 @@ return new class extends Migration {
 
             $table->integer('numero_mesa');
 
+            $table->foreignId('delegado_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            // estado operativo de la mesa (para filtros y colores)
+            $table->string('estado', 30)->default('PENDIENTE');
+
             $table->timestamps();
             $table->softDeletes();
         });
