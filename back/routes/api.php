@@ -26,6 +26,9 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::post('/logout', [App\Http\Controllers\UserController::class, 'logout']);
     Route::get('/me', [App\Http\Controllers\UserController::class, 'me']);
 
+    Route::post('/users/{user}/files', [App\Http\Controllers\UserController::class, 'updateFiles']);
+
+
     Route::get('/users', [App\Http\Controllers\UserController::class, 'index']);
     Route::post('/users', [App\Http\Controllers\UserController::class, 'store']);
     Route::put('/users/{user}', [App\Http\Controllers\UserController::class, 'update']);

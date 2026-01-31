@@ -6,20 +6,36 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable();
-            $table->string('username')->nullable();
-            $table->string('role')->default('Usuario');
-            $table->string('avatar')->default('default.png');
+            $table->string('name', 255)->nullable();
+
+
+            // ===== NUEVOS CAMPOS PERSONALES =====
+            $table->string('nombres', 120);                          // solo nombre(s)
+            $table->string('apellido_paterno', 120)->nullable();     // puede ser vacío
+            $table->string('apellido_materno', 120);                 // requerido
+            $table->string('ci', 30)->unique();                      // carnet
+            $table->date('fecha_nacimiento');                        // fecha
+
+            // bloque / agrupación / organización
+            $table->string('bloque', 180);
+
+            // ===== ARCHIVOS (paths) =====
+            $table->string('ci_anverso', 255)->nullable();           // path storage
+            $table->string('ci_reverso', 255)->nullable();           // path storage
+            $table->string('foto_personal', 255)->nullable();        // path storage
+
+            // ===== LO QUE YA TENÍAS =====
+            $table->string('username')->unique();
+            $table->string('role')->default('Usuario');              // Administrador, Supervisor, Jefe..., Delegado...
+            $table->string('avatar')->default('default.png');        // opcional (tu avatar viejo)
             $table->string('email')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();
@@ -41,9 +57,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');
