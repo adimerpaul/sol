@@ -89,5 +89,27 @@ class User extends Authenticatable
             ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
+    // jefes que administro (supervisor → jefes)
+//    public function jefesAsignados()
+//    {
+//        return $this->belongsToMany(
+//            User::class,
+//            'supervisor_jefe',
+//            'supervisor_id',
+//            'jefe_id'
+//        );
+//    }
+
+// recintos donde soy jefe
+    public function recintosComoJefe()
+    {
+        return $this->belongsToMany(
+            Recinto::class,
+            'recinto_jefe',
+            'jefe_id',
+            'recinto_id'
+        );
+    }
+
 
 }

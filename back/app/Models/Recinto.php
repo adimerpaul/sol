@@ -40,4 +40,14 @@ class Recinto extends Model
         return $this->belongsToMany(\App\Models\User::class, 'recinto_user')
             ->withTimestamps();
     }
+    public function jefe()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'recinto_jefe',
+            'recinto_id',
+            'jefe_id'
+        )->withTimestamps()->withTrashed();
+    }
+
 }
