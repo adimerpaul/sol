@@ -13,6 +13,13 @@ class Mesa extends Model
         'recinto_id','localidad_id','municipio_id','provincia_id','departamento_id','pais_id',
         'numero_mesa','delegado_id','estado'
     ];
+    public function departamento() { return $this->belongsTo(Departamento::class); }
+    public function provincia()   { return $this->belongsTo(Provincia::class); }
+    public function municipio()  { return $this->belongsTo(Municipio::class); }
+    public function localidad()  { return $this->belongsTo(Localidad::class); }
+//    pais
+    public function pais()      { return $this->belongsTo(Pais::class); }
+
 
     public function recinto()   { return $this->belongsTo(Recinto::class); }
     public function delegado()  { return $this->belongsTo(User::class, 'delegado_id'); }
