@@ -262,7 +262,7 @@ export default {
       gestiones: [],
       filter: '',
       // supervisor jefe de recinto delegado de mesa
-      roles: ['Administrador', 'Supervisor', 'Jefe de recinto', 'Delegado de mesa'],
+      roles: ['Administrador', 'Supervisor', 'Jefe de Recinto', 'Delegado de Mesa'],
       columns: [
         {name: 'actions', label: 'Acciones', align: 'center'},
         {name: 'name', label: 'Nombre', align: 'left', field: 'name'},
