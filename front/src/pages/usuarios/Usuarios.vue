@@ -1,72 +1,74 @@
 <template>
   <q-page class="q-pa-md">
-    <q-table :rows="users" :columns="columns" dense wrap-cells flat bordered :rows-per-page-options="[0]"
-             title="Usuarios" :filter="filter">
+    <q-table
+      :rows="users"
+      :columns="columns"
+      row-key="id"
+      dense
+      wrap-cells
+      flat
+      bordered
+      :rows-per-page-options="[0]"
+      title="Usuarios"
+      :filter="filter"
+    >
       <template v-slot:top-right>
-        <q-btn color="positive" label="Nuevo" @click="userNew" no-caps icon="add_circle_outline" :loading="loading"
-               class="q-mr-sm"/>
-        <q-btn color="primary" label="Actualizar" @click="usersGet" no-caps icon="refresh" :loading="loading"/>
-        <q-input v-model="filter" label="Buscar" dense outlined>
-          <template v-slot:append>
-            <q-icon name="search"/>
-          </template>
+        <q-btn
+          color="positive"
+          label="Nuevo"
+          @click="userNew"
+          no-caps
+          icon="add_circle_outline"
+          :loading="loading"
+          class="q-mr-sm"
+        />
+        <q-btn
+          color="primary"
+          label="Actualizar"
+          @click="usersGet"
+          no-caps
+          icon="refresh"
+          :loading="loading"
+          class="q-mr-sm"
+        />
+        <q-input v-model="filter" label="Buscar" dense outlined style="width: 260px">
+          <template v-slot:append><q-icon name="search"/></template>
         </q-input>
       </template>
+
       <template v-slot:body-cell-actions="props">
         <q-td :props="props">
           <q-btn-dropdown label="Opciones" no-caps size="10px" dense color="primary">
             <q-list>
               <q-item clickable @click="userEdit(props.row)" v-close-popup>
-                <q-item-section avatar>
-                  <q-icon name="edit"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Editar</q-item-label>
-                </q-item-section>
+                <q-item-section avatar><q-icon name="edit"/></q-item-section>
+                <q-item-section><q-item-label>Editar</q-item-label></q-item-section>
               </q-item>
+
               <q-item clickable @click="userDelete(props.row.id)" v-close-popup>
-                <q-item-section avatar>
-                  <q-icon name="delete"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Eliminar</q-item-label>
-                </q-item-section>
+                <q-item-section avatar><q-icon name="delete"/></q-item-section>
+                <q-item-section><q-item-label>Eliminar</q-item-label></q-item-section>
               </q-item>
+
               <q-item clickable @click="userEditPassword(props.row)" v-close-popup>
-                <q-item-section avatar>
-                  <q-icon name="lock_reset"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Cambiar contraseña</q-item-label>
-                </q-item-section>
+                <q-item-section avatar><q-icon name="lock_reset"/></q-item-section>
+                <q-item-section><q-item-label>Cambiar contraseña</q-item-label></q-item-section>
               </q-item>
+
               <q-item clickable @click="cambiarAvatar(props.row)" v-close-popup>
-                <q-item-section avatar>
-                  <q-icon name="image"/>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Cambiar avatar</q-item-label>
-                </q-item-section>
+                <q-item-section avatar><q-icon name="image"/></q-item-section>
+                <q-item-section><q-item-label>Cambiar avatar</q-item-label></q-item-section>
               </q-item>
+
               <q-item clickable @click="permisosShow(props.row)" v-close-popup>
-                <q-item-section avatar>
-                  <q-icon name="lock" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Permisos</q-item-label>
-                </q-item-section>
+                <q-item-section avatar><q-icon name="lock"/></q-item-section>
+                <q-item-section><q-item-label>Permisos</q-item-label></q-item-section>
               </q-item>
             </q-list>
           </q-btn-dropdown>
         </q-td>
       </template>
-      <template v-slot:body-cell-role="props">
-        <q-td :props="props">
-          <q-chip :label="props.row.role"
-                  :color="$filters.color(props.row.role)"
-                  text-color="white" dense size="14px"/>
-        </q-td>
-      </template>
+
       <template v-slot:body-cell-avatar="props">
         <q-td :props="props">
           <q-avatar rounded>
@@ -75,11 +77,16 @@
           </q-avatar>
         </q-td>
       </template>
+
+      <template v-slot:body-cell-role="props">
+        <q-td :props="props">
+          <q-chip :label="props.row.role" :color="$filters.color(props.row.role)" text-color="white" dense size="14px"/>
+        </q-td>
+      </template>
+
       <template v-slot:body-cell-permissions="props">
         <q-td :props="props">
           <div class="row items-center q-col-gutter-xs">
-
-            <!-- hasta 3 chips visibles -->
             <q-chip
               v-for="(perm, idx) in (props.row.permissions || []).slice(0, 3)"
               :key="perm.id"
@@ -92,101 +99,204 @@
               {{ perm.name }}
             </q-chip>
 
-            <!-- si hay más, badge + tooltip con el listado completo -->
             <template v-if="(props.row.permissions || []).length > 3">
               <q-badge outline color="primary" class="q-ml-xs">
                 +{{ (props.row.permissions || []).length - 3 }}
                 <q-tooltip anchor="top middle" self="bottom middle" :offset="[0,8]">
                   <div class="text-left">
-                    <div
-                      v-for="perm in props.row.permissions"
-                      :key="perm.id"
-                    >• {{ perm.name }}</div>
+                    <div v-for="perm in props.row.permissions" :key="perm.id">• {{ perm.name }}</div>
                   </div>
                 </q-tooltip>
               </q-badge>
             </template>
 
-            <!-- sin permisos -->
             <q-badge v-if="!(props.row.permissions || []).length" color="grey-5" text-color="white" outline>
               Sin permisos
             </q-badge>
           </div>
         </q-td>
       </template>
-      <!--      <template v-slot:body-cell-permisos="props">-->
-      <!--        <q-td :props="props">-->
-      <!--          <ul class="pm-0">-->
-      <!--            <li class="pm-0" v-for="permiso in props.row.userPermisos" :key="permiso.id">-->
-      <!--              {{ permiso?.permiso?.nombre }}-->
-      <!--            </li>-->
-      <!--          </ul>-->
-      <!--        </q-td>-->
-      <!--      </template>-->
-    </q-table>
-<!--    <pre>{{ users }}</pre>-->
-    <q-dialog v-model="userDialog" persistent>
-      <q-card style="width: 400px">
-        <q-card-section class="q-pb-none row items-center">
-          <div>
-            {{ actionUser }} user
+
+      <template v-slot:body-cell-ci_files="props">
+        <q-td :props="props">
+          <div class="row items-center q-gutter-xs">
+            <q-badge outline :color="props.row.ci_anverso_url ? 'positive' : 'grey-6'">CI A</q-badge>
+            <q-badge outline :color="props.row.ci_reverso_url ? 'positive' : 'grey-6'">CI R</q-badge>
+            <q-badge outline :color="props.row.foto_personal_url ? 'positive' : 'grey-6'">FOTO</q-badge>
           </div>
+        </q-td>
+      </template>
+    </q-table>
+
+    <!-- DIALOG CREAR/EDITAR -->
+    <q-dialog v-model="userDialog" persistent>
+      <q-card style="width: 860px; max-width: 98vw">
+        <q-card-section class="q-pb-none row items-center">
+          <div class="text-weight-bold">{{ actionUser }} usuario</div>
           <q-space/>
-          <q-btn icon="close" flat round dense @click="userDialog = false"/>
+          <q-btn icon="close" flat round dense @click="closeUserDialog"/>
         </q-card-section>
-        <q-card-section class="q-pt-none">
+
+        <q-separator />
+
+        <q-card-section>
           <q-form @submit="user.id ? userPut() : userPost()">
-            <q-input v-model="user.name" label="Nombre" dense outlined :rules="[val => !!val || 'Campo requerido']"/>
-            <q-input v-model="user.username" label="Usuario" dense outlined
-                     :rules="[val => !!val || 'Campo requerido']"/>
-            <q-input v-model="user.email" label="Email" dense outlined hint="" />
-            <q-input v-model="user.password" label="Contraseña" dense outlined
-                     :rules="[val => !!val || 'Campo requerido']" v-if="!user.id"/>
-            <q-select v-model="user.role" label="Rol" dense outlined :options="roles"
-                      :rules="[val => !!val || 'Campo requerido']"/>
-<!--            <q-select v-model="user.docente_id" label="Docente" dense outlined :options="docentes"-->
-<!--                      option-label="nombre" option-value="id" emit-value map-options-->
-<!--                      :rules="[val => !!val || 'Campo requerido']"/>-->
-            <!--            <q-input v-model="user.phone" label="Telefono" dense outlined hint="" />-->
-            <!--            <q-input v-model="user.codigo" label="Codigo" dense outlined hint="" />-->
-            <!--            <q-input v-model="user.gestion" label="Gestion" dense outlined hint="" />-->
-            <!--            <q-input v-model="user.bloque" label="Bloque" dense outlined hint="" />-->
-<!--            <pre>{{user}}</pre>-->
-            <div class="text-right">
-              <q-btn color="negative" label="Cancelar" @click="userDialog = false" no-caps :loading="loading"/>
+            <div class="row q-col-gutter-sm">
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="user.nombres"
+                  label="Nombre(s) *"
+                  dense outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="user.apellido_paterno"
+                  label="Apellido paterno (opcional)"
+                  dense outlined
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="user.apellido_materno"
+                  label="Apellido materno *"
+                  dense outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="user.ci"
+                  label="Carnet de identidad *"
+                  dense outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="user.fecha_nacimiento"
+                  type="date"
+                  label="Fecha de nacimiento *"
+                  dense outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="user.bloque"
+                  label="Bloque / agrupación / organización *"
+                  dense outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="user.username"
+                  label="Usuario *"
+                  dense outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-input v-model="user.email" label="Email" dense outlined />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-select
+                  v-model="user.role"
+                  label="Rol *"
+                  dense outlined
+                  :options="roles"
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+
+              <div class="col-12 col-md-6" v-if="!user.id">
+                <q-input
+                  v-model="user.password"
+                  label="Contraseña *"
+                  dense outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                  type="password"
+                />
+              </div>
+            </div>
+
+            <q-separator class="q-my-md" />
+
+            <!-- ARCHIVOS -->
+            <div class="row q-col-gutter-sm">
+              <div class="col-12 col-md-4">
+                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (anverso) *</div>
+                <q-file
+                  v-model="files.ci_anverso"
+                  dense outlined
+                  accept="image/*,application/pdf"
+                  label="Subir archivo (máx 10MB)"
+                  clearable
+                  :rules="[v => !!user.id ? true : (!!v || 'Requerido')]"
+                />
+                <div v-if="user.ci_anverso_url" class="text-caption text-primary q-mt-xs">
+                  Ya cargado:
+<!--                  {{ user.ci_anverso_url }}-->
+                  <q-btn size="12px" :href="$url + '/..' + user.ci_anverso_url" target="_blank" no-caps>
+                    Ver archivo
+                  </q-btn>
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (reverso) *</div>
+                <q-file
+                  v-model="files.ci_reverso"
+                  dense outlined
+                  accept="image/*,application/pdf"
+                  label="Subir archivo (máx 10MB)"
+                  clearable
+                  :rules="[v => !!user.id ? true : (!!v || 'Requerido')]"
+                />
+                <div v-if="user.ci_reverso_url" class="text-caption text-primary q-mt-xs">
+                  Ya cargado:
+<!--                  {{ user.ci_reverso_url }}-->
+                  <q-btn size="12px" :href="$url + '/..' + user.ci_reverso_url" target="_blank" no-caps>
+                    Ver archivo
+                  </q-btn>
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <div class="text-caption text-grey-7 q-mb-xs">Foto personal (selfie) *</div>
+                <q-file
+                  v-model="files.foto_personal"
+                  dense outlined
+                  accept="image/*"
+                  label="Subir archivo (máx 10MB)"
+                  clearable
+                  :rules="[v => !!user.id ? true : (!!v || 'Requerido')]"
+                />
+                <div v-if="user.foto_personal_url" class="text-caption text-primary q-mt-xs">
+                  Ya cargado:
+<!--                  {{ user.foto_personal_url }}-->
+                </div>
+              </div>
+            </div>
+
+            <div class="text-right q-mt-md">
+              <q-btn color="negative" label="Cancelar" @click="closeUserDialog" no-caps :loading="loading"/>
               <q-btn color="primary" label="Guardar" type="submit" no-caps :loading="loading" class="q-ml-sm"/>
             </div>
           </q-form>
         </q-card-section>
       </q-card>
     </q-dialog>
-    <!--    dialogPermisos-->
-    <!--    <q-dialog v-model="dialogPermisos" persistent>-->
-    <!--      <q-card>-->
-    <!--        <q-card-section class="q-pb-none row items-center text-bold">-->
-    <!--          Permisos-->
-    <!--          <q-space />-->
-    <!--          <q-btn icon="close" flat round dense @click="dialogPermisos = false" />-->
-    <!--        </q-card-section>-->
-    <!--        <q-card-section class="q-pt-none">-->
-    <!--          <q-list dense>-->
-    <!--            <q-item v-for="permiso in permissions" :key="permiso.id">-->
-    <!--              <q-item-section>-->
-    <!--                <q-item-label>{{ permiso.nombre }}</q-item-label>-->
-    <!--              </q-item-section>-->
-    <!--              <q-item-section side>-->
-    <!--                <q-toggle v-model="permiso.checked" />-->
-    <!--              </q-item-section>-->
-    <!--            </q-item>-->
-    <!--          </q-list>-->
-    <!--          &lt;!&ndash;          <pre>{{ user }}</pre>&ndash;&gt;-->
-    <!--        </q-card-section>-->
-    <!--        <q-card-actions align="right">-->
-    <!--          <q-btn color="negative" label="Cancelar" @click="dialogPermisos = false" no-caps :loading="loading" />-->
-    <!--          <q-btn color="primary" label="Guardar" @click="permisosPost" no-caps :loading="loading" />-->
-    <!--        </q-card-actions>-->
-    <!--      </q-card>-->
-    <!--    </q-dialog>-->
+
+    <!-- DIALOG AVATAR (tu mismo) -->
     <q-dialog v-model="cambioAvatarDialogo" persistent>
       <q-card>
         <q-card-section class="q-pb-none row items-center text-bold">
@@ -196,7 +306,6 @@
         </q-card-section>
         <q-card-section class="q-pt-none">
           <q-form @submit="userPut()">
-            <!--            <q-avatar>-->
             <div>
               <div style="position: relative;top: 0;left: 0;">
                 <q-btn icon="edit" size="10px" class="absolute q-mt-sm q-ml-sm" @click="$refs.fileInput.click()" dense
@@ -206,7 +315,6 @@
               <q-icon name="person" size="100px" v-else/>
               <input ref="fileInput" type="file" style="display: none;" @change="onFileChange" accept="image/*"/>
             </div>
-            <!--            </q-avatar>-->
             <div class="text-right">
               <q-btn color="negative" label="Cancelar" @click="cambioAvatarDialogo = false" no-caps :loading="loading"/>
               <q-btn color="primary" label="Guardar" type="submit" no-caps :loading="loading" class="q-ml-sm"/>
@@ -215,6 +323,8 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- DIALOG PERMISOS (tu mismo) -->
     <q-dialog v-model="dialogPermisos" persistent>
       <q-card style="min-width: 420px">
         <q-card-section class="q-pb-none row items-center text-bold">
@@ -244,12 +354,10 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
-<script>
-import moment from 'moment'
 
+<script>
 export default {
   name: 'UsuariosPage',
   data() {
@@ -259,153 +367,209 @@ export default {
       userDialog: false,
       loading: false,
       actionUser: '',
-      gestiones: [],
       filter: '',
-      // supervisor jefe de recinto delegado de mesa
       roles: ['Administrador', 'Supervisor', 'Jefe de Recinto', 'Delegado de Mesa'],
+
+      // archivos nuevos (temporal)
+      files: {
+        ci_anverso: null,
+        ci_reverso: null,
+        foto_personal: null
+      },
+
       columns: [
-        {name: 'actions', label: 'Acciones', align: 'center'},
-        {name: 'name', label: 'Nombre', align: 'left', field: 'name'},
-        {name: 'username', label: 'Usuario', align: 'left', field: 'username'},
-        {name: 'avatar', label: 'Avatar', align: 'left', field: (row) => row.avatar},
-        {name: 'role', label: 'Rol', align: 'left', field: 'role'},
-        { name: 'permissions', label: 'Permisos', align: 'left',
+        { name: 'actions', label: 'Acciones', align: 'center' },
+        { name: 'nombres', label: 'Nombre(s)', align: 'left', field: 'nombres' },
+        { name: 'apellido_paterno', label: 'Ap. paterno', align: 'left', field: 'apellido_paterno' },
+        { name: 'apellido_materno', label: 'Ap. materno', align: 'left', field: 'apellido_materno' },
+        { name: 'ci', label: 'CI', align: 'left', field: 'ci' },
+        { name: 'fecha_nacimiento', label: 'Nacimiento', align: 'left', field: 'fecha_nacimiento' },
+        { name: 'bloque', label: 'Bloque', align: 'left', field: 'bloque' },
+        { name: 'username', label: 'Usuario', align: 'left', field: 'username' },
+        { name: 'avatar', label: 'Avatar', align: 'left', field: row => row.avatar },
+        { name: 'role', label: 'Rol', align: 'left', field: 'role' },
+        { name: 'ci_files', label: 'Docs', align: 'left', field: row => row.id },
+        {
+          name: 'permissions',
+          label: 'Permisos',
+          align: 'left',
           field: row => (row.permissions || []).map(p => p.name).join(', ')
         },
       ],
+
+      // permisos
       permissions: [],
       dialogPermisos: false,
       permFilter: '',
-      cambioAvatarDialogo: false,
-      docentes: [],
+
+      // avatar dialog
+      cambioAvatarDialogo: false
     }
   },
+
   async mounted() {
-    // this.docentes = await this.$axios.get('docentes').then(res => res.data)
     this.usersGet()
-    // this.permissionsGet()
   },
+
+  computed: {
+    filteredPermissions() {
+      if (!this.permFilter) return this.permissions
+      const t = this.permFilter.toLowerCase()
+      return this.permissions.filter(p => (p.name || '').toLowerCase().includes(t))
+    }
+  },
+
   methods: {
+    closeUserDialog () {
+      this.userDialog = false
+      this.files = { ci_anverso: null, ci_reverso: null, foto_personal: null }
+    },
+
+    userNew() {
+      this.user = {
+        nombres: '',
+        apellido_paterno: '',
+        apellido_materno: '',
+        ci: '',
+        fecha_nacimiento: '',
+        bloque: '',
+        username: '',
+        email: '',
+        password: '',
+        role: 'Supervisor',
+      }
+      this.actionUser = 'Nuevo'
+      this.files = { ci_anverso: null, ci_reverso: null, foto_personal: null }
+      this.userDialog = true
+    },
+
+    userEdit(row) {
+      this.user = { ...row }
+      this.actionUser = 'Editar'
+      this.files = { ci_anverso: null, ci_reverso: null, foto_personal: null }
+      this.userDialog = true
+    },
+
+    usersGet() {
+      this.loading = true
+      this.users = []
+      this.$axios.get('users')
+        .then(res => { this.users = res.data })
+        .catch(err => { this.$alert.error(err.response?.data?.message || 'Error') })
+        .finally(() => { this.loading = false })
+    },
+
+    async uploadFilesIfNeeded (userId) {
+      const hasAny = !!(this.files.ci_anverso || this.files.ci_reverso || this.files.foto_personal)
+      if (!hasAny) return
+
+      const fd = new FormData()
+      if (this.files.ci_anverso) fd.append('ci_anverso', this.files.ci_anverso)
+      if (this.files.ci_reverso) fd.append('ci_reverso', this.files.ci_reverso)
+      if (this.files.foto_personal) fd.append('foto_personal', this.files.foto_personal)
+
+      await this.$axios.post(`users/${userId}/files`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    },
+
+    async userPost() {
+      this.loading = true
+      try {
+        const res = await this.$axios.post('users', this.user)
+        const created = res.data
+
+        // subir archivos obligatorios en create
+        await this.uploadFilesIfNeeded(created.id)
+
+        this.userDialog = false
+        this.$alert.success('Usuario creado')
+        this.usersGet()
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo crear')
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async userPut() {
+      this.loading = true
+      try {
+        await this.$axios.put('users/' + this.user.id, this.user)
+
+        // si seleccionó archivos nuevos, subirlos
+        await this.uploadFilesIfNeeded(this.user.id)
+
+        this.userDialog = false
+        this.$alert.success('Usuario actualizado')
+        this.usersGet()
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo actualizar')
+      } finally {
+        this.loading = false
+      }
+    },
+
+    userDelete(id) {
+      this.$alert.dialog('¿Desea eliminar el usuario?')
+        .onOk(() => {
+          this.loading = true
+          this.$axios.delete('users/' + id)
+            .then(() => {
+              this.usersGet()
+              this.$alert.success('Usuario eliminado')
+            })
+            .catch(err => this.$alert.error(err.response?.data?.message || 'Error'))
+            .finally(() => { this.loading = false })
+        })
+    },
+
+    userEditPassword(user) {
+      this.user = { ...user }
+      this.$alert.dialogPrompt('Nueva contraseña', 'Ingrese la nueva contraseña', 'password')
+        .onOk(password => {
+          this.$axios.put('updatePassword/' + user.id, { password })
+            .then(() => {
+              this.usersGet()
+              this.$alert.success('Contraseña actualizada de ' + user.username)
+            })
+            .catch(err => this.$alert.error(err.response?.data?.message || 'Error'))
+        })
+    },
+
+    // AVATAR (tu lógica)
     onFileChange(event) {
       const file = event.target.files[0]
       const formData = new FormData()
       formData.append('avatar', file)
       this.loading = true
       this.$axios.post(this.user.id + '/avatar', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }).then(res => {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      }).then(() => {
         this.cambioAvatarDialogo = false
         this.$alert.success('Avatar actualizado')
         this.usersGet()
       }).catch(error => {
-        this.$alert.error(error.response.data.message)
+        this.$alert.error(error.response?.data?.message || 'Error')
       }).finally(() => {
         this.loading = false
       })
     },
+
     cambiarAvatar(user) {
       this.cambioAvatarDialogo = true
-      this.user = {...user}
+      this.user = { ...user }
     },
-    // permisosPost() {
-    //   this.loading = true
-    //   const permissions = this.permissions.filter(p => p.checked).map(p => p.id)
-    //   this.$axios.post('permisos', {
-    //     user_id: this.user.id,
-    //     permissions
-    //   }).then(res => {
-    //     this.dialogPermisos = false
-    //     this.$alert.success('Permisos actualizados')
-    //     this.usersGet()
-    //   }).catch(error => {
-    //     this.$alert.error(error.response.data.message)
-    //   }).finally(() => {
-    //     this.loading = false
-    //   })
-    // },
-    // permissionsGet() {
-    //   this.$axios.get('permisos').then(res => {
-    //     this.permissions = res.data
-    //   }).catch(error => {
-    //     this.$alert.error(error.response.data.message)
-    //   })
-    // },
-    userNew() {
-      this.user = {
-        name: '',
-        email: '',
-        password: '',
-        area_id: 1,
-        username: '',
-        cargo: '',
-        role: 'Supervisor',
-      }
-      this.actionUser = 'Nuevo'
-      this.userDialog = true
-    },
-    usersGet() {
-      this.loading = true
-      this.users = []
-      this.$axios.get('users').then(res => {
-        this.users = res.data
-      }).catch(error => {
-        this.$alert.error(error.response.data.message)
-      }).finally(() => {
-        this.loading = false
-      })
-    },
-    gestionGet() {
-      this.loading = true
-      this.$axios.get('gestiones').then(res => {
-        this.gestiones = res.data
-        this.loading = false
-      }).catch(error => {
-        this.$alert.error(error.response.data.message)
-        this.loading = false
-      })
-    },
-    userPost() {
-      this.loading = true
-      this.$axios.post('users', this.user).then(res => {
-        this.userDialog = false
-        this.$alert.success('User creado')
-        this.usersGet()
-        // this.users.push(res.data)
-      }).catch(error => {
-        this.$alert.error(error.response.data.message)
-      }).finally(() => {
-        this.loading = false
-      })
-    },
-    userPut() {
-      this.loading = true
-      this.$axios.put('users/' + this.user.id, this.user).then(res => {
-        this.usersGet()
-        this.userDialog = false
-        this.$alert.success('User actualizado')
-      }).catch(error => {
-        this.$alert.error(error.response.data.message)
-      }).finally(() => {
-        this.loading = false
-      })
-    },
+
+    // PERMISOS (tu lógica)
     async permisosShow(user) {
       this.user = { ...user }
       this.dialogPermisos = true
       this.loading = true
       try {
-        // 1) Traer todos los permisos
         const all = await this.$axios.get('permissions').then(r => r.data)
-        // 2) Traer permisos del usuario (array de IDs)
         const userPermIds = await this.$axios.get(`users/${user.id}/permissions`).then(r => r.data)
-
-        // 3) Mezclar con checked
-        this.permissions = all.map(p => ({
-          ...p,
-          checked: userPermIds.includes(p.id)
-        }))
+        this.permissions = all.map(p => ({ ...p, checked: (userPermIds || []).includes(p.id) }))
       } catch (e) {
         this.$alert.error(e.response?.data?.message || 'Error cargando permisos')
       } finally {
@@ -427,46 +591,6 @@ export default {
         this.loading = false
       }
     },
-    userEditPassword(user) {
-      this.user = {...user}
-      this.$alert.dialogPrompt('Nueva contraseña', 'Ingrese la nueva contraseña', 'password')
-        .onOk(password => {
-          this.$axios.put('updatePassword/' + user.id, {
-            password: password
-          }).then(res => {
-            this.usersGet()
-            this.$alert.success('Contraseña actualizada de ' + user.username)
-          }).catch(error => {
-            this.$alert.error(error.response.data.message)
-          })
-        })
-    },
-    userEdit(user) {
-      this.user = {...user}
-      this.actionUser = 'Editar'
-      this.userDialog = true
-    },
-    userDelete(id) {
-      this.$alert.dialog('¿Desea eliminar el user?')
-        .onOk(() => {
-          this.loading = true
-          this.$axios.delete('users/' + id).then(res => {
-            this.usersGet()
-            this.$alert.success('User eliminado')
-          }).catch(error => {
-            this.$alert.error(error.response.data.message)
-          }).finally(() => {
-            this.loading = false
-          })
-        })
-    },
-  },
-  computed: {
-    filteredPermissions() {
-      if (!this.permFilter) return this.permissions
-      const t = this.permFilter.toLowerCase()
-      return this.permissions.filter(p => p.name.toLowerCase().includes(t))
-    }
-  },
+  }
 }
 </script>

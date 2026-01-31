@@ -199,44 +199,44 @@
         </q-item>
 
         <!--        { path: 'resultados-mesa', component: () => import('pages/resultados/ResultadosMesa.vue'), meta: { requiresAuth: true } },-->
-        <q-item dense to="/resultados-mesa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
-          <q-item-section avatar>
-            <q-icon name="assignment_turned_in" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Resultados por Mesa</q-item-label>
-          </q-item-section>
-        </q-item>
+<!--        <q-item dense to="/resultados-mesa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="assignment_turned_in" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Resultados por Mesa</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
 
-        <!-- Resultados -->
-        <q-item dense to="/resultados" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
-          <q-item-section avatar>
-            <q-icon name="how_to_vote" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Resultados</q-item-label>
-          </q-item-section>
-        </q-item>
+<!--        &lt;!&ndash; Resultados &ndash;&gt;-->
+<!--        <q-item dense to="/resultados" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="how_to_vote" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Resultados</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
 
-        <!-- Reportes -->
-        <q-item dense to="/reportes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
-          <q-item-section avatar>
-            <q-icon name="summarize" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Reportes</q-item-label>
-          </q-item-section>
-        </q-item>
+<!--        &lt;!&ndash; Reportes &ndash;&gt;-->
+<!--        <q-item dense to="/reportes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="summarize" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Reportes</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
 
-        <!-- Mesas faltantes -->
-        <q-item dense to="/mesas-faltantes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
-          <q-item-section avatar>
-            <q-icon name="warning_amber" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Mesas faltantes</q-item-label>
-          </q-item-section>
-        </q-item>
+<!--        &lt;!&ndash; Mesas faltantes &ndash;&gt;-->
+<!--        <q-item dense to="/mesas-faltantes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="warning_amber" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Mesas faltantes</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
 
         <div class="q-pa-md">
           <div class="text-white-7 text-caption">
