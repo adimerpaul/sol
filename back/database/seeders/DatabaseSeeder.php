@@ -27,6 +27,63 @@ class DatabaseSeeder extends Seeder
             'email'    => '',
             'password' => bcrypt('admin123Admin'), // hash
         ]);
+        // =========================
+// USUARIOS DE PRUEBA
+// =========================
+
+// --- Supervisores
+        $supervisores = collect([
+            ['name' => 'Carlos Medina',  'username' => 'supervisor1'],
+            ['name' => 'Lucía Fernández','username' => 'supervisor2'],
+            ['name' => 'Jorge Quispe',   'username' => 'supervisor3'],
+        ])->map(fn ($u) => User::create([
+            'name'     => $u['name'],
+            'username' => $u['username'],
+            'role'     => 'Supervisor',
+            'avatar'   => 'default.png',
+            'email'    => null,
+            'password' => bcrypt('123456'),
+        ]));
+
+// --- Jefes de Recinto
+        $jefes = collect([
+            ['name' => 'Ana Rojas',     'username' => 'jefe1'],
+            ['name' => 'Mario López',   'username' => 'jefe2'],
+            ['name' => 'Patricia Cruz', 'username' => 'jefe3'],
+            ['name' => 'Luis Mamani',   'username' => 'jefe4'],
+            ['name' => 'Rosa Aguilar',  'username' => 'jefe5'],
+            ['name' => 'David Flores',  'username' => 'jefe6'],
+        ])->map(fn ($u) => User::create([
+            'name'     => $u['name'],
+            'username' => $u['username'],
+            'role'     => 'Jefe de Recinto',
+            'avatar'   => 'default.png',
+            'email'    => null,
+            'password' => bcrypt('123456'),
+        ]));
+
+// --- Delegados de Mesa
+        $delegados = collect([
+            ['name' => 'Juan Pérez',     'username' => 'delegado1'],
+            ['name' => 'María Torres',   'username' => 'delegado2'],
+            ['name' => 'José Vargas',    'username' => 'delegado3'],
+            ['name' => 'Elena Gómez',    'username' => 'delegado4'],
+            ['name' => 'Ricardo Soto',   'username' => 'delegado5'],
+            ['name' => 'Carmen Ruiz',    'username' => 'delegado6'],
+            ['name' => 'Fernando Lima',  'username' => 'delegado7'],
+            ['name' => 'Paola Núñez',    'username' => 'delegado8'],
+            ['name' => 'Miguel Ortiz',   'username' => 'delegado9'],
+            ['name' => 'Daniela Paredes','username' => 'delegado10'],
+        ])->map(fn ($u) => User::create([
+            'name'     => $u['name'],
+            'username' => $u['username'],
+            'role'     => 'Delegado de Mesa',
+            'avatar'   => 'default.png',
+            'email'    => null,
+            'password' => bcrypt('123456'),
+        ]));
+
+
 //        crear 10 usuario falseos
 //        User::factory(10)->create();
 

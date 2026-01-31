@@ -58,4 +58,36 @@ class User extends Authenticatable
         return $this->belongsToMany(\App\Models\Recinto::class, 'recinto_user')
             ->withTimestamps();
     }
+    // Supervisor -> muchos Jefes
+    public function jefesAsignados()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'supervisor_jefe', 'supervisor_id', 'jefe_id')
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
+// Jefe -> muchos Supervisores (por si lo necesitas)
+    public function supervisores()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'supervisor_jefe', 'jefe_id', 'supervisor_id')
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
+// Jefe -> muchos Delegados
+    public function delegadosAsignados()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'jefe_delegado', 'jefe_id', 'delegado_id')
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
+// Delegado -> muchos Jefes (por si lo necesitas)
+    public function jefes()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'jefe_delegado', 'delegado_id', 'jefe_id')
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
 }

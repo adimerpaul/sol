@@ -14,6 +14,8 @@ use App\Http\Controllers\AdminUserRecintoController;
 use App\Http\Controllers\ResultadoMesaController;
 use App\Http\Controllers\RecintoMapaController;
 use App\Http\Controllers\EleccionesDashboardController;
+use App\Http\Controllers\AdminUserJerarquiaController;
+
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
 //})->middleware('auth:sanctum');
@@ -65,6 +67,17 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('mapas/recintos/{recinto}', [RecintoMapaController::class, 'update']);
 
     Route::middleware('auth:sanctum')->get('/dashboard/elecciones/resumen', [EleccionesDashboardController::class, 'resumen']);
+
+    Route::get('admin/jerarquia/supervisores', [AdminUserJerarquiaController::class, 'supervisores']);
+    Route::get('admin/jerarquia/jefes', [AdminUserJerarquiaController::class, 'jefes']);
+    Route::get('admin/jerarquia/delegados', [AdminUserJerarquiaController::class, 'delegados']);
+
+    Route::get('admin/jerarquia/supervisores/{supervisor}/jefes', [AdminUserJerarquiaController::class, 'supervisorJefes']);
+    Route::put('admin/jerarquia/supervisores/{supervisor}/jefes', [AdminUserJerarquiaController::class, 'syncSupervisorJefes']);
+
+    Route::get('admin/jerarquia/jefes/{jefe}/delegados', [AdminUserJerarquiaController::class, 'jefeDelegados']);
+    Route::put('admin/jerarquia/jefes/{jefe}/delegados', [AdminUserJerarquiaController::class, 'syncJefeDelegados']);
+
 
 });
 //Route::get(
