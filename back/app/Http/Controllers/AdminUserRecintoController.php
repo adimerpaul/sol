@@ -21,6 +21,8 @@ class AdminUserRecintoController extends Controller
             ->with([
                 'recintos:id,nombre',
             ])
+//            ->where usel role Administrador Suervisor
+            ->whereIn('role', ['Administrador', 'Supervisor'])
             ->get()
             ->map(function ($u) {
                 $recintoIds = $u->recintos->pluck('id');

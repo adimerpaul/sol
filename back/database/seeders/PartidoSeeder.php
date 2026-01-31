@@ -13,7 +13,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'MTS',
                 'nombre' => 'Movimiento Tercer Sistema',
-                'icono' => null,
+                'icono' => 'MTS_logo.jpg',
                 'tipo' => 'PARTIDO',
                 'color' => '#2E7D32',
                 'orden' => 1,
@@ -21,7 +21,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'SOMOS',
                 'nombre' => 'Somos Pueblo',
-                'icono' => null,
+                'icono' => 'Somos Pueblo.png',
                 'tipo' => 'PARTIDO',
                 'color' => '#C2185B',
                 'orden' => 2,
@@ -29,7 +29,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'UN',
                 'nombre' => 'Unidad Nacional',
-                'icono' => null,
+                'icono' => 'Unidad Nacional.jpg',
                 'tipo' => 'PARTIDO',
                 'color' => '#0D47A1',
                 'orden' => 3,
@@ -37,15 +37,15 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'JACHA',
                 'nombre' => 'Jach’a Jakasawi',
-                'icono' => null,
-                'tipo' => 'INDIGENA',
+                'icono' => 'jacha.jpg',
+                'tipo' => 'PARTIDO',
                 'color' => '#EF6C00',
                 'orden' => 4,
             ],
             [
                 'sigla' => 'PP',
                 'nombre' => 'Poder Popular',
-                'icono' => null,
+                'icono' => 'Poder Popular.png',
                 'tipo' => 'PARTIDO',
                 'color' => '#F9A825',
                 'orden' => 5,
@@ -53,7 +53,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'AORA',
                 'nombre' => 'Alianza por Oruro',
-                'icono' => null,
+                'icono' => 'Alianza por Oruro.jpg',
                 'tipo' => 'AGRUPACION',
                 'color' => '#2E7D32',
                 'orden' => 6,
@@ -61,7 +61,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'NGP',
                 'nombre' => 'Nueva Generación Patriótica',
-                'icono' => null,
+                'icono' => 'Nueva Generación Patriótica.png',
                 'tipo' => 'PARTIDO',
                 'color' => '#1976D2',
                 'orden' => 7,
@@ -69,7 +69,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'PATRIA',
                 'nombre' => 'Patria Oruro',
-                'icono' => null,
+                'icono' => 'Patria Oruro.jpg',
                 'tipo' => 'AGRUPACION',
                 'color' => '#D84315',
                 'orden' => 8,
@@ -77,7 +77,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'LIBRE',
                 'nombre' => 'Libre',
-                'icono' => null,
+                'icono' => 'Libre.jpg',
                 'tipo' => 'PARTIDO',
                 'color' => '#BDBDBD',
                 'orden' => 9,
@@ -85,7 +85,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'FRI',
                 'nombre' => 'Frente Revolucionario de Izquierda',
-                'icono' => null,
+                'icono' => 'Frente Revolucionario de Izquierda.jpg',
                 'tipo' => 'PARTIDO',
                 'color' => '#1A237E',
                 'orden' => 10,
@@ -93,7 +93,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'APD-SUMATE',
                 'nombre' => 'Acción Para el Desarrollo – Súmate',
-                'icono' => null,
+                'icono' => 'Acción Para el Desarrollo – Súmate.jpg',
                 'tipo' => 'PARTIDO',
                 'color' => '#4A148C',
                 'orden' => 11,
@@ -101,7 +101,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'A-UPP',
                 'nombre' => 'Alianza Unidad Popular',
-                'icono' => null,
+                'icono' => 'Alianza Unidad Popular.jpg',
                 'tipo' => 'ALIANZA',
                 'color' => '#FBC02D',
                 'orden' => 12,
@@ -109,7 +109,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'UCS',
                 'nombre' => 'Unidad Cívica Solidaridad',
-                'icono' => null,
+                'icono' => 'Unidad_civica_solidaridad_ucs.jpg',
                 'tipo' => 'PARTIDO',
                 'color' => '#0288D1',
                 'orden' => 13,
@@ -117,7 +117,7 @@ class PartidoSeeder extends Seeder
             [
                 'sigla' => 'PDC',
                 'nombre' => 'Partido Demócrata Cristiano',
-                'icono' => null,
+                'icono' => 'Partido Demócrata Cristiano.webp',
                 'tipo' => 'PARTIDO',
                 'color' => '#2E7D32',
                 'orden' => 14,

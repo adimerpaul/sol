@@ -1,16 +1,152 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Controller;
 use App\Models\Provincia;
 use App\Models\Municipio;
 use App\Models\Localidad;
 use App\Models\Recinto;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Log;
 class RecintoMapaController extends Controller
 {
+    public function geocodeOruro(Request $request)
+    {
+//        $apiKey = config('services.google.maps_key', env('GOOGLE_MAPS_API_KEY'));
+        $apiKey = "AIzaSyDz5BANK2jX_un-Zu_qZpK0cO8ZuOmK7No";
+
+        if (!$apiKey) {
+            return response()->json([
+                'message' => 'Falta GOOGLE_MAPS_API_KEY en .env (o services.google.maps_key).'
+            ], 422);
+        }
+
+        // Tus filtros (igual que tu SQL)
+        $departamentoId = (int) $request->input('departamento_id', 5);
+        $provinciaId    = (int) $request->input('provincia_id', 57);
+        $municipioId    = (int) $request->input('municipio_id', 191);
+        $localidadId    = (int) $request->input('localidad_id', 1988);
+
+        // Control de lote para no quemar cuota
+        $limit = (int) $request->input('limit', 50);
+        if ($limit < 1) $limit = 1;
+        if ($limit > 300) $limit = 300;
+
+        // Solo los que NO tienen coordenadas
+        $recintos = Recinto::query()
+            ->with(['pais', 'departamento', 'provincia', 'municipio', 'localidad'])
+            ->where('departamento_id', $departamentoId)
+            ->where('provincia_id', $provinciaId)
+            ->where('municipio_id', $municipioId)
+            ->where('localidad_id', $localidadId)
+            ->whereNull('latitud')
+            ->whereNull('longitud')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+
+        $updated = 0;
+        $errors = [];
+
+        foreach ($recintos as $r) {
+            // Arma una "dirección" lo más completa posible
+            // OJO: Entre más contexto, mejores resultados.
+            $parts = array_filter([
+                $r->nombre,
+                optional($r->localidad)->nombre,
+                optional($r->municipio)->nombre,
+                optional($r->provincia)->nombre,
+                optional($r->departamento)->nombre,
+                optional($r->pais)->nombre ?? 'Bolivia',
+            ]);
+
+            $address = implode(', ', $parts);
+
+            try {
+                $resp = Http::timeout(15)
+                    ->retry(2, 300) // 2 reintentos, 300ms
+                    ->get('https://maps.googleapis.com/maps/api/geocode/json', [
+                        'address' => $address,
+                        'key'     => $apiKey,
+                        'region'  => 'bo',      // Bolivia
+                        'language'=> 'es',
+                    ]);
+
+                if (!$resp->ok()) {
+                    $errors[] = [
+                        'recinto_id' => $r->id,
+                        'nombre' => $r->nombre,
+                        'address' => $address,
+                        'error' => 'HTTP '.$resp->status(),
+                    ];
+                    continue;
+                }
+
+                $data = $resp->json();
+
+                if (($data['status'] ?? null) !== 'OK') {
+                    $errors[] = [
+                        'recinto_id' => $r->id,
+                        'nombre' => $r->nombre,
+                        'address' => $address,
+                        'error' => $data['status'] ?? 'UNKNOWN',
+                        'message' => $data['error_message'] ?? null,
+                    ];
+                    continue;
+                }
+
+                $loc = $data['results'][0]['geometry']['location'] ?? null;
+                if (!$loc || !isset($loc['lat'], $loc['lng'])) {
+                    $errors[] = [
+                        'recinto_id' => $r->id,
+                        'nombre' => $r->nombre,
+                        'address' => $address,
+                        'error' => 'No geometry.location',
+                    ];
+                    continue;
+                }
+
+                $r->latitud  = (string) $loc['lat']; // si tu columna es decimal/string
+                $r->longitud = (string) $loc['lng'];
+                $r->save();
+
+                $updated++;
+
+                // Mini pausa para no saturar (ajusta si quieres)
+                usleep(120000); // 120ms
+            } catch (\Throwable $e) {
+                Log::error('Geocode recinto failed', [
+                    'recinto_id' => $r->id,
+                    'address' => $address,
+                    'ex' => $e->getMessage()
+                ]);
+
+                $errors[] = [
+                    'recinto_id' => $r->id,
+                    'nombre' => $r->nombre,
+                    'address' => $address,
+                    'error' => 'EXCEPTION',
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'filters' => [
+                'departamento_id' => $departamentoId,
+                'provincia_id' => $provinciaId,
+                'municipio_id' => $municipioId,
+                'localidad_id' => $localidadId,
+                'limit' => $limit,
+            ],
+            'found' => $recintos->count(),
+            'updated' => $updated,
+            'errors_count' => count($errors),
+            'errors' => $errors,
+        ]);
+    }
     /**
      * Opcional: si quieres restringir solo ORURO:
      * - Puedes filtrar por departamento_id fijo.

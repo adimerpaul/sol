@@ -67,3 +67,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::middleware('auth:sanctum')->get('/dashboard/elecciones/resumen', [EleccionesDashboardController::class, 'resumen']);
 
 });
+//Route::get(
+//    'admin/recintos/geocode',
+//    [RecintoMapaController::class, 'geocodeOruro']
+//);
