@@ -172,6 +172,14 @@
             <q-item-label class="text-white">Jerarquía Usuarios</q-item-label>
           </q-item-section>
         </q-item>
+        <q-item dense to="/admin-recinto-jefe-mapa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+          <q-item-section avatar>
+            <q-icon name="pin_drop" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Mapa Asignar Jefes</q-item-label>
+          </q-item-section>
+        </q-item>
 
         <!--        { path: 'resultados-mesa', component: () => import('pages/resultados/ResultadosMesa.vue'), meta: { requiresAuth: true } },-->
         <q-item dense to="/resultados-mesa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
