@@ -2,52 +2,56 @@
   <q-page class="q-pa-md bg-grey-2">
     <q-card flat bordered class="bg-white">
 
-      <!-- header -->
+      <!-- HEADER + FILTROS -->
       <q-card-section class="row items-center q-col-gutter-sm">
         <div class="col-12 col-md-4">
-          <div class="text-h6 text-weight-bold">Resultados - Mesas (SuperAdmin)</div>
-          <div class="text-caption text-grey-7">
-            1,057 mesas • filtra por recinto, asignación, estado y resultados.
-          </div>
+          <div class="text-h6 text-weight-bold">Resultados · Mesas</div>
+          <div class="text-caption text-grey-7">Asignación y carga de resultados por mesa.</div>
         </div>
 
-        <!-- filtros -->
         <div class="col-12 col-md-8">
-          <div class="row q-col-gutter-sm justify-end">
+          <div class="row q-col-gutter-sm justify-end items-center">
 
-            <div class="col-12 col-sm-4">
+            <div class="col-12 col-sm-5">
               <q-select
                 v-model="filters.recinto_id"
                 :options="recintosOpt"
                 option-label="nombre"
                 option-value="id"
                 emit-value map-options
-                use-input input-debounce="250"
+                use-input input-debounce="200"
                 dense outlined clearable
                 label="Recinto"
                 @filter="filterRecintos"
+                @update:model-value="onPickRecinto"
               />
             </div>
 
             <div class="col-6 col-sm-2">
-              <q-input v-model="filters.mesa" dense outlined label="Mesa #" type="number" />
+              <q-select
+                v-model="filters.mesa_id"
+                :options="mesasOpt"
+                option-label="label"
+                option-value="id"
+                emit-value map-options
+                dense outlined clearable
+                label="Mesa"
+                :disable="!filters.recinto_id || loadingMesas"
+                :loading="loadingMesas"
+              />
             </div>
 
-            <div class="col-6 col-sm-3">
+            <div class="col-6 col-sm-2">
               <q-select
                 v-model="filters.asignado"
                 dense outlined
                 label="Delegado"
-                :options="[
-                  {label:'Todos', value:'ALL'},
-                  {label:'Asignado', value:'YES'},
-                  {label:'Sin asignar', value:'NO'},
-                ]"
+                :options="asignadoOptions"
                 emit-value map-options
               />
             </div>
 
-            <div class="col-6 col-sm-3">
+            <div class="col-6 col-sm-2">
               <q-select
                 v-model="filters.estado"
                 dense outlined clearable
@@ -56,16 +60,12 @@
               />
             </div>
 
-            <div class="col-6 col-sm-3">
+            <div class="col-6 col-sm-2">
               <q-select
                 v-model="filters.con_resultado"
                 dense outlined
                 label="Resultado"
-                :options="[
-                  {label:'Todos', value:'ALL'},
-                  {label:'Con resultado', value:'YES'},
-                  {label:'Sin resultado', value:'NO'},
-                ]"
+                :options="resultadoOptions"
                 emit-value map-options
               />
             </div>
@@ -78,113 +78,161 @@
                 no-caps
                 class="full-width"
                 :loading="loading"
-                @click="refresh()"
+                @click="refresh"
               />
             </div>
+            <div class="col-12 col-sm-3">
+              <q-btn
+                color="teal"
+                icon="download"
+                label="Traer TODO"
+                no-caps
+                class="full-width"
+                :loading="loadingAll"
+                @click="fetchAll"
+              />
+            </div>
+
           </div>
         </div>
       </q-card-section>
 
       <q-separator />
 
-      <!-- tabla -->
-      <q-table
-        flat bordered
-        :rows="rows"
-        :columns="columns"
-        row-key="id"
-        :loading="loading"
-        v-model:pagination="pagination"
-        @request="onRequest"
-        binary-state-sort
-        dense
-        wrap-cells
-      >
-        <template v-slot:top-left>
-          <div class="row items-center q-col-gutter-sm">
-            <q-chip outline color="primary">Total (página): {{ rows.length }}</q-chip>
-            <q-chip outline color="positive">Asignadas: {{ countAsignadas }}</q-chip>
-            <q-chip outline color="negative">Sin delegado: {{ countSinDelegado }}</q-chip>
+      <!-- CHIPS -->
+      <q-card-section class="q-pt-sm q-pb-none">
+        <div class="row items-center q-col-gutter-sm">
+          <div class="col-auto"><q-chip outline color="primary">Total: {{ totalReal }}</q-chip></div>
+          <div class="col-auto"><q-chip outline color="positive">Asignadas: {{ countAsignadas }}</q-chip></div>
+          <div class="col-auto"><q-chip outline color="negative">Sin delegado: {{ countSinDelegado }}</q-chip></div>
+          <div class="col-auto"><q-chip outline color="teal">Con resultado: {{ countConResultado }}</q-chip></div>
+
+          <q-space />
+
+          <div class="col-auto">
+            <q-select
+              v-model="rowsPerPage"
+              dense outlined
+              label="Filas"
+              :options="rowsPerPageOptions"
+              emit-value map-options
+              style="width: 140px"
+              @update:model-value="onChangeRowsPerPage"
+            />
+<!--            <pre>{{rowsPerPage}}</pre>-->
           </div>
-        </template>
+        </div>
 
-        <!-- recinto -->
-        <template v-slot:body-cell-recinto="props">
-          <q-td :props="props">
-            <div class="text-weight-medium">{{ props.row.recinto?.nombre }}</div>
-            <div class="text-caption text-grey-7">Mesa: {{ props.row.numero_mesa }}</div>
-          </q-td>
-        </template>
+<!--        <q-banner v-if="truncated" dense class="bg-orange-2 text-black q-mt-sm">-->
+<!--          OJO: existen <b>{{ totalReal }}</b> registros, pero por rendimiento solo se cargan <b>{{ maxCap }}</b>.-->
+<!--          Ajusta filtros para reducir.-->
+<!--        </q-banner>-->
+      </q-card-section>
 
-        <!-- delegado -->
-        <template v-slot:body-cell-delegado="props">
-          <q-td :props="props">
-            <q-badge
-              outline
-              :color="props.row.delegado ? 'positive' : 'negative'"
-            >
-              {{ props.row.delegado ? (props.row.delegado.name + ' (' + props.row.delegado.username + ')') : 'SIN ASIGNAR' }}
-            </q-badge>
-          </q-td>
-        </template>
+      <!-- TABLA (QMarkupTable) -->
+      <q-card-section class="q-pt-sm">
+        <q-markup-table dense flat bordered separator="horizontal" class="bg-white">
+          <thead>
+          <tr>
+            <th class="text-center" style="width: 110px;">Acciones</th>
+            <th class="text-left">Mesa</th>
+            <th class="text-left">Delegado</th>
+            <th class="text-left">Estado</th>
+            <th class="text-left">Resultado</th>
+            <th class="text-left">Avisos / Etapas</th>
+          </tr>
+          </thead>
 
-        <!-- estado -->
-        <template v-slot:body-cell-estado="props">
-          <q-td :props="props">
-            <q-chip dense text-color="white" :color="colorEstado(props.row.estado)">
-              {{ props.row.estado }}
-            </q-chip>
-          </q-td>
-        </template>
+          <tbody v-if="pagedRows.length">
+          <tr v-for="(r,i) in pagedRows" :key="r.id">
+            <td class="text-center">
+              <q-btn-dropdown dense color="primary" :label="'Acciones ' + (i+1)" no-caps>
+                <q-list>
+                  <q-item clickable v-close-popup @click="openAsignar(r)">
+                    <q-item-section avatar><q-icon name="person_add" /></q-item-section>
+                    <q-item-section><q-item-label>Asignar delegado</q-item-label></q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="openResultado(r)">
+                    <q-item-section avatar><q-icon name="how_to_vote" /></q-item-section>
+                    <q-item-section><q-item-label>Registrar resultado</q-item-label></q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
+            </td>
+            <td class="text-left">
+              <div class="text-weight-bold">Mesa {{ r.numero_mesa }}</div>
+              <div class="text-caption text-grey-7">{{ r.recinto_nombre }}</div>
+            </td>
 
-        <!-- avisos/etapas -->
-        <template v-slot:body-cell-etapas="props">
-          <q-td :props="props">
-            <div class="row items-center q-col-gutter-xs">
-              <q-chip dense size="12px" :color="b(props.row.resultado?.aviso_antes)" text-color="white">Antes</q-chip>
-              <q-chip dense size="12px" :color="b(props.row.resultado?.aviso_manana)" text-color="white">Mañana</q-chip>
-              <q-chip dense size="12px" :color="b(props.row.resultado?.aviso_mediodia)" text-color="white">Mediodía</q-chip>
-              <q-chip dense size="12px" :color="b(props.row.resultado?.aviso_tarde)" text-color="white">Tarde</q-chip>
-              <q-chip dense size="12px" :color="b(props.row.resultado?.etapa_1)" text-color="white">Etapa 1</q-chip>
-              <q-chip dense size="12px" :color="b(props.row.resultado?.etapa_2)" text-color="white">Etapa 2</q-chip>
-            </div>
-          </q-td>
-        </template>
+            <td class="text-left">
+              <q-badge outline :color="r.delegado ? 'positive' : 'negative'">
+                {{ r.delegado ? (r.delegado.name + ' (' + r.delegado.username + ')') : 'SIN ASIGNAR' }}
+              </q-badge>
+            </td>
 
-        <!-- totales -->
-        <template v-slot:body-cell-total="props">
-          <q-td :props="props">
-            <div class="text-weight-bold">
-              {{ props.row.resultado?.total_votos ?? 0 }}
-            </div>
-            <div class="text-caption text-grey-7">
-              Válidos: {{ props.row.resultado?.total_validos ?? 0 }} • B: {{ props.row.resultado?.total_blancos ?? 0 }} • N: {{ props.row.resultado?.total_nulos ?? 0 }}
-            </div>
-          </q-td>
-        </template>
+            <td class="text-left">
+              <q-chip dense text-color="white" :color="colorEstado(r.estado)">
+                {{ r.estado }}
+              </q-chip>
+            </td>
 
-        <!-- acciones -->
-        <template v-slot:body-cell-actions="props">
-          <q-td :props="props" class="text-center">
-            <q-btn-dropdown dense size="10px" color="primary" label="Opciones" no-caps>
-              <q-list>
-                <q-item clickable v-close-popup @click="openAsignar(props.row)">
-                  <q-item-section avatar><q-icon name="person_add" /></q-item-section>
-                  <q-item-section><q-item-label>Asignar delegado</q-item-label></q-item-section>
-                </q-item>
+            <td class="text-left">
+              <div class="row items-center q-gutter-xs">
+                <q-badge outline :color="r.tiene_resultado ? 'teal' : 'grey-6'">
+                  {{ r.tiene_resultado ? 'CON RESULTADO' : 'SIN RESULTADO' }}
+                </q-badge>
+                <q-chip v-if="r.tiene_resultado" dense color="primary" text-color="white">
+                  Total: {{ r.total_votos }}
+                </q-chip>
+              </div>
 
-                <q-item clickable v-close-popup @click="openResultado(props.row)">
-                  <q-item-section avatar><q-icon name="how_to_vote" /></q-item-section>
-                  <q-item-section><q-item-label>Registrar resultado</q-item-label></q-item-section>
-                </q-item>
-              </q-list>
-            </q-btn-dropdown>
-          </q-td>
-        </template>
-      </q-table>
+              <div v-if="r.tiene_resultado" class="text-caption text-grey-7">
+                Válidos: {{ r.total_validos }} · B: {{ r.total_blancos }} · N: {{ r.total_nulos }}
+              </div>
+            </td>
+
+            <td class="text-left">
+              <div class="row items-center q-gutter-xs">
+                <q-chip dense size="11px" :color="b(r.aviso_antes)" text-color="white">Antes</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_manana)" text-color="white">Mañana</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_mediodia)" text-color="white">Mediodía</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_tarde)" text-color="white">Tarde</q-chip>
+                <q-chip dense size="11px" :color="b(r.etapa_1)" text-color="white">Etapa 1</q-chip>
+                <q-chip dense size="11px" :color="b(r.etapa_2)" text-color="white">Etapa 2</q-chip>
+              </div>
+            </td>
+
+          </tr>
+          </tbody>
+
+          <tbody v-else>
+          <tr>
+            <td colspan="6" class="text-center text-grey-7 q-pa-md">
+              <q-icon name="info" class="q-mr-sm" />
+              No hay datos para los filtros.
+            </td>
+          </tr>
+          </tbody>
+        </q-markup-table>
+
+        <!-- PAGINACIÓN -->
+        <div class="row items-center q-mt-md">
+          <div class="text-caption text-grey-7">
+            Mostrando {{ fromRow }}-{{ toRow }} de {{ filteredRows.length }}
+          </div>
+          <q-space />
+          <q-pagination
+            v-model="page"
+            :max="maxPage"
+            boundary-numbers
+            direction-links
+            size="sm"
+          />
+        </div>
+      </q-card-section>
     </q-card>
 
-    <!-- DIALOG: asignar delegado -->
+    <!-- DIALOG: ASIGNAR -->
     <q-dialog v-model="dlgAsignar" persistent>
       <q-card style="width: 520px; max-width: 95vw;">
         <q-card-section class="row items-center">
@@ -192,9 +240,10 @@
           <q-space />
           <q-btn icon="close" flat round dense @click="dlgAsignar=false" />
         </q-card-section>
+
         <q-card-section class="q-pt-none">
           <div class="text-caption text-grey-7 q-mb-sm">
-            {{ curMesa?.recinto?.nombre }} • Mesa {{ curMesa?.numero_mesa }}
+            {{ curMesa?.recinto_nombre }} · Mesa {{ curMesa?.numero_mesa }}
           </div>
 
           <q-select
@@ -203,7 +252,7 @@
             option-label="name"
             option-value="id"
             emit-value map-options
-            use-input input-debounce="250"
+            use-input input-debounce="200"
             dense outlined
             label="Delegado de Mesa"
             clearable
@@ -225,19 +274,18 @@
             label="Estado"
             :options="estadoOptions"
           />
-
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn color="negative" label="Cancelar" no-caps @click="dlgAsignar=false" />
-          <q-btn color="primary" label="Asignar" no-caps :disable="!delegadoPick" :loading="saving" @click="saveAsignar" />
+          <q-btn color="grey-7" label="Cancelar" no-caps @click="dlgAsignar=false" />
+          <q-btn color="primary" label="Guardar" no-caps :disable="!delegadoPick" :loading="saving" @click="saveAsignar" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- DIALOG: resultado -->
+    <!-- DIALOG: RESULTADO -->
     <q-dialog v-model="dlgResultado" persistent>
-      <q-card style="width: 900px; max-width: 98vw;">
+      <q-card style="width: 980px; max-width: 98vw;">
         <q-card-section class="row items-center">
           <div class="text-weight-bold">Resultado de Mesa</div>
           <q-space />
@@ -246,7 +294,7 @@
 
         <q-card-section class="q-pt-none">
           <div class="text-caption text-grey-7">
-            {{ resMesa?.recinto?.nombre }} • Mesa {{ resMesa?.numero_mesa }} •
+            {{ resMesa?.recinto_nombre }} · Mesa {{ resMesa?.numero_mesa }} ·
             Delegado: <span class="text-weight-medium">{{ resMesa?.delegado?.name || 'SIN ASIGNAR' }}</span>
           </div>
 
@@ -255,6 +303,7 @@
           </q-banner>
 
           <div class="row q-col-gutter-sm q-mt-sm">
+            <!-- PANEL IZQ -->
             <div class="col-12 col-md-4">
               <q-card flat bordered>
                 <q-card-section class="text-weight-bold">Avisos / Etapas</q-card-section>
@@ -275,18 +324,53 @@
                 <q-separator />
                 <q-card-section class="row q-col-gutter-sm">
                   <div class="col-6">
-                    <q-input v-model.number="resForm.total_blancos" type="number" dense outlined label="Blancos" />
+                    <q-input v-model.number="resForm.total_blancos" type="number" dense outlined label="Blancos" min="0" />
                   </div>
                   <div class="col-6">
-                    <q-input v-model.number="resForm.total_nulos" type="number" dense outlined label="Nulos" />
+                    <q-input v-model.number="resForm.total_nulos" type="number" dense outlined label="Nulos" min="0" />
                   </div>
                   <div class="col-12">
                     <q-input dense outlined label="Total votos (auto)" :model-value="sumVotos" disable />
                   </div>
                 </q-card-section>
               </q-card>
+
+              <!-- FOTOS (compacto tipo Usuarios) -->
+              <q-card flat bordered class="q-mt-sm">
+                <q-card-section class="text-weight-bold">Fotos (4)</q-card-section>
+                <q-separator />
+                <q-card-section class="q-pt-sm">
+                  <div class="row q-col-gutter-sm">
+                    <div v-for="n in 4" :key="n" class="col-6">
+                      <q-card flat bordered class="q-pa-xs">
+<!--                        <pre>{{fotoPreview(n)}}</pre>-->
+                        <q-img
+                          v-if="fotoPreview(n)"
+                          :src="fotoPreview(n)"
+                          style="height: 110px"
+                          spinner-color="primary"
+                        />
+                        <div v-else class="flex flex-center text-grey-6" style="height: 110px;">
+                          <q-icon name="image" size="28px" />
+                        </div>
+
+                        <div class="q-mt-xs">
+                          <q-file
+                            v-model="fotos[`foto${n}`]"
+                            dense outlined
+                            accept="image/*"
+                            label="Subir"
+                            clearable
+                          />
+                        </div>
+                      </q-card>
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
             </div>
 
+            <!-- PANEL DER -->
             <div class="col-12 col-md-8">
               <q-card flat bordered>
                 <q-card-section class="row items-center">
@@ -295,26 +379,25 @@
                   <q-chip outline color="primary">Total: {{ sumVotos }}</q-chip>
                 </q-card-section>
                 <q-separator />
+
                 <q-card-section style="max-height: 55vh; overflow:auto;">
-                  <div
-                    v-for="p in partidos"
-                    :key="p.id"
-                    class="row items-center q-col-gutter-sm q-mb-xs"
-                  >
-                    <div class="col-12 col-md-6">
+                  <div v-for="p in partidos" :key="p.id" class="row items-center q-col-gutter-sm q-mb-xs">
+                    <div class="col-12 col-md-7 row items-center">
+<!--                      <q-avatar v-if="p.icono_url" size="26px" class="q-mr-sm">-->
+<!--                        <q-img :src="p.icono_url" />-->
+<!--                      </q-avatar>:src="`${$url}/../images/partidos/${props.row.icono}`"-->
+                      <div v-if="p.icono" class="q-mr-sm">
+                        <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
+                      </div>
+
                       <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
                         {{ p.sigla }}
                       </q-badge>
                       <span class="q-ml-sm">{{ p.nombre }}</span>
                     </div>
-                    <div class="col-12 col-md-6">
-                      <q-input
-                        v-model.number="votosMap[p.id]"
-                        type="number"
-                        dense outlined
-                        label="Votos"
-                        min="0"
-                      />
+
+                    <div class="col-12 col-md-5">
+                      <q-input v-model.number="votosMap[p.id]" type="number" dense outlined label="Votos" min="0" />
                     </div>
                   </div>
                 </q-card-section>
@@ -330,7 +413,7 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn color="negative" label="Cerrar" no-caps @click="dlgResultado=false" />
+          <q-btn color="grey-7" label="Cerrar" no-caps @click="dlgResultado=false" />
           <q-btn
             color="primary"
             label="Guardar resultado"
@@ -342,7 +425,6 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
 
@@ -351,24 +433,51 @@ export default {
   name: 'AdminResultadosMesas',
   data () {
     return {
+      loadingAll: false,
       loading: false,
       saving: false,
+      loadingMesas: false,
 
-      rows: [],
-      pagination: { page: 1, rowsPerPage: 25, rowsNumber: 0, sortBy: 'numero_mesa', descending: false },
+      // datos
+      allRows: [],
+      totalReal: 0,
+      truncated: false,
+      maxCap: 250,
+
+      // paginación local
+      page: 1,
+      rowsPerPage: 0,
+      rowsPerPageOptions: [
+        { label: '15', value: 15 },
+        { label: '30', value: 30 },
+        { label: '50', value: 50 },
+        { label: '100', value: 100 },
+        { label: 'Todas', value: 0 }
+      ],
 
       filters: {
         recinto_id: null,
-        mesa: null,
+        mesa_id: null,
         asignado: 'ALL',
         estado: null,
         con_resultado: 'ALL'
       },
 
       estadoOptions: ['PENDIENTE','ASIGNADA','EN_PROCESO','FINALIZADA','OBSERVADA'],
+      asignadoOptions: [
+        {label:'Todos', value:'ALL'},
+        {label:'Asignado', value:'YES'},
+        {label:'Sin asignar', value:'NO'}
+      ],
+      resultadoOptions: [
+        {label:'Todos', value:'ALL'},
+        {label:'Con resultado', value:'YES'},
+        {label:'Sin resultado', value:'NO'}
+      ],
 
       recintosOpt: [],
       recintosBase: [],
+      mesasOpt: [],
 
       // asignar
       dlgAsignar: false,
@@ -392,17 +501,55 @@ export default {
         total_blancos: 0,
         total_nulos: 0,
         observacion: ''
-      }
+      },
+
+      // fotos
+      fotos: { foto1: null, foto2: null, foto3: null, foto4: null },
+      fotosServer: { foto1_url: null, foto2_url: null, foto3_url: null, foto4_url: null }
     }
   },
 
   computed: {
+    // filas actuales (ya vienen filtradas del backend, por eso "filteredRows" = allRows)
+    filteredRows () {
+      return this.allRows || []
+    },
+
+    maxPage () {
+      const rp = this.realRowsPerPage
+      if (rp <= 0) return 1
+      return Math.max(1, Math.ceil(this.filteredRows.length / rp))
+    },
+
+    realRowsPerPage () {
+      // 0 => todas (máx 250)
+      if (this.rowsPerPage === 0) return this.filteredRows.length || 1
+      return this.rowsPerPage
+    },
+
+    pagedRows () {
+      const rp = this.realRowsPerPage
+      const start = (this.page - 1) * rp
+      return this.filteredRows.slice(start, start + rp)
+    },
+
+    fromRow () {
+      if (!this.filteredRows.length) return 0
+      return (this.page - 1) * this.realRowsPerPage + 1
+    },
+    toRow () {
+      if (!this.filteredRows.length) return 0
+      return Math.min(this.filteredRows.length, (this.page - 1) * this.realRowsPerPage + this.realRowsPerPage)
+    },
+
     countSinDelegado () {
-      return (this.rows || []).filter(x => !x.delegado_id).length
+      // this.allRows.length
+      // return (this.filteredRows || []).filter(x => !x.delegado_id).length
+      return this.totalReal - this.countAsignadas
     },
-    countAsignadas () {
-      return (this.rows || []).filter(x => !!x.delegado_id).length
-    },
+    countAsignadas () { return (this.filteredRows || []).filter(x => !!x.delegado_id).length },
+    countConResultado () { return (this.filteredRows || []).filter(x => !!x.tiene_resultado).length },
+
     sumVotos () {
       let s = 0
       for (const k of Object.keys(this.votosMap || {})) {
@@ -427,16 +574,15 @@ export default {
       if (e === 'OBSERVADA') return 'negative'
       return 'grey-7'
     },
-    b (val) {
-      return val ? 'positive' : 'grey-6'
+    b (val) { return val ? 'positive' : 'grey-6' },
+
+    onChangeRowsPerPage () {
+      this.page = 1
     },
 
     async loadOptions () {
-      // recintos
       this.recintosBase = await this.$axios.get('admin/mesas/options/recintos').then(r => r.data)
       this.recintosOpt = this.recintosBase
-
-      // delegados
       this.delegadosOpt = await this.$axios.get('admin/mesas/options/delegados').then(r => r.data)
     },
 
@@ -448,19 +594,78 @@ export default {
       })
     },
 
-    refresh () {
-      this.onRequest({ pagination: this.pagination })
+    async onPickRecinto (recintoId) {
+      this.filters.mesa_id = null
+      this.mesasOpt = []
+      if (!recintoId) return
+
+      this.loadingMesas = true
+      try {
+        const data = await this.$axios.get('admin/mesas/options/mesas', { params: { recinto_id: recintoId } }).then(r => r.data)
+        this.mesasOpt = (data || []).map(x => ({
+          id: x.id,
+          label: `Mesa ${x.numero_mesa} (${x.estado})`
+        }))
+      } finally {
+        this.loadingMesas = false
+      }
+    },
+    async fetchAll () {
+      this.loadingAll = true
+      try {
+        const baseParams = {
+          recinto_id: this.filters.recinto_id || undefined,
+          mesa_id: this.filters.mesa_id || undefined,
+          asignado: this.filters.asignado,
+          estado: this.filters.estado || undefined,
+          con_resultado: this.filters.con_resultado,
+          all: 1,              // 🔥 activa paginate del backend
+          per_page: 200        // lote (sube/baja)
+        }
+
+        let page = 1
+        let all = []
+        let total = 0
+        let last = 1
+
+        do {
+          const res = await this.$axios.get('admin/mesas', {
+            params: { ...baseParams, page }
+          }).then(r => r.data)
+
+          total = res.total
+          last = res.last_page
+
+          all = all.concat(res.data || [])
+          page++
+
+          // opcional: feedback
+          this.totalReal = total
+          this.allRows = all
+        } while (page <= last)
+
+        this.allRows = all
+        this.totalReal = total
+        this.truncated = false
+        this.maxCap = total
+
+        // ✅ ahora sí "Todas" real
+        this.rowsPerPage = 0
+        this.page = 1
+        this.$alert.success(`Cargadas ${all.length} filas`)
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo traer todo')
+      } finally {
+        this.loadingAll = false
+      }
     },
 
-    async onRequest ({ pagination }) {
+    async refresh () {
       this.loading = true
       try {
         const params = {
-          page: pagination.page,
-          per_page: pagination.rowsPerPage,
-
           recinto_id: this.filters.recinto_id || undefined,
-          mesa: this.filters.mesa || undefined,
+          mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado
@@ -468,11 +673,11 @@ export default {
 
         const res = await this.$axios.get('admin/mesas', { params }).then(r => r.data)
 
-        this.rows = res.data || []
-        this.pagination = {
-          ...pagination,
-          rowsNumber: res.total || 0
-        }
+        this.allRows = res.data || []
+        this.totalReal = res.total || this.allRows.length
+        this.truncated = !!res.truncated
+        this.maxCap = res.max || 250
+        this.page = 1
       } finally {
         this.loading = false
       }
@@ -503,6 +708,17 @@ export default {
       }
     },
 
+    // preview: primero archivo local, si no hay -> foto server
+    fotoPreview (n) {
+      const key = `foto${n}`
+      // console.log('fotoPreview', key, this.fotos[key], this.fotosServer[`${key}_url`])
+      const f =  this.fotos[key]
+      // console.log('fotoPreview file', f)
+      if (f) return URL.createObjectURL(f)
+      // console.log('fotoPreview server', this.fotosServer[`${key}_url`])
+      return this.$url+'/..'+this.fotosServer[`${key}_url`] || null
+    },
+
     async openResultado (row) {
       this.saving = true
       try {
@@ -511,7 +727,7 @@ export default {
         this.resMesa = data.mesa
         this.partidos = data.partidos || []
 
-        // reset
+        // reset form + votos + fotos
         this.votosMap = {}
         this.resForm = {
           aviso_antes: false,
@@ -525,7 +741,9 @@ export default {
           observacion: ''
         }
 
-        // si ya existe resultado -> cargar
+        this.fotos = { foto1: null, foto2: null, foto3: null, foto4: null }
+        this.fotosServer = { foto1_url: null, foto2_url: null, foto3_url: null, foto4_url: null }
+
         if (data.resultado) {
           const r = data.resultado
 
@@ -535,21 +753,23 @@ export default {
           this.resForm.aviso_tarde = !!r.aviso_tarde
           this.resForm.etapa_1 = !!r.etapa_1
           this.resForm.etapa_2 = !!r.etapa_2
+
           this.resForm.total_blancos = Number(r.total_blancos || 0)
           this.resForm.total_nulos = Number(r.total_nulos || 0)
           this.resForm.observacion = r.observacion || ''
 
-          // detalles
+          // fotos existentes
+          this.fotosServer.foto1_url = r.foto1_url || null
+          this.fotosServer.foto2_url = r.foto2_url || null
+          this.fotosServer.foto3_url = r.foto3_url || null
+          this.fotosServer.foto4_url = r.foto4_url || null
+
           const det = r.detalles || []
-          det.forEach(d => {
-            this.votosMap[d.partido_id] = Number(d.votos || 0)
-          })
+          det.forEach(d => { this.votosMap[d.partido_id] = Number(d.votos || 0) })
         }
 
-        // inicializa votosMap para todos los partidos
-        this.partidos.forEach(p => {
-          if (this.votosMap[p.id] == null) this.votosMap[p.id] = 0
-        })
+        // asegurar todos los partidos
+        this.partidos.forEach(p => { if (this.votosMap[p.id] == null) this.votosMap[p.id] = 0 })
 
         this.dlgResultado = true
       } catch (e) {
@@ -568,11 +788,33 @@ export default {
           votos: Number(this.votosMap[p.id] || 0)
         }))
 
-        await this.$axios.put(`admin/mesas/${this.resMesa.id}/resultado`, {
-          ...this.resForm,
-          total_validos: this.sumVotos, // auto
-          votos
-        })
+        // multipart
+        const fd = new FormData()
+        fd.append('aviso_antes', this.resForm.aviso_antes ? '1' : '0')
+        fd.append('aviso_manana', this.resForm.aviso_manana ? '1' : '0')
+        fd.append('aviso_mediodia', this.resForm.aviso_mediodia ? '1' : '0')
+        fd.append('aviso_tarde', this.resForm.aviso_tarde ? '1' : '0')
+        fd.append('etapa_1', this.resForm.etapa_1 ? '1' : '0')
+        fd.append('etapa_2', this.resForm.etapa_2 ? '1' : '0')
+
+        fd.append('total_blancos', String(this.resForm.total_blancos || 0))
+        fd.append('total_nulos', String(this.resForm.total_nulos || 0))
+        fd.append('total_validos', String(this.sumVotos || 0))
+        fd.append('observacion', this.resForm.observacion || '')
+
+        fd.append('votos', JSON.stringify(votos))
+
+        // fotos (si selecciona, reemplaza)
+        if (this.fotos.foto1) fd.append('foto1', this.fotos.foto1)
+        if (this.fotos.foto2) fd.append('foto2', this.fotos.foto2)
+        if (this.fotos.foto3) fd.append('foto3', this.fotos.foto3)
+        if (this.fotos.foto4) fd.append('foto4', this.fotos.foto4)
+
+        await this.$axios.post(
+          `admin/mesas/${this.resMesa.id}/resultado?_method=PUT`,
+          fd,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        )
 
         this.$alert.success('Resultado guardado')
         this.dlgResultado = false

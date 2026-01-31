@@ -221,7 +221,7 @@ export default {
   },
 
   async mounted () {
-    await this.loadResumen()
+    // await this.loadResumen()
   },
 
   methods: {
