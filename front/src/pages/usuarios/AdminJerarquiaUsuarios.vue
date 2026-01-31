@@ -404,11 +404,12 @@ export default {
       }
     },
 
-    selectJefe (j) {
+    async selectJefe (j) {
       this.selectedJefe = { ...j }
       this.assignedDelegadoIds = []
       this.delegadoToAdd = null
-      this.loadDelegadosDeJefe(j.id)
+
+      await this.loadDelegadosDeJefe(this.selectedJefe.id)
     },
 
     async loadDelegadosDeJefe (jefeId) {
@@ -459,13 +460,17 @@ export default {
 
     async saveJefes () {
       if (!this.selectedSupervisor?.id) return
+      const supId = this.selectedSupervisor.id
+
       this.savingJefes = true
       try {
-        await this.$axios.put(`admin/jerarquia/supervisores/${this.selectedSupervisor.id}/jefes`, {
-          jefes: this.assignedJefeIds
-        })
+        await this.$axios.put(`admin/jerarquia/supervisores/${supId}/jefes`, { jefes: this.assignedJefeIds })
         this.$alert?.success('Jefes guardados')
+
         await this.loadAll()
+
+        const againS = (this.supervisores || []).find(x => x.id === supId)
+        if (againS) await this.selectSupervisor(againS)
       } catch (e) {
         this.$alert?.error(e.response?.data?.message || 'No se pudo guardar jefes')
       } finally {
@@ -490,22 +495,30 @@ export default {
 
     async saveDelegados () {
       if (!this.selectedJefe?.id) return
+
+      const jefeId = this.selectedJefe.id  // ✅ guarda id antes de recargar
       this.savingDelegados = true
-      // try {
-        await this.$axios.put(`admin/jerarquia/jefes/${this.selectedJefe.id}/delegados`, {
+
+      try {
+        await this.$axios.put(`admin/jerarquia/jefes/${jefeId}/delegados`, {
           delegados: this.assignedDelegadoIds
         })
+
         this.$alert?.success('Delegados guardados')
-        // refresca conteos del jefe
+
+        // ✅ recargar listas (conteos de delegados_count)
         await this.loadAll()
-        // recarga lista de delegados del jefe seleccionado (porque loadAll rehidrata arrays)
-        const againJ = (this.jefesAll || []).find(x => x.id === this.selectedJefe.id)
-        if (againJ) this.selectJefe(againJ)
-      // } catch (e) {
-      //   this.$alert?.error(e.response?.data?.message || 'No se pudo guardar delegados')
-      // } finally {
-      //   this.savingDelegados = false
-      // }
+
+        // ✅ rehidratar el jefe seleccionado con el array nuevo
+        const againJ = (this.jefesAll || []).find(x => x.id === jefeId)
+        if (againJ) {
+          await this.selectJefe(againJ) // ✅ ahora sí espera cargar delegados
+        }
+      } catch (e) {
+        this.$alert?.error(e.response?.data?.message || 'No se pudo guardar delegados')
+      } finally {
+        this.savingDelegados = false
+      }
     }
   }
 }
