@@ -12,6 +12,8 @@ const routes = [
       { path: 'admin-recintos-mapa', component: () => import('pages/geo/AdminRecintosMapa.vue'), meta: { requiresAuth: true } },
       { path: 'admin-jerarquia-usuarios', component: () => import('pages/usuarios/AdminJerarquiaUsuarios.vue'), meta: { requiresAuth: true } },
       { path: 'admin-recinto-jefe-mapa', component: () => import('pages/usuarios/AdminRecintoJefeMapa.vue'), meta: { requiresAuth: true } },
+      { path: 'admin-resultados-mesas', component: () => import('pages/resultados/AdminResultadosMesas.vue'), meta: { requiresAuth: true } },
+
     ]
   },
   {

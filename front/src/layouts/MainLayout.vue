@@ -180,6 +180,23 @@
             <q-item-label class="text-white">Mapa Asignar Jefes</q-item-label>
           </q-item-section>
         </q-item>
+        <q-item
+          dense
+          to="/admin-resultados-mesas"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission('SuperAdmin Mesas') || ($store.user?.role === 'Administrador')"
+        >
+          <q-item-section avatar>
+            <q-icon name="table_view" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">SuperAdmin Mesas</q-item-label>
+          </q-item-section>
+        </q-item>
 
         <!--        { path: 'resultados-mesa', component: () => import('pages/resultados/ResultadosMesa.vue'), meta: { requiresAuth: true } },-->
         <q-item dense to="/resultados-mesa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
