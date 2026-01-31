@@ -15,7 +15,7 @@ class RecintoMapaController extends Controller
     public function geocodeOruro(Request $request)
     {
 //        $apiKey = config('services.google.maps_key', env('GOOGLE_MAPS_API_KEY'));
-        $apiKey = "AIzaSyDz5BANK2jX_un-Zu_qZpK0cO8ZuOmK7No";
+        $apiKey = "XXXXs";
 
         if (!$apiKey) {
             return response()->json([
