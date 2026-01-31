@@ -246,7 +246,7 @@ export default {
       municipioId: 191,
       localidadId: 1988,
       search: '',
-      onlyMissing: true,
+      onlyMissing: false,
 
       provOptions: [],
       munOptions: [],
