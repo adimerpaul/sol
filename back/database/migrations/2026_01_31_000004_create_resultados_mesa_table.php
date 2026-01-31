@@ -30,6 +30,11 @@ return new class extends Migration {
             $table->integer('total_validos')->default(0);
             $table->integer('total_blancos')->default(0);
             $table->integer('total_nulos')->default(0);
+//            'foto1','foto2','foto3','foto4',
+            $table->string('foto1')->nullable();
+            $table->string('foto2')->nullable();
+            $table->string('foto3')->nullable();
+            $table->string('foto4')->nullable();
 
             $table->text('observacion')->nullable();
 

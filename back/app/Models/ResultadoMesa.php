@@ -15,6 +15,7 @@ class ResultadoMesa extends Model
         'mesa_id','registrado_por',
         'aviso_antes','aviso_manana','aviso_mediodia','aviso_tarde',
         'etapa_1','etapa_2',
+        'foto1','foto2','foto3','foto4',
         'total_votos','total_validos','total_blancos','total_nulos',
         'observacion'
     ];

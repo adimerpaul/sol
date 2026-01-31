@@ -83,14 +83,23 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('admin/mapa-recintos/jefes', [AdminRecintoJefeMapaController::class, 'jefes']);
     Route::put('admin/mapa-recintos/recintos/{recinto}/jefe', [AdminRecintoJefeMapaController::class, 'asignar']);
 
-    Route::get('admin/mesas', [SuperAdminMesasController::class, 'index']);
-    Route::get('admin/mesas/options/recintos', [SuperAdminMesasController::class, 'recintosOptions']);
-    Route::get('admin/mesas/options/delegados', [SuperAdminMesasController::class, 'delegadosOptions']);
-
-    Route::put('admin/mesas/{mesa}/delegado', [SuperAdminMesasController::class, 'asignarDelegado']);
+//    Route::get('admin/mesas', [SuperAdminMesasController::class, 'index']);
+//    Route::get('admin/mesas/options/recintos', [SuperAdminMesasController::class, 'recintosOptions']);
+//    Route::get('admin/mesas/options/delegados', [SuperAdminMesasController::class, 'delegadosOptions']);
+//
+//    Route::put('admin/mesas/{mesa}/delegado', [SuperAdminMesasController::class, 'asignarDelegado']);
 
     Route::get('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'resultado']);
     Route::put('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'guardarResultado']);
+    Route::get('admin/mesas/options/mesas', [SuperAdminMesasController::class, 'mesasOptions']);
+    Route::get('admin/mesas', [SuperAdminMesasController::class, 'index']);
+    Route::get('admin/mesas/options/recintos', [SuperAdminMesasController::class, 'recintosOptions']);
+    Route::get('admin/mesas/options/mesas', [SuperAdminMesasController::class, 'mesasOptions']); // ✅ NUEVO
+    Route::get('admin/mesas/options/delegados', [SuperAdminMesasController::class, 'delegadosOptions']);
+    Route::put('admin/mesas/{mesa}/delegado', [SuperAdminMesasController::class, 'asignarDelegado']);
+    Route::get('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'resultado']);
+    Route::put('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'guardarResultado']);
+
 
 });
 //Route::get(
