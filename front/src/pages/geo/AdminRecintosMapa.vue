@@ -4,11 +4,11 @@
 
       <!-- HEADER -->
       <q-card-section class="row items-center">
-        <q-avatar rounded size="42px" class="bg-blue-1">
-          <q-icon name="map" class="text-primary" />
-        </q-avatar>
+<!--        <q-avatar rounded size="42px" class="bg-blue-1">-->
+<!--          <q-icon name="map" class="text-primary" />-->
+<!--        </q-avatar>-->
 
-        <div class="col">
+        <div class="col-12">
           <div class="text-h6 text-weight-bold">Actualización de Mapas • Recintos</div>
           <div class="text-caption text-grey-7">
             Filtra por provincia/municipio/localidad • Selecciona recinto • Completa distrito y coordenadas (lat/lng)
@@ -24,10 +24,8 @@
       <q-separator />
 
       <q-card-section class="q-pa-none">
-        <q-splitter v-model="split" style="height: calc(100vh - 180px); min-height: 580px">
-
-          <!-- LEFT: LISTA + FILTROS -->
-          <template v-slot:before>
+        <div class="row">
+          <div class="col-12 col-md-4">
             <div class="q-pa-sm">
 
               <!-- filtros -->
@@ -142,10 +140,8 @@
                 </q-item>
               </q-list>
             </div>
-          </template>
-
-          <!-- RIGHT: EDITOR + MAPA -->
-          <template v-slot:after>
+          </div>
+          <div class="col-12 col-md-8">
             <div class="q-pa-sm">
               <div v-if="!selected" class="text-grey-7 q-pa-md">
                 Selecciona un recinto de la lista para editar sus coordenadas.
@@ -202,9 +198,21 @@
                 </q-card>
               </div>
             </div>
-          </template>
+          </div>
+        </div>
+<!--        <q-splitter v-model="split" style="height: calc(100vh - 180px); min-height: 580px">-->
 
-        </q-splitter>
+<!--          &lt;!&ndash; LEFT: LISTA + FILTROS &ndash;&gt;-->
+<!--          <template v-slot:before>-->
+
+<!--          </template>-->
+
+<!--          &lt;!&ndash; RIGHT: EDITOR + MAPA &ndash;&gt;-->
+<!--          <template v-slot:after>-->
+
+<!--          </template>-->
+
+<!--        </q-splitter>-->
       </q-card-section>
 
       <q-inner-loading :showing="loading || loadingCatalogo || loadingMunicipios || loadingLocalidades">

@@ -393,9 +393,11 @@ export default {
       this.assignedDelegadoIds = []
       this.delegadoToAdd = null
       this.jefeToAdd = null
+      this.loading = true
 
       try {
         const r = await this.$axios.get(`admin/jerarquia/supervisores/${s.id}/jefes`)
+        this.loading = false
         const assigned = Array.isArray(r.data) ? r.data : []
         this.assignedJefeIds = assigned.map(x => x.id)
       } catch (e) {
