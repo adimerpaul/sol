@@ -12,7 +12,7 @@ class AdminUserJerarquiaController extends Controller
     {
         return User::query()
             ->select('id','name','username','role','avatar','email')
-            ->where('role', 'Supervisor')
+            ->whereIn('role', ['Supervisor', 'Administrador'])
             ->withCount(['jefesAsignados as jefes_count'])
             ->orderBy('name')
             ->get();
@@ -42,8 +42,11 @@ class AdminUserJerarquiaController extends Controller
     // Devuelve jefes asignados a un supervisor
     public function supervisorJefes(User $supervisor)
     {
-        if ($supervisor->role !== 'Supervisor') {
-            return response()->json(['message' => 'El usuario no es Supervisor'], 422);
+//        if ($supervisor->role !== 'Supervisor') {
+//            return response()->json(['message' => 'El usuario no es Supervisor'], 422);
+//        } pue deser supervisor o administrador
+        if (!in_array($supervisor->role, ['Supervisor', 'Administrador'])) {
+            return response()->json(['message' => 'El usuario no es Supervisor o Administrador'], 422);
         }
 
         return $supervisor->jefesAsignados()
@@ -56,8 +59,8 @@ class AdminUserJerarquiaController extends Controller
     // Sync jefes a supervisor (reemplaza todo)
     public function syncSupervisorJefes(Request $request, User $supervisor)
     {
-        if ($supervisor->role !== 'Supervisor') {
-            return response()->json(['message' => 'El usuario no es Supervisor'], 422);
+        if (!in_array($supervisor->role, ['Supervisor', 'Administrador'])) {
+            return response()->json(['message' => 'El usuario no es Supervisor o Administrador'], 422);
         }
 
         $data = $request->validate([

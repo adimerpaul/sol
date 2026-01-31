@@ -117,6 +117,7 @@ class DatabaseSeeder extends Seeder
             'localidades_202512241454.sql',
             'recintos_202512241454.sql',
             'mesas_202512241524.sql',
+            'update_location.sql',
         ];
         foreach ($files as $file) {
             $path = $url . $file;
