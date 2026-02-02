@@ -17,7 +17,7 @@ class AdminRecintoJefeMapaController extends Controller
         // Admin ve TODOS sus recintos asignados
         if ($user->role === 'Administrador') {
             return Recinto::with(['jefe:id,name,username'])
-                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id))
+//                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id))
                 ->get();
         }
 
@@ -40,6 +40,13 @@ class AdminRecintoJefeMapaController extends Controller
 
         if (!in_array($user->role, ['Administrador','Supervisor'])) {
             return response()->json([], 403);
+        }
+        if ($user->role === 'Administrador') {
+            return User::where('role', 'Jefe de Recinto')
+                ->select('id','name','username')
+                ->orderBy('name')
+                ->get();
+
         }
 
         return $user->jefesAsignados()

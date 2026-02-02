@@ -3,7 +3,11 @@
     <q-card flat bordered class="bg-white">
 
       <q-card-section>
-        <div class="text-h6 text-weight-bold">Asignación de Jefes por Recinto (Mapa)</div>
+        <div class="text-h6 text-weight-bold">
+          Asignación de Jefes por Recinto (Mapa)
+<!--          btn atulizar-->
+          <q-btn icon="refresh" round dense flat class="q-ml-sm" @click="load" />
+        </div>
         <div class="text-caption text-grey-7">Selecciona un recinto en el mapa y asigna su jefe</div>
 
         <!-- chips -->
