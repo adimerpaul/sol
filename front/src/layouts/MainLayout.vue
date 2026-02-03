@@ -143,7 +143,7 @@
             <q-icon name="people" class="text-white"/>
           </q-item-section>
           <q-item-section>
-            <q-item-label class="text-white">Usuarios</q-item-label>
+            <q-item-label class="text-white">Delegados de Mesa</q-item-label>
           </q-item-section>
         </q-item>
 <!--        partidos-->

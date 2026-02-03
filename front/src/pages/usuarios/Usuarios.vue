@@ -204,7 +204,7 @@
               </div>
 
               <div class="col-12 col-md-4">
-                <q-input v-model="user.email" label="Email" dense outlined />
+                <q-input v-model="user.email" label="Celular" dense outlined />
               </div>
 
               <div class="col-12 col-md-4">
@@ -233,14 +233,13 @@
             <!-- ARCHIVOS -->
             <div class="row q-col-gutter-sm">
               <div class="col-12 col-md-4">
-                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (anverso) *</div>
+                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (anverso) </div>
                 <q-file
                   v-model="files.ci_anverso"
                   dense outlined
                   accept="image/*,application/pdf"
                   label="Subir archivo (máx 10MB)"
                   clearable
-                  :rules="[v => !!user.id ? true : (!!v || 'Requerido')]"
                 />
                 <div v-if="user.ci_anverso_url" class="text-caption text-primary q-mt-xs">
                   Ya cargado:
@@ -252,14 +251,13 @@
               </div>
 
               <div class="col-12 col-md-4">
-                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (reverso) *</div>
+                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (reverso) </div>
                 <q-file
                   v-model="files.ci_reverso"
                   dense outlined
                   accept="image/*,application/pdf"
                   label="Subir archivo (máx 10MB)"
                   clearable
-                  :rules="[v => !!user.id ? true : (!!v || 'Requerido')]"
                 />
                 <div v-if="user.ci_reverso_url" class="text-caption text-primary q-mt-xs">
                   Ya cargado:
@@ -271,14 +269,13 @@
               </div>
 
               <div class="col-12 col-md-4">
-                <div class="text-caption text-grey-7 q-mb-xs">Foto personal (selfie) *</div>
+                <div class="text-caption text-grey-7 q-mb-xs">Foto personal (selfie) </div>
                 <q-file
                   v-model="files.foto_personal"
                   dense outlined
                   accept="image/*"
                   label="Subir archivo (máx 10MB)"
                   clearable
-                  :rules="[v => !!user.id ? true : (!!v || 'Requerido')]"
                 />
                 <div v-if="user.foto_personal_url" class="text-caption text-primary q-mt-xs">
                   Ya cargado:
@@ -379,6 +376,7 @@ export default {
 
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
+        { name: 'email', label: 'Celular', align: 'left', field: 'email' },
         { name: 'nombres', label: 'Nombre(s)', align: 'left', field: 'nombres' },
         { name: 'apellido_paterno', label: 'Ap. paterno', align: 'left', field: 'apellido_paterno' },
         { name: 'apellido_materno', label: 'Ap. materno', align: 'left', field: 'apellido_materno' },

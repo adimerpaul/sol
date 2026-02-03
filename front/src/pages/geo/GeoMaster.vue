@@ -99,6 +99,7 @@
             @update:filters="(v) => (provincias.filters = v)"
             @filters-changed="() => {}"
           />
+<!--          <pre>{{provinciaSelects}}</pre>-->
         </q-tab-panel>
 
         <!-- ===================== MUNICIPIOS ===================== -->
@@ -172,7 +173,14 @@ export default {
     return {
       tab: 'provincias',
       loadingGeo: false,
-
+      defaults: {
+        pais_id: 1,          // si no usas país, déjalo null
+        departamento_id: 5,     // Oruro
+        provincia_id: 57,       // Cercado
+        municipio_id: 191,      // Oruro
+        localidad_id: 1988,     // Oruro
+        recinto_id: null        // si quieres fijo, pon el id
+      },
       geo: {
         paises: [],
         departamentos: [],
@@ -182,38 +190,35 @@ export default {
         recintos: [],
       },
 
-      departamentos: { filters: { pais_id: null } },
-      provincias: { filters: { pais_id: null, departamento_id: null } },
-      municipios: {
-        filters: { pais_id: null, departamento_id: null, provincia_id: null },
-      },
+      departamentos: { filters: { pais_id: 1 } },
+
+      // ✅ PROVINCIAS: solo necesita departamento_id
+      provincias: { filters: { pais_id: 1, departamento_id: 5 } },
+
+      // ✅ MUNICIPIOS: depto + provincia
+      municipios: { filters: { pais_id: 1, departamento_id: 5, provincia_id: 57 } },
+
+      // ✅ LOCALIDADES: depto + provincia + municipio
       localidades: {
-        filters: {
-          pais_id: null,
-          departamento_id: null,
-          provincia_id: null,
-          municipio_id: null,
-        },
+        filters: { pais_id: 1, departamento_id: 5, provincia_id: 57, municipio_id: 191 }
       },
+
+      // ✅ RECINTOS: depto + provincia + municipio + localidad
       recintos: {
-        filters: {
-          pais_id: null,
-          departamento_id: null,
-          provincia_id: null,
-          municipio_id: null,
-          localidad_id: null,
-        },
+        filters: { pais_id: 1, departamento_id: 5, provincia_id: 57, municipio_id: 191, localidad_id: 1988 }
       },
+
+      // ✅ MESAS: todo + recinto (si quieres)
       mesas: {
         filters: {
-          pais_id: null,
-          departamento_id: null,
-          provincia_id: null,
-          municipio_id: null,
-          localidad_id: null,
-          recinto_id: null,
-        },
-      },
+          pais_id: 1,
+          departamento_id: 5,
+          provincia_id: 57,
+          municipio_id: 191,
+          localidad_id: 1988,
+          recinto_id: null
+        }
+      }
     };
   },
 

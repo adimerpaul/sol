@@ -50,6 +50,12 @@ class AdminUserRecintoController extends Controller
             ->whereHas('departamento', fn($d) =>
             $d->whereRaw('UPPER(nombre) = ?', ['ORURO'])
             )
+//        &pais_id=1&departamento_id=5&provincia_id=57&municipio_id=191&localidad_id=1988&page=1&per_page=10
+            ->where('pais_id', 1)
+            ->where('departamento_id', 5)
+            ->where('provincia_id', 57)
+            ->where('municipio_id', 191)
+            ->where('localidad_id', 1988)
             ->withCount('mesas') // 👈 mesas_count
             ->orderBy('nombre')
             ->get();
@@ -84,6 +90,12 @@ class AdminUserRecintoController extends Controller
                 'provincia:id,nombre',
                 'departamento:id,nombre',
             ])
+            //        &pais_id=1&departamento_id=5&provincia_id=57&municipio_id=191&localidad_id=1988&page=1&per_page=10
+            ->where('pais_id', 1)
+            ->where('departamento_id', 5)
+            ->where('provincia_id', 57)
+            ->where('municipio_id', 191)
+            ->where('localidad_id', 1988)
             ->whereDoesntHave('users')
             ->withCount('mesas')
             ->orderBy('nombre')

@@ -157,6 +157,13 @@
                   </tr>
                   </tbody>
                 </q-markup-table>
+<!--                mesanje si es made de 5 jefes de recinto un mesnaje-->
+                <div v-if="assignedJefeIds.length >= 5" class="q-mt-sm">
+                  <q-banner dense class="bg-yellow-2 text-yellow-10">
+                    <q-icon name="warning" class="q-mr-sm" />
+                    Has asignado 5 o más jefes de recinto. Asegúrate de que esto es intencional.
+                  </q-banner>
+                </div>
               </div>
             </div>
             <div class="q-pa-sm">

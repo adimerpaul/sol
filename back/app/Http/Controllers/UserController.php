@@ -109,7 +109,7 @@ class UserController extends Controller{
             'username' => 'required|string|max:120|unique:users,username',
             'password' => 'required|string|min:4',
             'role' => 'required|string|max:60',
-            'email' => 'nullable|email|max:180',
+            'email' => 'nullable|max:180',
         ]);
 
         $data['password'] = bcrypt($data['password']);
@@ -137,7 +137,7 @@ class UserController extends Controller{
 
             'username' => 'required|string|max:120|unique:users,username,'.$user->id,
             'role' => 'required|string|max:60',
-            'email' => 'nullable|email|max:180',
+            'email' => 'nullable|max:180',
         ]);
 
         $data['name'] = trim($data['nombres'].' '.$data['apellido_paterno'].' '.$data['apellido_materno']);
