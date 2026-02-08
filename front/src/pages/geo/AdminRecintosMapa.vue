@@ -124,6 +124,15 @@
                       <q-badge v-else color="green" outline>
                         OK
                       </q-badge>
+                      <q-badge :color="r.delegados_ok ? 'positive' : 'negative'" outline>
+                        {{ r.delegados_ok ? 'Delegados OK' : 'Falta delegados' }}
+                      </q-badge>
+                      <q-badge color="grey-8" outline>
+                        Mesas: {{ r.mesas_total }}
+                      </q-badge>
+                      <q-badge color="primary" outline>
+                        Asignadas: {{ r.mesas_asignadas }}
+                      </q-badge>
                       <q-badge v-if="r.distrito" color="primary" outline>
                         Distrito: {{ r.distrito }}
                       </q-badge>
@@ -131,7 +140,7 @@
                   </q-item-section>
 
                   <q-item-section side>
-                    <q-icon :name="r.missing ? 'visibility_off' : 'visibility'" :color="r.missing ? 'orange' : 'green'" />
+                    <q-icon :name="r.delegados_ok ? 'check_circle' : 'error'" :color="r.delegados_ok ? 'green' : 'red'" />
                   </q-item-section>
                 </q-item>
 
@@ -158,9 +167,12 @@
                     </div>
                   </div>
 
-                  <div class="col-auto row items-center q-gutter-sm">
+                <div class="col-auto row items-center q-gutter-sm">
                     <q-badge outline :color="selected.missing ? 'warning' : 'positive'">
-                      {{ selected.missing ? 'FALTANTE' : 'COMPLETO' }}
+                      {{ selected.missing ? 'FALTA LAT/LNG' : 'LAT/LNG OK' }}
+                    </q-badge>
+                    <q-badge outline :color="selected.delegados_ok ? 'positive' : 'negative'">
+                      {{ selected.delegados_ok ? 'DELEGADOS OK' : 'FALTA DELEGADOS' }}
                     </q-badge>
 
                     <q-btn

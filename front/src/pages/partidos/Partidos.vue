@@ -80,7 +80,8 @@
       <!-- ACCIONES -->
       <template v-slot:body-cell-actions="props">
         <q-td :props="props">
-          <q-btn-dropdown label="Opciones" no-caps size="10px" dense color="primary">
+          <q-btn-dropdown :label="'Opciones (' + props.row.id + ')'"
+                          no-caps size="10px" dense color="primary">
             <q-list>
               <q-item clickable @click="partidoEdit(props.row)" v-close-popup>
                 <q-item-section avatar><q-icon name="edit" /></q-item-section>
@@ -140,6 +141,26 @@
                   outlined
                   :options="tipos"
                   :rules="[v => !!v || 'Requerido']"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model.number="partido.orden_municipal"
+                  type="number"
+                  label="Orden Municipal"
+                  dense
+                  outlined
+                  min="0"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model.number="partido.orden_departamental"
+                  type="number"
+                  label="Orden Departamental"
+                  dense
+                  outlined
+                  min="0"
                 />
               </div>
               <div class="col-12 col-md-4">
@@ -285,8 +306,8 @@ export default {
         { name: 'sigla', label: 'Sigla', align: 'left', field: 'sigla' },
         { name: 'nombre', label: 'Nombre', align: 'left', field: 'nombre' },
         { name: 'tipo', label: 'Tipo', align: 'left', field: 'tipo' },
-        // orden y colcoar
-        { name: 'orden', label: 'Orden', align: 'center', field: 'orden' },
+        { name: 'orden_municipal', label: 'Orden Municipal', align: 'center', field: 'orden_municipal' },
+        { name: 'orden_departamental', label: 'Orden Departamental', align: 'center', field: 'orden_departamental' },
         { name: 'color', label: 'Color', align: 'center', field: 'color' }
         // { name: 'alcalde', label: 'Alcalde', align: 'left', field: 'alcalde' }
       ]
@@ -334,6 +355,8 @@ export default {
         sigla: '',
         nombre: '',
         tipo: 'PARTIDO',
+        orden_municipal: 0,
+        orden_departamental: 0,
         alcalde: ''
       }
       this.iconFile = null
@@ -380,6 +403,8 @@ export default {
       fd.append('tipo', this.partido.tipo || 'PARTIDO')
       fd.append('alcalde', this.partido.alcalde || '')
       fd.append('color', this.partido.color || '')
+      fd.append('orden_municipal', String(this.partido.orden_municipal || 0))
+      fd.append('orden_departamental', String(this.partido.orden_departamental || 0))
       if (this.iconFile) fd.append('icono', this.iconFile)
 
       this.$axios.post('partidos', fd, {
@@ -406,6 +431,8 @@ export default {
       fd.append('tipo', this.partido.tipo || 'PARTIDO')
       fd.append('alcalde', this.partido.alcalde || '')
       fd.append('color', this.partido.color || '')
+      fd.append('orden_municipal', String(this.partido.orden_municipal || 0))
+      fd.append('orden_departamental', String(this.partido.orden_departamental || 0))
       if (this.iconFile) fd.append('icono', this.iconFile)
 
       this.$axios.post(`partidos/${this.partido.id}`, fd, {
