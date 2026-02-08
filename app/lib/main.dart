@@ -2,11 +2,15 @@ import 'dart:io';
 
 import 'package:app/views/auth_check_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
+  const isRelease = bool.fromEnvironment('dart.vm.product');
+  await dotenv.load(fileName: isRelease ? '.env.production' : '.env');
+  runApp(MyApp());
 }
 
 class MyApp extends StatefulWidget {
