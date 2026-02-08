@@ -51,7 +51,7 @@ class PartidoController extends Controller
                     ->orWhere('sigla', 'like', "%{$search}%")
                     ->orWhere('alcalde', 'like', "%{$search}%");
             })
-            ->orderBy('orden')
+            ->orderBy('orden_municipal')
             ->paginate($perPage);
     }
 
@@ -64,7 +64,8 @@ class PartidoController extends Controller
             'alcalde' => 'nullable|string|max:150',
             'icono'   => 'nullable|file|mimes:jpg,jpeg,png,webp|max:4096',
             'color'   => 'nullable|string|max:7',
-            'orden'   => 'nullable|integer',
+            'orden_municipal' => 'nullable|integer',
+            'orden_departamental' => 'nullable|integer',
         ]);
 
         $data['icono'] = $this->saveIcono($request, null);
@@ -83,7 +84,8 @@ class PartidoController extends Controller
             'alcalde' => 'nullable|string|max:150',
             'icono'   => 'nullable|file|mimes:jpg,jpeg,png,webp|max:4096',
             'color'   => 'nullable|string|max:7',
-            'orden'   => 'nullable|integer',
+            'orden_municipal' => 'nullable|integer',
+            'orden_departamental' => 'nullable|integer',
         ]);
 
         $data['icono'] = $this->saveIcono($request, $partido->icono);

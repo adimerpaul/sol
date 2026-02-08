@@ -15,8 +15,14 @@ class ResultadoMesa extends Model
         'mesa_id','registrado_por',
         'aviso_antes','aviso_manana','aviso_mediodia','aviso_tarde',
         'etapa_1','etapa_2',
-        'foto1','foto2','foto3','foto4',
+        'foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8','foto9','foto10',
+        'latitud','longitud',
         'total_votos','total_validos','total_blancos','total_nulos',
+        'blancos_gobernador','nulos_gobernador',
+        'blancos_asambleista_distrito','nulos_asambleista_distrito',
+        'blancos_asambleista_poblacion','nulos_asambleista_poblacion',
+        'blancos_concejal','nulos_concejal',
+        'blancos_alcalde','nulos_alcalde',
         'observacion'
     ];
 

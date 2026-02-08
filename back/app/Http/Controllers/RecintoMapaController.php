@@ -230,10 +230,19 @@ class RecintoMapaController extends Controller
                 'municipio:id,nombre',
                 'localidad:id,nombre',
             ])
+            ->withCount([
+                'mesas',
+                'mesas as mesas_asignadas_count' => function ($qq) {
+                    $qq->whereNotNull('delegado_id');
+                }
+            ])
             ->orderBy('nombre');
 
         $items = $q->get()->map(function($r){
             $missing = empty($r->latitud) || empty($r->longitud);
+            $totalMesas = (int)($r->mesas_count ?? 0);
+            $asignadas = (int)($r->mesas_asignadas_count ?? 0);
+            $delegadosOk = $totalMesas > 0 ? ($asignadas >= $totalMesas) : true;
             return [
                 'id' => $r->id,
                 'nombre' => $r->nombre,
@@ -242,6 +251,9 @@ class RecintoMapaController extends Controller
                 'latitud' => $r->latitud,
                 'longitud' => $r->longitud,
                 'missing' => $missing,
+                'mesas_total' => $totalMesas,
+                'mesas_asignadas' => $asignadas,
+                'delegados_ok' => $delegadosOk,
                 'provincia' => $r->provincia,
                 'municipio' => $r->municipio,
                 'localidad' => $r->localidad,

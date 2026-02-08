@@ -17,7 +17,8 @@ class Partido extends Model
         'tipo',
 //        'alcalde',
         'color',
-        'orden'
+        'orden_municipal',
+        'orden_departamental'
     ];
     protected $hidden=[
         'deleted_at',

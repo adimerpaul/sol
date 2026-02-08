@@ -14,6 +14,11 @@ return new class extends Migration {
             $table->foreignId('partido_id')->constrained('partidos')->cascadeOnDelete();
 
             $table->integer('votos')->default(0);
+            $table->integer('votos_gobernador')->default(0);
+            $table->integer('votos_asambleista_distrito')->default(0);
+            $table->integer('votos_asambleista_poblacion')->default(0);
+            $table->integer('votos_concejal')->default(0);
+            $table->integer('votos_alcalde')->default(0);
 
             $table->timestamps();
             $table->softDeletes();

@@ -19,9 +19,15 @@ class MobileResultadosController extends Controller
             'payload.total_blancos' => 'required|integer|min:0',
             'payload.total_nulos' => 'required|integer|min:0',
             'payload.observacion' => 'nullable|string',
+            'payload.latitud' => 'nullable|numeric',
+            'payload.longitud' => 'nullable|numeric',
             'payload.detalles' => 'required|array',
             'payload.detalles.*.partido_id' => 'required|integer|exists:partidos,id',
-            'payload.detalles.*.votos' => 'required|integer|min:0',
+            'payload.detalles.*.votos_gobernador' => 'required|integer|min:0',
+            'payload.detalles.*.votos_asambleista_distrito' => 'required|integer|min:0',
+            'payload.detalles.*.votos_asambleista_poblacion' => 'required|integer|min:0',
+            'payload.detalles.*.votos_concejal' => 'required|integer|min:0',
+            'payload.detalles.*.votos_alcalde' => 'required|integer|min:0',
         ]);
 
         $user = $request->user();
@@ -36,6 +42,8 @@ class MobileResultadosController extends Controller
                     'total_blancos' => $data['payload']['total_blancos'],
                     'total_nulos' => $data['payload']['total_nulos'],
                     'observacion' => $data['payload']['observacion'] ?? null,
+                    'latitud' => $data['payload']['latitud'] ?? null,
+                    'longitud' => $data['payload']['longitud'] ?? null,
                 ]
             );
 
@@ -45,7 +53,13 @@ class MobileResultadosController extends Controller
                         'resultado_mesa_id' => $rm->id,
                         'partido_id' => $d['partido_id'],
                     ],
-                    ['votos' => $d['votos']]
+                    [
+                        'votos_gobernador' => $d['votos_gobernador'],
+                        'votos_asambleista_distrito' => $d['votos_asambleista_distrito'],
+                        'votos_asambleista_poblacion' => $d['votos_asambleista_poblacion'],
+                        'votos_concejal' => $d['votos_concejal'],
+                        'votos_alcalde' => $d['votos_alcalde'],
+                    ]
                 );
             }
         });

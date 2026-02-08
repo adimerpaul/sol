@@ -214,8 +214,8 @@ class SuperAdminMesasController extends Controller
     public function resultado(Mesa $mesa)
     {
         $partidos = Partido::query()
-            ->select('id','sigla','nombre','color','orden','icono') // icono/logo
-            ->orderBy('orden')
+            ->select('id','sigla','nombre','color','orden_municipal','orden_departamental','icono') // icono/logo
+            ->orderBy('orden_municipal')
             ->orderBy('sigla')
             ->get();
 
@@ -243,6 +243,12 @@ class SuperAdminMesasController extends Controller
             $res->foto2_url = $res->foto2 ? Storage::url($res->foto2) : null;
             $res->foto3_url = $res->foto3 ? Storage::url($res->foto3) : null;
             $res->foto4_url = $res->foto4 ? Storage::url($res->foto4) : null;
+            $res->foto5_url = $res->foto5 ? Storage::url($res->foto5) : null;
+            $res->foto6_url = $res->foto6 ? Storage::url($res->foto6) : null;
+            $res->foto7_url = $res->foto7 ? Storage::url($res->foto7) : null;
+            $res->foto8_url = $res->foto8 ? Storage::url($res->foto8) : null;
+            $res->foto9_url = $res->foto9 ? Storage::url($res->foto9) : null;
+            $res->foto10_url = $res->foto10 ? Storage::url($res->foto10) : null;
         }
 
         // icono como url (si es path en storage)
@@ -261,7 +267,7 @@ class SuperAdminMesasController extends Controller
     /**
      * PUT /api/admin/mesas/{mesa}/resultado
      * Acepta multipart/form-data para fotos:
-     * - foto1..foto4 (image)
+     * - foto1..foto10 (image)
      * - votos (JSON string)
      */
     public function guardarResultado(Request $request, Mesa $mesa)
@@ -282,6 +288,18 @@ class SuperAdminMesasController extends Controller
             'total_blancos' => 'nullable|integer|min:0',
             'total_nulos' => 'nullable|integer|min:0',
             'observacion' => 'nullable|string',
+            'latitud' => 'nullable|numeric',
+            'longitud' => 'nullable|numeric',
+            'blancos_gobernador' => 'nullable|integer|min:0',
+            'nulos_gobernador' => 'nullable|integer|min:0',
+            'blancos_asambleista_distrito' => 'nullable|integer|min:0',
+            'nulos_asambleista_distrito' => 'nullable|integer|min:0',
+            'blancos_asambleista_poblacion' => 'nullable|integer|min:0',
+            'nulos_asambleista_poblacion' => 'nullable|integer|min:0',
+            'blancos_concejal' => 'nullable|integer|min:0',
+            'nulos_concejal' => 'nullable|integer|min:0',
+            'blancos_alcalde' => 'nullable|integer|min:0',
+            'nulos_alcalde' => 'nullable|integer|min:0',
 
             // viene como string JSON
             'votos' => 'required',
@@ -291,6 +309,12 @@ class SuperAdminMesasController extends Controller
             'foto2' => 'nullable|image|max:2048',
             'foto3' => 'nullable|image|max:2048',
             'foto4' => 'nullable|image|max:2048',
+            'foto5' => 'nullable|image|max:2048',
+            'foto6' => 'nullable|image|max:2048',
+            'foto7' => 'nullable|image|max:2048',
+            'foto8' => 'nullable|image|max:2048',
+            'foto9' => 'nullable|image|max:2048',
+            'foto10' => 'nullable|image|max:2048',
         ]);
 
         $votos = $request->input('votos');
@@ -301,16 +325,29 @@ class SuperAdminMesasController extends Controller
             return response()->json(['message' => 'Formato inválido de votos'], 422);
         }
 
+        $votosFields = [
+            'votos_gobernador',
+            'votos_asambleista_distrito',
+            'votos_asambleista_poblacion',
+            'votos_concejal',
+            'votos_alcalde',
+        ];
+
         // validar estructura de votos
         foreach ($votos as $row) {
-            if (!isset($row['partido_id'], $row['votos'])) {
+            if (!isset($row['partido_id'])) {
                 return response()->json(['message' => 'Votos incompletos'], 422);
+            }
+            foreach ($votosFields as $vf) {
+                if (!isset($row[$vf])) {
+                    return response()->json(['message' => 'Votos incompletos'], 422);
+                }
+                if ((int)$row[$vf] < 0) {
+                    return response()->json(['message' => 'Votos inválidos'], 422);
+                }
             }
             if (!Partido::whereKey($row['partido_id'])->exists()) {
                 return response()->json(['message' => 'Partido inválido'], 422);
-            }
-            if ((int)$row['votos'] < 0) {
-                return response()->json(['message' => 'Votos inválidos'], 422);
             }
         }
 
@@ -332,10 +369,22 @@ class SuperAdminMesasController extends Controller
             if ($request->has('observacion'))   $res->observacion = $data['observacion'] ?? null;
             if ($request->has('total_blancos')) $res->total_blancos = (int)($data['total_blancos'] ?? 0);
             if ($request->has('total_nulos'))   $res->total_nulos   = (int)($data['total_nulos'] ?? 0);
+            if ($request->has('latitud'))       $res->latitud       = $data['latitud'] ?? null;
+            if ($request->has('longitud'))      $res->longitud      = $data['longitud'] ?? null;
+            if ($request->has('blancos_gobernador')) $res->blancos_gobernador = (int)($data['blancos_gobernador'] ?? 0);
+            if ($request->has('nulos_gobernador')) $res->nulos_gobernador = (int)($data['nulos_gobernador'] ?? 0);
+            if ($request->has('blancos_asambleista_distrito')) $res->blancos_asambleista_distrito = (int)($data['blancos_asambleista_distrito'] ?? 0);
+            if ($request->has('nulos_asambleista_distrito')) $res->nulos_asambleista_distrito = (int)($data['nulos_asambleista_distrito'] ?? 0);
+            if ($request->has('blancos_asambleista_poblacion')) $res->blancos_asambleista_poblacion = (int)($data['blancos_asambleista_poblacion'] ?? 0);
+            if ($request->has('nulos_asambleista_poblacion')) $res->nulos_asambleista_poblacion = (int)($data['nulos_asambleista_poblacion'] ?? 0);
+            if ($request->has('blancos_concejal')) $res->blancos_concejal = (int)($data['blancos_concejal'] ?? 0);
+            if ($request->has('nulos_concejal')) $res->nulos_concejal = (int)($data['nulos_concejal'] ?? 0);
+            if ($request->has('blancos_alcalde')) $res->blancos_alcalde = (int)($data['blancos_alcalde'] ?? 0);
+            if ($request->has('nulos_alcalde')) $res->nulos_alcalde = (int)($data['nulos_alcalde'] ?? 0);
 
             // guardar / reemplazar fotos si llegan
             $dir = "resultados_mesa/mesa_{$mesa->id}";
-            foreach (['foto1','foto2','foto3','foto4'] as $f) {
+            foreach (['foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8','foto9','foto10'] as $f) {
                 if ($request->hasFile($f)) {
                     // borra anterior
                     if (!empty($res->{$f})) {
@@ -349,8 +398,13 @@ class SuperAdminMesasController extends Controller
             // detalles votos
             $totalVotos = 0;
             foreach ($votos as $row) {
-                $vv = (int)$row['votos'];
-                $totalVotos += $vv;
+                $vvGob = (int)$row['votos_gobernador'];
+                $vvAsd = (int)$row['votos_asambleista_distrito'];
+                $vvAsp = (int)$row['votos_asambleista_poblacion'];
+                $vvCon = (int)$row['votos_concejal'];
+                $vvAlc = (int)$row['votos_alcalde'];
+
+                $totalVotos += ($vvGob + $vvAsd + $vvAsp + $vvCon + $vvAlc);
 
                 ResultadoMesaDetalle::updateOrCreate(
                     [
@@ -358,7 +412,11 @@ class SuperAdminMesasController extends Controller
                         'partido_id' => $row['partido_id'],
                     ],
                     [
-                        'votos' => $vv
+                        'votos_gobernador' => $vvGob,
+                        'votos_asambleista_distrito' => $vvAsd,
+                        'votos_asambleista_poblacion' => $vvAsp,
+                        'votos_concejal' => $vvCon,
+                        'votos_alcalde' => $vvAlc,
                     ]
                 );
             }

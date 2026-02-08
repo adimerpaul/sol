@@ -35,6 +35,15 @@ return new class extends Migration {
             $table->string('foto2')->nullable();
             $table->string('foto3')->nullable();
             $table->string('foto4')->nullable();
+            $table->string('foto5')->nullable();
+            $table->string('foto6')->nullable();
+            $table->string('foto7')->nullable();
+            $table->string('foto8')->nullable();
+            $table->string('foto9')->nullable();
+            $table->string('foto10')->nullable();
+
+            $table->decimal('latitud', 10, 7)->nullable();
+            $table->decimal('longitud', 10, 7)->nullable();
 
             $table->text('observacion')->nullable();
 

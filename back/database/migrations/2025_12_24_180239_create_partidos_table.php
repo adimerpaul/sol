@@ -19,7 +19,8 @@ return new class extends Migration
             $table->string('tipo')->nullable();     // PARTIDO, AGRUPACION, INDIGENA
 //            $table->string('alcalde')->nullable();
             $table->string('color', 7)->nullable(); // #FF0000
-            $table->integer('orden')->default(0);
+            $table->integer('orden_municipal')->default(0);
+            $table->integer('orden_departamental')->default(0);
             $table->softDeletes();
             $table->timestamps();
         });
