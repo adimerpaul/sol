@@ -17,6 +17,12 @@ class AdminRecintoJefeMapaController extends Controller
         // Admin ve TODOS sus recintos asignados
         if ($user->role === 'Administrador') {
             return Recinto::with(['jefe:id,name,username'])
+                ->withCount([
+                    'mesas',
+                    'mesas as mesas_asignadas_count' => function ($qq) {
+                        $qq->whereNotNull('delegado_id');
+                    }
+                ])
 //                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id))
                 //        &pais_id=1&departamento_id=5&provincia_id=57&municipio_id=191&localidad_id=1988&page=1&per_page=10
                 ->where('pais_id', 1)
@@ -24,14 +30,40 @@ class AdminRecintoJefeMapaController extends Controller
                 ->where('provincia_id', 57)
                 ->where('municipio_id', 191)
                 ->where('localidad_id', 1988)
-                ->get();
+                ->get()
+                ->map(function ($r) {
+                    $total = (int)($r->mesas_count ?? 0);
+                    $asignadas = (int)($r->mesas_asignadas_count ?? 0);
+                    $delegadosOk = $total > 0 ? ($asignadas >= $total) : true;
+                    $r->mesas_total = $total;
+                    $r->mesas_asignadas = $asignadas;
+                    $r->delegados_ok = $delegadosOk;
+                    $r->mesas_faltan = max(0, $total - $asignadas);
+                    return $r;
+                });
         }
 
         // Supervisor ve SOLO sus recintos
         if ($user->role === 'Supervisor') {
             return Recinto::with(['jefe:id,name,username'])
+                ->withCount([
+                    'mesas',
+                    'mesas as mesas_asignadas_count' => function ($qq) {
+                        $qq->whereNotNull('delegado_id');
+                    }
+                ])
                 ->whereHas('users', fn ($q) => $q->where('users.id', $user->id))
-                ->get();
+                ->get()
+                ->map(function ($r) {
+                    $total = (int)($r->mesas_count ?? 0);
+                    $asignadas = (int)($r->mesas_asignadas_count ?? 0);
+                    $delegadosOk = $total > 0 ? ($asignadas >= $total) : true;
+                    $r->mesas_total = $total;
+                    $r->mesas_asignadas = $asignadas;
+                    $r->delegados_ok = $delegadosOk;
+                    $r->mesas_faltan = max(0, $total - $asignadas);
+                    return $r;
+                });
         }
 
         return response()->json([], 403);

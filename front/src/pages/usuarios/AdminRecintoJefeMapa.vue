@@ -29,6 +29,11 @@
               Recintos sin jefe: {{ recintos.filter(r => !r.jefe?.length).length }}
             </q-chip>
           </div>
+          <div class="col-auto">
+            <q-chip color="orange" text-color="white" outline>
+              Recintos con mesas faltantes: {{ recintos.filter(r => r.mesas_faltan > 0).length }}
+            </q-chip>
+          </div>
         </div>
 
         <!-- ✅ filtro rápido -->
@@ -66,13 +71,16 @@
                     <q-item-label caption>
                       {{ scope.opt.jefeNombre }}
                     </q-item-label>
+                    <q-item-label caption>
+                      Mesas: {{ scope.opt.mesas_total }} · Asignadas: {{ scope.opt.mesas_asignadas }}
+                    </q-item-label>
                   </q-item-section>
                   <q-item-section side>
                     <q-badge
                       outline
-                      :color="scope.opt.tieneJefe ? 'positive' : 'negative'"
+                      :color="scope.opt.okDelegados ? 'positive' : 'negative'"
                     >
-                      {{ scope.opt.tieneJefe ? 'con jefe' : 'sin jefe' }}
+                      {{ scope.opt.okDelegados ? 'completo' : 'falta' }}
                     </q-badge>
                   </q-item-section>
                 </q-item>
@@ -106,6 +114,13 @@
               <q-badge class="q-mt-xs" outline :color="selected?.jefe?.length ? 'positive' : 'negative'">
                 {{ selected?.jefe?.length ? `Actual: ${selected.jefe[0].name}` : 'Sin jefe asignado' }}
               </q-badge>
+              <div class="row q-gutter-xs q-mt-xs">
+                <q-badge outline color="grey-8">Mesas: {{ selected.mesas_total }}</q-badge>
+                <q-badge outline color="primary">Asignadas: {{ selected.mesas_asignadas }}</q-badge>
+                <q-badge outline :color="selected.mesas_faltan > 0 ? 'negative' : 'positive'">
+                  {{ selected.mesas_faltan > 0 ? `Faltan ${selected.mesas_faltan}` : 'Delegados OK' }}
+                </q-badge>
+              </div>
 
               <q-select
                 class="q-mt-md"
@@ -180,13 +195,19 @@ export default {
         const jefe = x?.jefe?.[0]
         const jefeNombre = jefe ? `${jefe.name} (${jefe.username})` : 'Sin jefe asignado'
         const tieneJefe = !!jefe
+        const mesasTotal = Number(x?.mesas_total || 0)
+        const mesasAsignadas = Number(x?.mesas_asignadas || 0)
+        const okDelegados = tieneJefe && (mesasTotal === 0 || mesasAsignadas >= mesasTotal)
 
         return {
           label: `${x.nombre} — ${jefeNombre}`, // para búsqueda rápida
           value: x.id,
           nombre: x.nombre,
           jefeNombre,
-          tieneJefe
+          tieneJefe,
+          mesas_total: mesasTotal,
+          mesas_asignadas: mesasAsignadas,
+          okDelegados
         }
       })
     },

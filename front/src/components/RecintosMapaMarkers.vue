@@ -33,7 +33,7 @@
       />
 
       <l-marker
-        v-for="r in cleanMarkers"
+        v-for="r in visibleMarkers"
         :key="r.id"
         :lat-lng="[r._lat, r._lng]"
         :icon="iconFor(r)"
@@ -53,6 +53,9 @@
                 Jefe: {{ r.jefe[0].name }} ({{ r.jefe[0].username }})
               </span>
               <span v-else class="text-negative">Sin jefe asignado</span>
+            </div>
+            <div class="q-mt-xs">
+              Mesas: {{ r.mesas_total || 0 }} · Asignadas: {{ r.mesas_asignadas || 0 }}
             </div>
           </div>
         </l-popup>
@@ -117,9 +120,11 @@ function sanitizeMarkers (list) {
 
 const cleanMarkers = computed(() => sanitizeMarkers(props.markers))
 
+const visibleMarkers = computed(() => cleanMarkers.value || [])
+
 const centerComputed = computed(() => {
-  if (cleanMarkers.value.length) {
-    return [cleanMarkers.value[0]._lat, cleanMarkers.value[0]._lng]
+  if (visibleMarkers.value.length) {
+    return [visibleMarkers.value[0]._lat, visibleMarkers.value[0]._lng]
   }
   return props.center
 })
@@ -130,7 +135,10 @@ function selectRecinto (r) {
 
 function iconFor (r) {
   const has = Array.isArray(r.jefe) && r.jefe.length > 0
-  const color = has ? 'green' : 'red'
+  const total = Number(r.mesas_total || 0)
+  const asignadas = Number(r.mesas_asignadas || 0)
+  const delegadosOk = total === 0 ? true : asignadas >= total
+  const color = has && delegadosOk ? 'green' : (has ? 'orange' : 'red')
 
   return L.divIcon({
     className: '',
