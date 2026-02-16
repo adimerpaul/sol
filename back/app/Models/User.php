@@ -63,6 +63,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+//            'fecha_nacimiento' => 'date',
         ];
     }
     public function recintos()

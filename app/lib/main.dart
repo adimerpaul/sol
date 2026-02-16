@@ -1,16 +1,16 @@
 import 'dart:io';
 
 import 'package:app/views/auth_check_view.dart';
+import 'package:app/views/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
   const isRelease = bool.fromEnvironment('dart.vm.product');
   await dotenv.load(fileName: isRelease ? '.env.production' : '.env');
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
@@ -49,11 +49,7 @@ class _MyAppState extends State<MyApp> {
       ),
       routes: {
         '/': (context) => const AuthCheckView(),
-        'login': (context) => const Scaffold(
-          body: Center(
-            child: Text('Login View'),
-          ),
-        ),
+        '/login': (context) => const LoginView(),
       },
       initialRoute: '/',
     );

@@ -11,10 +11,13 @@ class _AuthCheckViewState extends State<AuthCheckView> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuth();
+    });
   }
   Future<void> _checkAuth() async {
-    // Navigator.pushReplacementNamed(context, '/login');
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/login');
   }
   @override
   Widget build(BuildContext context) {
