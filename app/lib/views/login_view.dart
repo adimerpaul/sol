@@ -49,12 +49,11 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login Mobile'),
-      ),
+      appBar: AppBar(title: const Text('Login Mobile')),
       body: AnimatedBuilder(
         animation: _vm,
         builder: (context, _) {
+          final data = _vm.result;
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -89,8 +88,9 @@ class _LoginViewState extends State<LoginView> {
                           if (ci.isEmpty || fecha.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content:
-                                    Text('Completa CI y fecha de nacimiento'),
+                                content: Text(
+                                  'Completa CI y fecha de nacimiento',
+                                ),
                               ),
                             );
                             return;
@@ -107,28 +107,44 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 16),
                 if (_vm.error != null) ...[
-                  Text(
-                    _vm.error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
+                  Text(_vm.error!, style: const TextStyle(color: Colors.red)),
                   const SizedBox(height: 8),
                 ],
-                if (_vm.result != null) ...[
+                if (data != null) ...[
+                  if (_vm.isOfflineSession)
+                    const Text(
+                      'Sesion cargada desde SQLite (modo offline)',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  if (_vm.isOfflineSession) const SizedBox(height: 8),
                   const Text(
                     'Resultado:',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  Text('Nombre: ${_vm.result!.userName}'),
-                  Text('CI: ${_vm.result!.userCi}'),
-                  if (_vm.result!.userRole != null)
-                    Text('Rol: ${_vm.result!.userRole}'),
-                  if (_vm.result!.mesaNumero != null)
-                    Text('Mesa: ${_vm.result!.mesaNumero}'),
-                  if (_vm.result!.mesaEstado != null)
-                    Text('Estado mesa: ${_vm.result!.mesaEstado}'),
-                  if (_vm.result!.recintoNombre != null)
-                    Text('Recinto: ${_vm.result!.recintoNombre}'),
+                  Text('Token: ${data.token}'),
+                  Text('Nombre: ${data.user.name}'),
+                  Text('CI: ${data.user.ci}'),
+                  if (data.user.role != null) Text('Rol: ${data.user.role}'),
+                  Text('Jefes: ${data.jerarquia.jefes.length}'),
+                  Text('Supervisores: ${data.jerarquia.supervisores.length}'),
+                  Text('Mesas asignadas: ${data.mesas.length}'),
+                  if (data.mesas.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Mesas:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    ...data.mesas.map(
+                      (mesa) => Text(
+                        'Mesa ${mesa.numeroMesa ?? '-'} | ${mesa.estado ?? '-'} | ${mesa.recintoNombre ?? '-'}',
+                      ),
+                    ),
+                  ],
                 ],
               ],
             ),
