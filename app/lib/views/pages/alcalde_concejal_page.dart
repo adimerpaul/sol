@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,14 +28,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool _loading = true;
   bool _saving = false;
   bool _syncing = false;
-  bool _hasPending = false;
-
-  Timer? _autoSaveDebounce;
-  Timer? _autoSyncTimer;
 
   List<MobileMesa> _mesas = const [];
   List<Map<String, dynamic>> _partidos = const [];
   int? _mesaId;
+  final Map<int, Uint8List?> _partidoIconBytes = {};
 
   final Map<int, TextEditingController> _gobCtrl = {};
   final Map<int, TextEditingController> _asdCtrl = {};
@@ -41,30 +40,31 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final Map<int, TextEditingController> _conCtrl = {};
   final Map<int, TextEditingController> _alcCtrl = {};
 
-  final TextEditingController _bgCtrl = TextEditingController(text: '0');
-  final TextEditingController _ngCtrl = TextEditingController(text: '0');
-  final TextEditingController _basdCtrl = TextEditingController(text: '0');
-  final TextEditingController _nasdCtrl = TextEditingController(text: '0');
-  final TextEditingController _baspCtrl = TextEditingController(text: '0');
-  final TextEditingController _naspCtrl = TextEditingController(text: '0');
-  final TextEditingController _bconCtrl = TextEditingController(text: '0');
-  final TextEditingController _nconCtrl = TextEditingController(text: '0');
-  final TextEditingController _balcCtrl = TextEditingController(text: '0');
-  final TextEditingController _nalcCtrl = TextEditingController(text: '0');
+  final TextEditingController _bgCtrl = TextEditingController();
+  final TextEditingController _ngCtrl = TextEditingController();
+  final TextEditingController _basdCtrl = TextEditingController();
+  final TextEditingController _nasdCtrl = TextEditingController();
+  final TextEditingController _baspCtrl = TextEditingController();
+  final TextEditingController _naspCtrl = TextEditingController();
+  final TextEditingController _bconCtrl = TextEditingController();
+  final TextEditingController _nconCtrl = TextEditingController();
+  final TextEditingController _balcCtrl = TextEditingController();
+  final TextEditingController _nalcCtrl = TextEditingController();
   final TextEditingController _obsCtrl = TextEditingController();
 
   final Map<String, String?> _localFotos = {
     for (final slot in votacionFotoSlots) slot: null,
   };
-  final Map<String, String?> _serverFotos = {
-    for (final slot in votacionFotoSlots) slot: null,
-  };
 
-  static const List<Map<String, String>> _fotoConfig = [
+  static const List<Map<String, String>> _fotoAlcaldeConfig = [
     {'slot': 'foto1', 'label': 'Hoja trabajo - Alcalde'},
     {'slot': 'foto2', 'label': 'Acta electoral - Alcalde'},
+  ];
+  static const List<Map<String, String>> _fotoConcejalConfig = [
     {'slot': 'foto3', 'label': 'Hoja trabajo - Concejal'},
     {'slot': 'foto4', 'label': 'Acta electoral - Concejal'},
+  ];
+  static const List<Map<String, String>> _fotoComplementariasConfig = [
     {'slot': 'foto5', 'label': 'Hoja trabajo - Gobernador'},
     {'slot': 'foto6', 'label': 'Acta electoral - Gobernador'},
     {'slot': 'foto7', 'label': 'Hoja trabajo - Asam. Distrito'},
@@ -77,16 +77,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   void initState() {
     super.initState();
     _init();
-    _autoSyncTimer = Timer.periodic(const Duration(seconds: 25), (_) {
-      _syncPendientes(silent: true);
-    });
   }
 
   @override
   void dispose() {
-    _autoSaveDebounce?.cancel();
-    _autoSyncTimer?.cancel();
-
     _bgCtrl.dispose();
     _ngCtrl.dispose();
     _basdCtrl.dispose();
@@ -107,6 +101,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   }
 
   Future<void> _init() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     try {
       final localMesas = await _localStore.readMesasLocal();
@@ -118,6 +113,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
               'sigla': p.sigla,
               'nombre': p.nombre,
               'icono_url': p.iconoUrl,
+              'icono_base64': p.iconoBase64,
               'orden_municipal': p.ordenMunicipal,
               'orden_departamental': p.ordenDepartamental,
             },
@@ -137,7 +133,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       if (partidos.isEmpty) {
         partidos = await _buildPartidosFromLocalDrafts();
       }
-
       _ensureControllers(partidos);
 
       int? mesaId = _mesaId;
@@ -145,8 +140,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         mesaId = localMesas.first.id;
       }
 
-      _hasPending = (await _localStore.readPendingVotacionDrafts()).isNotEmpty;
-
+      if (!mounted) return;
       setState(() {
         _mesas = localMesas;
         _partidos = partidos;
@@ -156,8 +150,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       if (mesaId != null) {
         await _loadMesa(mesaId);
       }
-
-      unawaited(_syncPendientes(silent: true));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -185,11 +177,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   void _ensureControllers(List<Map<String, dynamic>> partidos) {
     for (final p in partidos) {
       final id = _toInt(p['id']) ?? 0;
-      _gobCtrl.putIfAbsent(id, () => TextEditingController(text: '0'));
-      _asdCtrl.putIfAbsent(id, () => TextEditingController(text: '0'));
-      _aspCtrl.putIfAbsent(id, () => TextEditingController(text: '0'));
-      _conCtrl.putIfAbsent(id, () => TextEditingController(text: '0'));
-      _alcCtrl.putIfAbsent(id, () => TextEditingController(text: '0'));
+      _gobCtrl.putIfAbsent(id, () => TextEditingController());
+      _asdCtrl.putIfAbsent(id, () => TextEditingController());
+      _aspCtrl.putIfAbsent(id, () => TextEditingController());
+      _conCtrl.putIfAbsent(id, () => TextEditingController());
+      _alcCtrl.putIfAbsent(id, () => TextEditingController());
     }
   }
 
@@ -237,99 +229,104 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return true;
   }
 
-  bool get _readyFinalizar =>
-      _mesaId != null &&
-      _partidos.isNotEmpty &&
-      _okGob &&
-      _okAsd &&
-      _okAsp &&
-      _okCon &&
-      _okAlc &&
-      _allFotosReady;
+  bool get _readyFinalizar => _mesaId != null;
 
   bool _hasFoto(String slot) {
     final localPath = _localFotos[slot];
-    if (localPath != null && localPath.isNotEmpty) return true;
-    final serverPath = _serverFotos[slot];
-    return serverPath != null && serverPath.isNotEmpty;
+    return localPath != null && localPath.isNotEmpty;
+  }
+
+  Future<Directory> _getVotacionCacheDir() async {
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory('${docs.path}/votacion/cache');
+    await dir.create(recursive: true);
+    return dir;
+  }
+
+  Uint8List? _decodePartidoIconBytes(Map<String, dynamic> partido) {
+    final partidoId = _toInt(partido['id']) ?? 0;
+    if (_partidoIconBytes.containsKey(partidoId)) {
+      return _partidoIconBytes[partidoId];
+    }
+    final raw = partido['icono_base64']?.toString();
+    if (raw == null || raw.isEmpty) {
+      _partidoIconBytes[partidoId] = null;
+      return null;
+    }
+    final commaIndex = raw.indexOf(',');
+    final payload = commaIndex >= 0 ? raw.substring(commaIndex + 1) : raw;
+    try {
+      final bytes = base64Decode(payload);
+      _partidoIconBytes[partidoId] = bytes;
+      return bytes;
+    } catch (_) {
+      _partidoIconBytes[partidoId] = null;
+      return null;
+    }
+  }
+
+  String _cachedFotoPath({
+    required Directory dir,
+    required int mesaId,
+    required String slot,
+  }) {
+    return '${dir.path}/mesa${mesaId}_$slot.jpg';
+  }
+
+  Future<void> _loadCachedFotosFromDisk(int mesaId) async {
+    final dir = await _getVotacionCacheDir();
+    for (final slot in votacionFotoSlots) {
+      final path = _cachedFotoPath(dir: dir, mesaId: mesaId, slot: slot);
+      if (await File(path).exists()) {
+        _localFotos[slot] = path;
+      }
+    }
   }
 
   Future<void> _loadMesa(int mesaId) async {
     _resetForm();
     final local = await _localStore.readVotacionDraft(mesaId);
+    if (!mounted) return;
     if (local != null) {
       _applyDraft(local);
       setState(() {});
       return;
     }
 
-    try {
-      final remote = await _service.loadMesa(mesaId);
-      final resultado = remote['resultado'];
-      if (resultado is! Map) {
-        setState(() {});
-        return;
-      }
-      final r = Map<String, dynamic>.from(resultado);
-      _bgCtrl.text = '${_toInt(r['blancos_gobernador']) ?? 0}';
-      _ngCtrl.text = '${_toInt(r['nulos_gobernador']) ?? 0}';
-      _basdCtrl.text = '${_toInt(r['blancos_asambleista_distrito']) ?? 0}';
-      _nasdCtrl.text = '${_toInt(r['nulos_asambleista_distrito']) ?? 0}';
-      _baspCtrl.text = '${_toInt(r['blancos_asambleista_poblacion']) ?? 0}';
-      _naspCtrl.text = '${_toInt(r['nulos_asambleista_poblacion']) ?? 0}';
-      _bconCtrl.text = '${_toInt(r['blancos_concejal']) ?? 0}';
-      _nconCtrl.text = '${_toInt(r['nulos_concejal']) ?? 0}';
-      _balcCtrl.text = '${_toInt(r['blancos_alcalde']) ?? 0}';
-      _nalcCtrl.text = '${_toInt(r['nulos_alcalde']) ?? 0}';
-      _obsCtrl.text = (r['observacion'] ?? '').toString();
-
-      for (final slot in votacionFotoSlots) {
-        _serverFotos[slot] = r['${slot}_url']?.toString();
-      }
-
-      final detalles = (r['detalles'] as List?) ?? const [];
-      for (final d in detalles.whereType<Map>()) {
-        final m = Map<String, dynamic>.from(d);
-        final id = _toInt(m['partido_id']) ?? 0;
-        _gobCtrl[id]?.text = '${_toInt(m['votos_gobernador']) ?? 0}';
-        _asdCtrl[id]?.text = '${_toInt(m['votos_asambleista_distrito']) ?? 0}';
-        _aspCtrl[id]?.text = '${_toInt(m['votos_asambleista_poblacion']) ?? 0}';
-        _conCtrl[id]?.text = '${_toInt(m['votos_concejal']) ?? 0}';
-        _alcCtrl[id]?.text = '${_toInt(m['votos_alcalde']) ?? 0}';
-      }
-    } catch (_) {}
+    await _loadCachedFotosFromDisk(mesaId);
+    if (!mounted) return;
     setState(() {});
   }
 
   void _applyDraft(VotacionDraft d) {
     _obsCtrl.text = d.observacion ?? '';
-    _bgCtrl.text = '${d.blancosGobernador}';
-    _ngCtrl.text = '${d.nulosGobernador}';
-    _basdCtrl.text = '${d.blancosAsd}';
-    _nasdCtrl.text = '${d.nulosAsd}';
-    _baspCtrl.text = '${d.blancosAsp}';
-    _naspCtrl.text = '${d.nulosAsp}';
-    _bconCtrl.text = '${d.blancosConcejal}';
-    _nconCtrl.text = '${d.nulosConcejal}';
-    _balcCtrl.text = '${d.blancosAlcalde}';
-    _nalcCtrl.text = '${d.nulosAlcalde}';
+    _setCtrlInt(_bgCtrl, d.blancosGobernador);
+    _setCtrlInt(_ngCtrl, d.nulosGobernador);
+    _setCtrlInt(_basdCtrl, d.blancosAsd);
+    _setCtrlInt(_nasdCtrl, d.nulosAsd);
+    _setCtrlInt(_baspCtrl, d.blancosAsp);
+    _setCtrlInt(_naspCtrl, d.nulosAsp);
+    _setCtrlInt(_bconCtrl, d.blancosConcejal);
+    _setCtrlInt(_nconCtrl, d.nulosConcejal);
+    _setCtrlInt(_balcCtrl, d.blancosAlcalde);
+    _setCtrlInt(_nalcCtrl, d.nulosAlcalde);
     for (final slot in votacionFotoSlots) {
       _localFotos[slot] = d.fotos[slot];
     }
 
     for (final v in d.votos) {
-      _gobCtrl[v.partidoId]?.text = '${v.votosGobernador}';
-      _asdCtrl[v.partidoId]?.text = '${v.votosAsd}';
-      _aspCtrl[v.partidoId]?.text = '${v.votosAsp}';
-      _conCtrl[v.partidoId]?.text = '${v.votosConcejal}';
-      _alcCtrl[v.partidoId]?.text = '${v.votosAlcalde}';
+      _setCtrlInt(_gobCtrl[v.partidoId], v.votosGobernador);
+      _setCtrlInt(_asdCtrl[v.partidoId], v.votosAsd);
+      _setCtrlInt(_aspCtrl[v.partidoId], v.votosAsp);
+      _setCtrlInt(_conCtrl[v.partidoId], v.votosConcejal);
+      _setCtrlInt(_alcCtrl[v.partidoId], v.votosAlcalde);
     }
   }
 
   void _resetForm() {
     for (final m in [_gobCtrl, _asdCtrl, _aspCtrl, _conCtrl, _alcCtrl]) {
       for (final c in m.values) {
-        c.text = '0';
+        c.text = '';
       }
     }
     for (final c in [
@@ -344,42 +341,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       _balcCtrl,
       _nalcCtrl,
     ]) {
-      c.text = '0';
+      c.text = '';
     }
     _obsCtrl.text = '';
     for (final slot in votacionFotoSlots) {
       _localFotos[slot] = null;
-      _serverFotos[slot] = null;
     }
   }
 
   void _onDataChanged() {
     if (!_loading) {
       setState(() {});
-      _scheduleAutoSave();
     }
-  }
-
-  void _scheduleAutoSave() {
-    if (_mesaId == null) return;
-    _autoSaveDebounce?.cancel();
-    _autoSaveDebounce = Timer(const Duration(milliseconds: 700), () {
-      _saveDraftLocal(
-        finalizar: false,
-        syncStatus: MobileAuthLocalStore.votacionSyncLocal,
-      );
-    });
-  }
-
-  Future<void> _saveDraftLocal({
-    required bool finalizar,
-    required String syncStatus,
-  }) async {
-    if (_mesaId == null) return;
-    final d = _buildDraft(finalizar: finalizar, syncStatus: syncStatus);
-    await _localStore.saveVotacionDraft(d);
-    _hasPending = true;
-    if (mounted) setState(() {});
   }
 
   Future<void> _pickImage(String slot, String label) async {
@@ -408,20 +381,15 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     final picked = await _picker.pickImage(source: source, imageQuality: 85);
     if (picked == null) return;
 
-    final docs = await getApplicationDocumentsDirectory();
-    final dir = Directory('${docs.path}/votacion');
-    await dir.create(recursive: true);
+    final dir = await _getVotacionCacheDir();
     final mesa = _mesaId ?? 0;
-    final fileName =
-        '${slot}_mesa${mesa}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final target = '${dir.path}/$fileName';
+    final target = _cachedFotoPath(dir: dir, mesaId: mesa, slot: slot);
     await _service.compressImageToJpeg(
       sourcePath: picked.path,
       targetPath: target,
     );
 
     _localFotos[slot] = target;
-    _serverFotos[slot] = null;
     _onDataChanged();
 
     if (mounted) {
@@ -470,17 +438,27 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   }
 
   Future<void> _finalizarYEnviar() async {
-    if (!_readyFinalizar) {
-      showError(context, 'Completa datos, valida 250 y carga las 10 fotos');
+    if (_mesaId == null) {
+      showError(context, 'Selecciona una mesa');
       return;
     }
+    final warnings = <String>[
+      if (!_okAlc) 'Alcalde no suma 250',
+      if (!_okCon) 'Concejal no suma 250',
+      if (!_okGob) 'Gobernador no suma 250',
+      if (!_okAsd) 'Asambleista por Distrito no suma 250',
+      if (!_okAsp) 'Asambleista por Poblacion no suma 250',
+      if (!_allFotosReady) 'Faltan fotos requeridas',
+    ];
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar finalizacion'),
-        content: const Text(
-          'Se enviaran datos de votacion. Si no hay internet quedaran pendientes para sincronizar.',
+        title: const Text('Confirmar envio'),
+        content: Text(
+          warnings.isEmpty
+              ? 'Se enviaran datos de votacion. Si no hay internet quedaran pendientes para sincronizar.'
+              : 'Se enviaran datos de votacion con advertencias:\n- ${warnings.join('\n- ')}\n\nSi no hay internet quedaran pendientes para sincronizar.',
         ),
         actions: [
           TextButton(
@@ -500,7 +478,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     setState(() => _saving = true);
     try {
       final d = _buildDraft(
-        finalizar: true,
+        finalizar: false,
         syncStatus: MobileAuthLocalStore.votacionSyncLocal,
       );
       await _localStore.saveVotacionDraft(d);
@@ -508,21 +486,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       try {
         await _service.sendVotacion(d);
         await _localStore.markVotacionSynced(d.mesaId);
-        _hasPending =
-            (await _localStore.readPendingVotacionDrafts()).isNotEmpty;
-        if (mounted) showSuccess(context, 'Votacion finalizada y sincronizada');
+        if (mounted) showSuccess(context, 'Votacion guardada y sincronizada');
       } catch (e) {
         await _localStore.markVotacionError(d.mesaId, e.toString());
-        _hasPending = true;
         if (mounted) {
-          showError(
-            context,
-            'Sin internet: guardado local y pendiente de sincronizacion',
-          );
+          showError(context, _friendlySendError(e));
         }
       }
-
-      await _init();
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -530,10 +500,12 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   Future<void> _syncPendientes({bool silent = false}) async {
     if (_syncing) return;
+    if (!mounted) return;
     setState(() => _syncing = true);
     try {
       final pendings = await _localStore.readPendingVotacionDrafts();
       var ok = 0;
+      var fail = 0;
       for (final d in pendings) {
         try {
           await _service.sendVotacion(d);
@@ -541,16 +513,34 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           ok++;
         } catch (e) {
           await _localStore.markVotacionError(d.mesaId, e.toString());
+          fail++;
         }
       }
-      _hasPending = (await _localStore.readPendingVotacionDrafts()).isNotEmpty;
       if (!silent && mounted) {
-        showSuccess(context, 'Sincronizados: $ok');
+        if (fail == 0) {
+          showSuccess(context, 'Sincronizados: $ok');
+        } else {
+          showError(context, 'Sincronizados: $ok | Fallidos: $fail');
+        }
       }
       if (mounted) setState(() {});
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
+  }
+
+  String _friendlySendError(Object e) {
+    if (e is TimeoutException) {
+      return 'Tiempo de espera agotado. Guardado local pendiente de sincronizacion';
+    }
+    if (e is SocketException) {
+      return 'Sin internet: guardado local pendiente de sincronizacion';
+    }
+    final msg = e.toString().replaceFirst('StateError: ', '').trim();
+    if (msg.isNotEmpty) {
+      return 'No se pudo sincronizar ahora: $msg';
+    }
+    return 'No se pudo sincronizar ahora. Guardado local pendiente de sincronizacion';
   }
 
   @override
@@ -575,6 +565,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           sum: _sumAlc,
           ok: _okAlc,
         ),
+        _buildFotosCard(
+          title: 'Fotos - Alcalde',
+          config: _fotoAlcaldeConfig,
+        ),
+        _buildGuardarMandarActions(),
         _buildCategoryCard(
           title: '2) Concejal',
           voteMap: _conCtrl,
@@ -583,6 +578,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           sum: _sumCon,
           ok: _okCon,
         ),
+        _buildFotosCard(
+          title: 'Fotos - Concejal',
+          config: _fotoConcejalConfig,
+        ),
+        _buildGuardarMandarActions(),
         _buildCategoryCard(
           title: '3) Gobernador',
           voteMap: _gobCtrl,
@@ -607,7 +607,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           sum: _sumAsp,
           ok: _okAsp,
         ),
-        _buildFotosCard(),
+        _buildFotosCard(
+          title: 'Fotos complementarias',
+          config: _fotoComplementariasConfig,
+        ),
+        _buildGuardarMandarActions(),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(10),
@@ -622,13 +626,30 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        FilledButton(
-          onPressed: _saving || !_readyFinalizar ? null : _finalizarYEnviar,
-          child: Text(_saving ? 'Procesando...' : 'Finalizar y enviar'),
-        ),
         const SizedBox(height: 12),
       ],
+    );
+  }
+
+  Widget _buildGuardarMandarActions() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton.icon(
+            onPressed: _saving || !_readyFinalizar ? null : _finalizarYEnviar,
+            icon: const Icon(Icons.send_outlined),
+            label: Text(_saving ? 'Procesando...' : 'Guardar y mandar'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _syncing ? null : () => _syncPendientes(),
+            icon: const Icon(Icons.sync),
+            label: Text(_syncing ? 'Sincronizando...' : 'Sincronizar pendientes'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -647,11 +668,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                     style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
                   ),
                 ),
-                if (_hasPending)
-                  Chip(
-                    avatar: const Icon(Icons.pending_actions, size: 18),
-                    label: Text(_syncing ? 'Sincronizando...' : 'Pendiente'),
-                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -688,6 +704,12 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('Mesa ${m.numeroMesa ?? '-'}'),
+                          Text(
+                            m.recintoNombre ?? '-',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 10),
+                          ),
                           Text(
                             local,
                             style: TextStyle(fontSize: 11, color: color),
@@ -731,20 +753,19 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             const SizedBox(height: 6),
             ..._partidosSorted.map((p) {
               final id = _toInt(p['id']) ?? 0;
-              final icon = p['icono_url']?.toString();
+              final iconBytes = _decodePartidoIconBytes(p);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
-                    if (icon != null && icon.isNotEmpty)
+                    if (iconBytes != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: Image.network(
-                          icon,
+                        child: Image.memory(
+                          iconBytes,
                           width: 24,
                           height: 24,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.flag, size: 20),
+                          fit: BoxFit.cover,
                         ),
                       )
                     else
@@ -818,19 +839,22 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     );
   }
 
-  Widget _buildFotosCard() {
+  Widget _buildFotosCard({
+    required String title,
+    required List<Map<String, String>> config,
+  }) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Fotos (10)',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 8),
-            ..._fotoConfig.map((cfg) {
+            ...config.map((cfg) {
               final slot = cfg['slot']!;
               final label = cfg['label']!;
               return Padding(
@@ -859,18 +883,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     final localPath = _localFotos[slot];
     if (localPath != null && localPath.isNotEmpty) {
       return _imgFile(localPath);
-    }
-    final remotePath = _serverFotos[slot];
-    if (remotePath != null && remotePath.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          remotePath,
-          height: 130,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _emptyImage(),
-        ),
-      );
     }
     return _emptyImage();
   }
@@ -901,6 +913,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 int _ivalOrZero(TextEditingController? c) {
   if (c == null) return 0;
   return int.tryParse(c.text.trim()) ?? 0;
+}
+
+void _setCtrlInt(TextEditingController? c, int value) {
+  if (c == null) return;
+  c.text = value == 0 ? '' : '$value';
 }
 
 int? _toInt(dynamic value) {

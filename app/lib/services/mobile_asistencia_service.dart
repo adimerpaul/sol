@@ -30,10 +30,15 @@ class MobileAsistenciaService {
       throw StateError('Sin token');
     }
     final uri = Uri.parse(_buildUrl('asistencia'));
-    final res = await _client.get(
-      uri,
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
-    );
+    final res = await _client
+        .get(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        )
+        .timeout(const Duration(seconds: 8));
     if (res.statusCode != 200) {
       throw StateError('No se pudo obtener asistencia');
     }
@@ -53,15 +58,17 @@ class MobileAsistenciaService {
       throw StateError('Sin token');
     }
     final uri = Uri.parse(_buildUrl('asistencia/update'));
-    final res = await _client.post(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'field': field, 'value': value}),
-    );
+    final res = await _client
+        .post(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'field': field, 'value': value}),
+        )
+        .timeout(const Duration(seconds: 8));
     if (res.statusCode < 200 || res.statusCode >= 300) {
       String message = 'Error al enviar asistencia';
       try {

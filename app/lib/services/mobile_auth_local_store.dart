@@ -78,6 +78,7 @@ class MobileAuthLocalStore {
         nombre TEXT NOT NULL,
         icono TEXT,
         icono_url TEXT,
+        icono_base64 TEXT,
         orden_municipal INTEGER NOT NULL DEFAULT 0,
         orden_departamental INTEGER NOT NULL DEFAULT 0
       )
@@ -179,6 +180,7 @@ class MobileAuthLocalStore {
         nombre TEXT NOT NULL,
         icono TEXT,
         icono_url TEXT,
+        icono_base64 TEXT,
         orden_municipal INTEGER NOT NULL DEFAULT 0,
         orden_departamental INTEGER NOT NULL DEFAULT 0
       )
@@ -243,6 +245,7 @@ class MobileAuthLocalStore {
     await _addColumnIfMissing(db, 'auth_supervisores', 'celular', 'TEXT');
     await _addColumnIfMissing(db, 'auth_mesas', 'recinto_id', 'INTEGER');
     await _addColumnIfMissing(db, 'votacion_draft', 'fotos_json', 'TEXT');
+    await _addColumnIfMissing(db, 'auth_partidos', 'icono_base64', 'TEXT');
   }
 
   Future<void> _addColumnIfMissing(
@@ -357,6 +360,7 @@ class MobileAuthLocalStore {
           'nombre': partido.nombre,
           'icono': partido.icono,
           'icono_url': partido.iconoUrl,
+          'icono_base64': partido.iconoBase64,
           'orden_municipal': partido.ordenMunicipal,
           'orden_departamental': partido.ordenDepartamental,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -459,6 +463,7 @@ class MobileAuthLocalStore {
             nombre: (row['nombre'] as String?) ?? '',
             icono: row['icono'] as String?,
             iconoUrl: row['icono_url'] as String?,
+            iconoBase64: row['icono_base64'] as String?,
             ordenMunicipal: row['orden_municipal'] as int? ?? 0,
             ordenDepartamental: row['orden_departamental'] as int? ?? 0,
           ),
@@ -634,6 +639,25 @@ class MobileAuthLocalStore {
     return rowsVotacion.isNotEmpty;
   }
 
+  Future<int> getPendingSyncCount() async {
+    final db = await database;
+    final rowsMesas = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM auth_mesas WHERE estado_local = ?',
+      [mesaEstadoLocal],
+    );
+    final rowsAsistencia = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM asistencia_queue',
+    );
+    final rowsVotacion = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM votacion_draft WHERE sync_status != ?',
+      [votacionSyncSynced],
+    );
+    final cMesas = _asInt(rowsMesas.first['c']) ?? 0;
+    final cAsistencia = _asInt(rowsAsistencia.first['c']) ?? 0;
+    final cVotacion = _asInt(rowsVotacion.first['c']) ?? 0;
+    return cMesas + cAsistencia + cVotacion;
+  }
+
   Future<void> clearSession() async {
     final db = await database;
     await db.transaction((txn) async {
@@ -773,6 +797,7 @@ class MobileAuthLocalStore {
             nombre: (row['nombre'] as String?) ?? '',
             icono: row['icono'] as String?,
             iconoUrl: row['icono_url'] as String?,
+            iconoBase64: row['icono_base64'] as String?,
             ordenMunicipal: row['orden_municipal'] as int? ?? 0,
             ordenDepartamental: row['orden_departamental'] as int? ?? 0,
           ),
@@ -780,7 +805,10 @@ class MobileAuthLocalStore {
         .toList();
   }
 
-  Future<void> saveVotacionDraft(VotacionDraft draft) async {
+  Future<void> saveVotacionDraft(
+    VotacionDraft draft, {
+    bool markMesaLocal = true,
+  }) async {
     final db = await database;
     final payload = {
       'finalizar': draft.finalizar,
@@ -820,7 +848,9 @@ class MobileAuthLocalStore {
       'updated_at': draft.updatedAt,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
 
-    await updateMesaEstadoLocal(draft.mesaId, mesaEstadoLocal);
+    if (markMesaLocal) {
+      await updateMesaEstadoLocal(draft.mesaId, mesaEstadoLocal);
+    }
   }
 
   Future<VotacionDraft?> readVotacionDraft(int mesaId) async {

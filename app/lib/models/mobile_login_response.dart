@@ -42,6 +42,7 @@ class MobilePartido {
     required this.nombre,
     required this.icono,
     required this.iconoUrl,
+    required this.iconoBase64,
     required this.ordenMunicipal,
     required this.ordenDepartamental,
   });
@@ -51,6 +52,7 @@ class MobilePartido {
   final String nombre;
   final String? icono;
   final String? iconoUrl;
+  final String? iconoBase64;
   final int ordenMunicipal;
   final int ordenDepartamental;
 
@@ -61,6 +63,7 @@ class MobilePartido {
       nombre: (json['nombre'] ?? '').toString(),
       icono: json['icono']?.toString(),
       iconoUrl: json['icono_url']?.toString(),
+      iconoBase64: json['icono_base64']?.toString(),
       ordenMunicipal: _asInt(json['orden_municipal']) ?? 0,
       ordenDepartamental: _asInt(json['orden_departamental']) ?? 0,
     );

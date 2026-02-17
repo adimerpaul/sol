@@ -9,6 +9,64 @@ use Illuminate\Http\Request;
 
 class MobileAuthController extends Controller
 {
+    private function partidoIconoBase64(?string $icono): ?string
+    {
+        if (empty($icono)) {
+            return null;
+        }
+        $path = public_path('images/partidos/' . $icono);
+        if (!is_file($path)) {
+            return null;
+        }
+        $binary = @file_get_contents($path);
+        if ($binary === false || $binary === '') {
+            return null;
+        }
+
+        if (!function_exists('imagecreatefromstring')) {
+            return 'data:image/jpeg;base64,' . base64_encode($binary);
+        }
+
+        $source = @imagecreatefromstring($binary);
+        if ($source === false) {
+            return 'data:image/jpeg;base64,' . base64_encode($binary);
+        }
+
+        $targetSize = 24;
+        $target = imagecreatetruecolor($targetSize, $targetSize);
+        if ($target === false) {
+            imagedestroy($source);
+            return null;
+        }
+
+        imagefill($target, 0, 0, imagecolorallocate($target, 255, 255, 255));
+        imagecopyresampled(
+            $target,
+            $source,
+            0,
+            0,
+            0,
+            0,
+            $targetSize,
+            $targetSize,
+            imagesx($source),
+            imagesy($source)
+        );
+
+        ob_start();
+        imagejpeg($target, null, 55);
+        $jpg = ob_get_clean();
+
+        imagedestroy($target);
+        imagedestroy($source);
+
+        if ($jpg === false || $jpg === '') {
+            return null;
+        }
+
+        return 'data:image/jpeg;base64,' . base64_encode($jpg);
+    }
+
     public function login(Request $request)
     {
         $data = $request->validate([
@@ -49,16 +107,14 @@ class MobileAuthController extends Controller
             ->orderBy('sigla')
             ->get()
             ->map(function ($p) {
-                $iconoUrl = null;
-                if (!empty($p->icono)) {
-                    $iconoUrl = url('/images/partidos/' . rawurlencode($p->icono));
-                }
+                $iconoBase64 = $this->partidoIconoBase64($p->icono);
                 return [
                     'id' => $p->id,
                     'sigla' => $p->sigla,
                     'nombre' => $p->nombre,
                     'icono' => $p->icono,
-                    'icono_url' => $iconoUrl,
+                    'icono_url' => null,
+                    'icono_base64' => $iconoBase64,
                     'orden_municipal' => (int) ($p->orden_municipal ?? 0),
                     'orden_departamental' => (int) ($p->orden_departamental ?? 0),
                 ];

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../addons/snackbar_helper.dart';
@@ -28,11 +30,21 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   bool _etapa1 = false;
   bool _etapa2 = false;
   final Set<String> _lockedFields = <String>{};
+  Timer? _autoSyncTimer;
 
   @override
   void initState() {
     super.initState();
     _init();
+    _autoSyncTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      _syncPending(silent: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoSyncTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _init() async {
@@ -40,31 +52,41 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     try {
       final local = await _localStore.readAsistenciaState();
       _applyState(local);
-
       _hasPending = await _localStore.hasAsistenciaPendiente();
+    } catch (_) {
+      // si falla algo local, dejamos defaults
+    }
 
-      if (!_hasPending) {
-        try {
-          final remote = await _service.fetchAsistenciaState();
-          final state = Map<String, dynamic>.from(
-            (remote['state'] as Map?) ?? const {},
-          );
-          await _localStore.saveAsistenciaState(
-            avisoAntes: state['aviso_antes'] == true,
-            avisoManana: state['aviso_manana'] == true,
-            avisoMediodia: state['aviso_mediodia'] == true,
-            avisoTarde: state['aviso_tarde'] == true,
-            etapa1: state['etapa_1'] == true,
-            etapa2: state['etapa_2'] == true,
-            syncStatus: MobileAuthLocalStore.asistenciaSyncSynced,
-          );
-          _applyState(state);
-        } catch (_) {
-          // seguimos con estado local
-        }
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    if (mounted) {
+      setState(() => _loading = false);
+    }
+
+    if (_hasPending) {
+      unawaited(_syncPending(silent: true));
+    } else {
+      unawaited(_refreshFromServer());
+    }
+  }
+
+  Future<void> _refreshFromServer() async {
+    try {
+      final remote = await _service.fetchAsistenciaState();
+      final state = Map<String, dynamic>.from(
+        (remote['state'] as Map?) ?? const {},
+      );
+      await _localStore.saveAsistenciaState(
+        avisoAntes: state['aviso_antes'] == true,
+        avisoManana: state['aviso_manana'] == true,
+        avisoMediodia: state['aviso_mediodia'] == true,
+        avisoTarde: state['aviso_tarde'] == true,
+        etapa1: state['etapa_1'] == true,
+        etapa2: state['etapa_2'] == true,
+        syncStatus: MobileAuthLocalStore.asistenciaSyncSynced,
+      );
+      _applyState(state);
+      if (mounted) setState(() {});
+    } catch (_) {
+      // offline: seguimos con local
     }
   }
 
@@ -91,7 +113,6 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   }) async {
     if (_lockedFields.contains(field)) return;
 
-    // Flujo irreversible: solo permitimos confirmar de false -> true.
     if (!value) return;
 
     final ok = await _confirmIrreversible();
@@ -140,7 +161,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       builder: (context) => AlertDialog(
         title: const Text('Confirmar'),
         content: const Text(
-          '¿Estas seguro? Una vez activado, este paso no se podra revertir.',
+          'Estas seguro? Una vez activado, este paso no se podra revertir.',
         ),
         actions: [
           TextButton(
@@ -183,7 +204,8 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     });
   }
 
-  Future<void> _syncPending() async {
+  Future<void> _syncPending({bool silent = false}) async {
+    if (_syncing) return;
     setState(() => _syncing = true);
     try {
       final count = await _service.flushQueue();
@@ -201,6 +223,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       );
       if (!mounted) return;
       setState(() {});
+      if (silent) return;
       if (_hasPending) {
         showError(context, 'Aun hay datos pendientes por enviar');
       } else {
@@ -235,7 +258,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Asistencia: cada cambio actualiza todas tus mesas asignadas.',
+                  'Asistencia: funciona offline y sincroniza cuando vuelve internet.',
                 ),
                 const SizedBox(height: 10),
                 if (_hasPending)

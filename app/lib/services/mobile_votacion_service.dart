@@ -31,10 +31,15 @@ class MobileVotacionService {
     if (token == null || token.isEmpty) {
       throw StateError('Sin token');
     }
-    final res = await _client.get(
-      Uri.parse(_buildUrl('votacion/catalogo')),
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
-    );
+    final res = await _client
+        .get(
+          Uri.parse(_buildUrl('votacion/catalogo')),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        )
+        .timeout(const Duration(seconds: 8));
     if (res.statusCode != 200) {
       throw StateError('No se pudo cargar catalogo');
     }
@@ -50,10 +55,15 @@ class MobileVotacionService {
     if (token == null || token.isEmpty) {
       throw StateError('Sin token');
     }
-    final res = await _client.get(
-      Uri.parse(_buildUrl('votacion/mesa/$mesaId')),
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
-    );
+    final res = await _client
+        .get(
+          Uri.parse(_buildUrl('votacion/mesa/$mesaId')),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        )
+        .timeout(const Duration(seconds: 8));
     if (res.statusCode != 200) {
       throw StateError('No se pudo cargar mesa');
     }
@@ -116,15 +126,19 @@ class MobileVotacionService {
       }
     }
 
-    final streamed = await req.send();
+    final streamed = await req.send().timeout(const Duration(seconds: 60));
     final body = await streamed.stream.bytesToString();
     if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
+      String? backendMessage;
       try {
         final parsed = jsonDecode(body);
         if (parsed is Map && parsed['message'] != null) {
-          throw StateError(parsed['message'].toString());
+          backendMessage = parsed['message'].toString();
         }
       } catch (_) {}
+      if (backendMessage != null && backendMessage.isNotEmpty) {
+        throw StateError(backendMessage);
+      }
       throw StateError('Error al enviar votacion (${streamed.statusCode})');
     }
   }
@@ -143,6 +157,30 @@ class MobileVotacionService {
         ? img.copyResize(decoded, width: 1600)
         : decoded;
     final jpg = img.encodeJpg(resized, quality: 78);
+    await File(targetPath).writeAsBytes(jpg, flush: true);
+    return targetPath;
+  }
+
+  Future<String?> downloadAndCompressImageToJpeg({
+    required String imageUrl,
+    required String targetPath,
+  }) async {
+    final uri = Uri.tryParse(imageUrl);
+    if (uri == null) return null;
+    final res = await _client
+        .get(uri, headers: {'Accept': 'image/*'})
+        .timeout(const Duration(seconds: 10));
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      return null;
+    }
+    final decoded = img.decodeImage(res.bodyBytes);
+    if (decoded == null) {
+      return null;
+    }
+    final resized = decoded.width > 1600
+        ? img.copyResize(decoded, width: 1600)
+        : decoded;
+    final jpg = img.encodeJpg(resized, quality: 75);
     await File(targetPath).writeAsBytes(jpg, flush: true);
     return targetPath;
   }

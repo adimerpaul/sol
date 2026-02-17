@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/mobile_auth_local_store.dart';
+import '../services/mobile_sync_service.dart';
 import 'pages/alcalde_concejal_page.dart';
 import 'pages/gobernador_asambleista_page.dart';
 import 'pages/mapa_page.dart';
@@ -17,6 +20,25 @@ class MenuView extends StatefulWidget {
 
 class _MenuViewState extends State<MenuView> {
   _MenuSection _section = _MenuSection.mapa;
+  final MobileSyncService _syncService = MobileSyncService();
+  bool _syncing = false;
+  int _pendingSyncCount = 0;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshPendingSync();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      _refreshPendingSync();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _goToLogin() async {
     final hasLocalPendings = await MobileAuthLocalStore.instance
@@ -45,6 +67,41 @@ class _MenuViewState extends State<MenuView> {
     setState(() {
       _section = value;
     });
+    await _refreshPendingSync();
+  }
+
+  Future<void> _refreshPendingSync() async {
+    final count = await MobileAuthLocalStore.instance.getPendingSyncCount();
+    if (!mounted) return;
+    setState(() => _pendingSyncCount = count);
+  }
+
+  Future<void> _syncNow() async {
+    if (_syncing) return;
+    setState(() => _syncing = true);
+    try {
+      final result = await _syncService.syncAll();
+      if (!mounted) return;
+      setState(() => _pendingSyncCount = result.pendingCount);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Sincronizados: asistencia ${result.asistenciaEnviados}, votacion ${result.votacionEnviados}',
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo sincronizar. Sigue en modo offline.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
   }
 
   Widget _currentPage() {
@@ -79,6 +136,12 @@ class _MenuViewState extends State<MenuView> {
       appBar: AppBar(
         title: Text(_title()),
         actions: [
+          if (_pendingSyncCount > 0)
+            TextButton.icon(
+              onPressed: _syncing ? null : _syncNow,
+              icon: const Icon(Icons.sync),
+              label: Text(_syncing ? 'Asink...' : 'Asink ($_pendingSyncCount)'),
+            ),
           PopupMenuButton<String>(
             onSelected: (value) async {
               if (value == 'perfil') {

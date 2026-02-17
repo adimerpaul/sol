@@ -22,14 +22,16 @@ class MobileAuthService {
     required String fechaNacimiento,
   }) async {
     final uri = Uri.parse(_buildUrl('login'));
-    final response = await http.post(
-      uri,
-      headers: const {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({'ci': ci, 'fecha_nacimiento': fechaNacimiento}),
-    );
+    final response = await http
+        .post(
+          uri,
+          headers: const {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({'ci': ci, 'fecha_nacimiento': fechaNacimiento}),
+        )
+        .timeout(const Duration(seconds: 20));
 
     final body = _decodeBody(response.body);
 

@@ -6,7 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../services/mobile_auth_local_store.dart';
 
 class MapaPage extends StatefulWidget {
-  const MapaPage({super.key, this.zoom = 12});
+  const MapaPage({super.key, this.zoom = 13.8});
 
   final double zoom;
 
