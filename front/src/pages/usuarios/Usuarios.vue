@@ -204,7 +204,7 @@
               </div>
 
               <div class="col-12 col-md-4">
-                <q-input v-model="user.email" label="Celular" dense outlined />
+                <q-input v-model="user.celular" label="Celular" dense outlined />
               </div>
 
               <div class="col-12 col-md-4">
@@ -376,7 +376,7 @@ export default {
 
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
-        { name: 'email', label: 'Celular', align: 'left', field: 'email' },
+        { name: 'celular', label: 'Celular', align: 'left', field: 'celular' },
         { name: 'nombres', label: 'Nombre(s)', align: 'left', field: 'nombres' },
         { name: 'apellido_paterno', label: 'Ap. paterno', align: 'left', field: 'apellido_paterno' },
         { name: 'apellido_materno', label: 'Ap. materno', align: 'left', field: 'apellido_materno' },
@@ -432,7 +432,7 @@ export default {
         fecha_nacimiento: '',
         bloque: '',
         username: '',
-        email: '',
+        celular: '',
         password: '',
         role: 'Supervisor',
       }
