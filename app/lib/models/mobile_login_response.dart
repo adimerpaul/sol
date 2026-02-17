@@ -35,6 +35,7 @@ class MobileUser {
     required this.ci,
     required this.fechaNacimiento,
     required this.role,
+    required this.celular,
   });
 
   final int? id;
@@ -42,6 +43,7 @@ class MobileUser {
   final String ci;
   final String? fechaNacimiento;
   final String? role;
+  final String? celular;
 
   factory MobileUser.fromJson(Map<String, dynamic> json) {
     return MobileUser(
@@ -50,6 +52,7 @@ class MobileUser {
       ci: (json['ci'] as String?) ?? '',
       fechaNacimiento: json['fecha_nacimiento'] as String?,
       role: json['role'] as String?,
+      celular: json['celular'] as String?,
     );
   }
 }
@@ -82,12 +85,14 @@ class MobilePersonaSimple {
     required this.id,
     required this.name,
     required this.nombres,
+    required this.celular,
     required this.supervisores,
   });
 
   final int? id;
   final String name;
   final String? nombres;
+  final String? celular;
   final List<MobilePersonaSimple> supervisores;
 
   factory MobilePersonaSimple.fromJson(Map<String, dynamic> json) {
@@ -97,6 +102,7 @@ class MobilePersonaSimple {
       id: _asInt(json['id']),
       name: (json['name'] as String?) ?? '',
       nombres: json['nombres'] as String?,
+      celular: json['celular'] as String?,
       supervisores: supervisoresJson
           .whereType<Map<String, dynamic>>()
           .map(MobilePersonaSimple.fromJson)
@@ -109,8 +115,10 @@ class MobileMesa {
   MobileMesa({
     required this.id,
     required this.idOriginal,
+    required this.recintoId,
     required this.numeroMesa,
     required this.estado,
+    required this.estadoLocal,
     required this.recintoNombre,
     required this.localidadNombre,
     required this.municipioNombre,
@@ -122,8 +130,10 @@ class MobileMesa {
 
   final int? id;
   final int? idOriginal;
+  final int? recintoId;
   final int? numeroMesa;
   final String? estado;
+  final String? estadoLocal;
   final String? recintoNombre;
   final String? localidadNombre;
   final String? municipioNombre;
@@ -142,8 +152,10 @@ class MobileMesa {
     return MobileMesa(
       id: _asInt(json['id']),
       idOriginal: _asInt(json['id_original']),
+      recintoId: _asInt(json['recinto_id']),
       numeroMesa: _asInt(json['numero_mesa']),
       estado: json['estado']?.toString(),
+      estadoLocal: json['estado_local']?.toString(),
       recintoNombre: recinto['nombre']?.toString(),
       localidadNombre: localidad['nombre']?.toString(),
       municipioNombre: municipio['nombre']?.toString(),

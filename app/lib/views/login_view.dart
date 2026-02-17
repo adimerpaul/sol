@@ -82,11 +82,11 @@ class _LoginViewState extends State<LoginView> {
                 ElevatedButton(
                   onPressed: _vm.isLoading
                       ? null
-                      : () {
+                      : () async {
                           final ci = _ciController.text.trim();
                           final fecha = _fechaController.text.trim();
                           if (ci.isEmpty || fecha.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(this.context).showSnackBar(
                               const SnackBar(
                                 content: Text(
                                   'Completa CI y fecha de nacimiento',
@@ -95,7 +95,14 @@ class _LoginViewState extends State<LoginView> {
                             );
                             return;
                           }
-                          _vm.login(ci: ci, fechaNacimiento: fecha);
+                          await _vm.login(ci: ci, fechaNacimiento: fecha);
+                          if (!mounted) return;
+                          if (_vm.result != null) {
+                            Navigator.pushReplacementNamed(
+                              this.context,
+                              '/menu',
+                            );
+                          }
                         },
                   child: _vm.isLoading
                       ? const SizedBox(

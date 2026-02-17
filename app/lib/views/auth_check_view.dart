@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/mobile_auth_local_store.dart';
+
 class AuthCheckView extends StatefulWidget {
   const AuthCheckView({super.key});
 
@@ -15,16 +17,15 @@ class _AuthCheckViewState extends State<AuthCheckView> {
       _checkAuth();
     });
   }
+
   Future<void> _checkAuth() async {
+    final hasSession = await MobileAuthLocalStore.instance.hasSession();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/login');
+    Navigator.pushReplacementNamed(context, hasSession ? '/menu' : '/login');
   }
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
