@@ -6,6 +6,6 @@ class GobernadorAsambleistaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AsistenciaPage(sectionTitle: 'Subir votacion y asistencia');
+    return const AsistenciaPage(sectionTitle: 'Asistencia');
   }
 }

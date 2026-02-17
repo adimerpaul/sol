@@ -4,17 +4,20 @@ class MobileLoginResponse {
     required this.user,
     required this.jerarquia,
     required this.mesas,
+    required this.partidos,
   });
 
   final String token;
   final MobileUser user;
   final MobileJerarquia jerarquia;
   final List<MobileMesa> mesas;
+  final List<MobilePartido> partidos;
 
   factory MobileLoginResponse.fromJson(Map<String, dynamic> json) {
     final userJson = (json['user'] as Map<String, dynamic>?) ?? {};
     final jerarquiaJson = (json['jerarquia'] as Map<String, dynamic>?) ?? {};
     final mesasJson = (json['mesas'] as List?) ?? const [];
+    final partidosJson = (json['partidos'] as List?) ?? const [];
 
     return MobileLoginResponse(
       token: (json['token'] as String?) ?? '',
@@ -24,6 +27,42 @@ class MobileLoginResponse {
           .whereType<Map<String, dynamic>>()
           .map(MobileMesa.fromJson)
           .toList(),
+      partidos: partidosJson
+          .whereType<Map<String, dynamic>>()
+          .map(MobilePartido.fromJson)
+          .toList(),
+    );
+  }
+}
+
+class MobilePartido {
+  MobilePartido({
+    required this.id,
+    required this.sigla,
+    required this.nombre,
+    required this.icono,
+    required this.iconoUrl,
+    required this.ordenMunicipal,
+    required this.ordenDepartamental,
+  });
+
+  final int id;
+  final String sigla;
+  final String nombre;
+  final String? icono;
+  final String? iconoUrl;
+  final int ordenMunicipal;
+  final int ordenDepartamental;
+
+  factory MobilePartido.fromJson(Map<String, dynamic> json) {
+    return MobilePartido(
+      id: _asInt(json['id']) ?? 0,
+      sigla: (json['sigla'] ?? '').toString(),
+      nombre: (json['nombre'] ?? '').toString(),
+      icono: json['icono']?.toString(),
+      iconoUrl: json['icono_url']?.toString(),
+      ordenMunicipal: _asInt(json['orden_municipal']) ?? 0,
+      ordenDepartamental: _asInt(json['orden_departamental']) ?? 0,
     );
   }
 }

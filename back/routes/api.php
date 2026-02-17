@@ -110,6 +110,9 @@ Route::prefix('mobile')->group(function () {
         Route::get('/me', [\App\Http\Controllers\MobileAuthController::class, 'me']);
         Route::get('/asistencia', [\App\Http\Controllers\MobileResultadosController::class, 'asistencia']);
         Route::post('/asistencia/update', [\App\Http\Controllers\MobileResultadosController::class, 'asistenciaUpdate']);
+        Route::get('/votacion/catalogo', [\App\Http\Controllers\MobileResultadosController::class, 'votacionCatalogo']);
+        Route::get('/votacion/mesa/{mesa}', [\App\Http\Controllers\MobileResultadosController::class, 'votacionMesa']);
+        Route::post('/votacion/mesa/{mesa}/guardar', [\App\Http\Controllers\MobileResultadosController::class, 'votacionGuardar']);
         Route::post('/resultados/sync', [\App\Http\Controllers\MobileResultadosController::class, 'sync']);
     });
 });

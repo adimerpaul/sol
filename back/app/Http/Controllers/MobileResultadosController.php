@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mesa;
+use App\Models\Partido;
 use App\Models\ResultadoMesa;
 use App\Models\ResultadoMesaDetalle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class MobileResultadosController extends Controller
 {
@@ -122,6 +124,273 @@ class MobileResultadosController extends Controller
             'field' => $data['field'],
             'value' => (bool) $data['value'],
             'updated_mesas' => $mesas->count(),
+        ]);
+    }
+
+    public function votacionCatalogo(Request $request)
+    {
+        $user = $request->user();
+
+        $mesas = Mesa::query()
+            ->where('delegado_id', $user->id)
+            ->with([
+                'recinto:id,nombre',
+                'resultado:id,mesa_id,total_validos,total_blancos,total_nulos,etapa_2',
+            ])
+            ->orderBy('numero_mesa')
+            ->get()
+            ->map(function ($m) {
+                return [
+                    'id' => $m->id,
+                    'numero_mesa' => $m->numero_mesa,
+                    'estado' => $m->estado,
+                    'recinto_nombre' => $m->recinto?->nombre,
+                    'tiene_resultado' => (bool) $m->resultado,
+                    'finalizada' => (bool) optional($m->resultado)->etapa_2,
+                ];
+            })
+            ->values();
+
+        $partidos = Partido::query()
+            ->select('id', 'sigla', 'nombre', 'icono', 'orden_municipal', 'orden_departamental')
+            ->whereNull('deleted_at')
+            ->orderBy('orden_municipal')
+            ->orderBy('sigla')
+            ->get()
+            ->map(function ($p) {
+                $iconoUrl = null;
+                if (!empty($p->icono)) {
+                    $iconoUrl = url('/images/partidos/' . rawurlencode($p->icono));
+                }
+                return [
+                    'id' => $p->id,
+                    'sigla' => $p->sigla,
+                    'nombre' => $p->nombre,
+                    'icono' => $p->icono,
+                    'icono_url' => $iconoUrl,
+                    'orden_municipal' => (int) ($p->orden_municipal ?? 0),
+                    'orden_departamental' => (int) ($p->orden_departamental ?? 0),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'mesas' => $mesas,
+            'partidos' => $partidos,
+        ]);
+    }
+
+    public function votacionMesa(Request $request, Mesa $mesa)
+    {
+        $user = $request->user();
+        if ((int) $mesa->delegado_id !== (int) $user->id) {
+            return response()->json(['message' => 'Mesa no asignada al usuario'], 403);
+        }
+
+        $resultado = ResultadoMesa::query()
+            ->with('detalles')
+            ->where('mesa_id', $mesa->id)
+            ->first();
+
+        if ($resultado) {
+            $resultado->foto1_url = $resultado->foto1 ? Storage::url($resultado->foto1) : null;
+            $resultado->foto2_url = $resultado->foto2 ? Storage::url($resultado->foto2) : null;
+            $resultado->foto3_url = $resultado->foto3 ? Storage::url($resultado->foto3) : null;
+            $resultado->foto4_url = $resultado->foto4 ? Storage::url($resultado->foto4) : null;
+            $resultado->foto5_url = $resultado->foto5 ? Storage::url($resultado->foto5) : null;
+            $resultado->foto6_url = $resultado->foto6 ? Storage::url($resultado->foto6) : null;
+            $resultado->foto7_url = $resultado->foto7 ? Storage::url($resultado->foto7) : null;
+            $resultado->foto8_url = $resultado->foto8 ? Storage::url($resultado->foto8) : null;
+            $resultado->foto9_url = $resultado->foto9 ? Storage::url($resultado->foto9) : null;
+            $resultado->foto10_url = $resultado->foto10 ? Storage::url($resultado->foto10) : null;
+        }
+
+        return response()->json([
+            'mesa_id' => $mesa->id,
+            'resultado' => $resultado,
+        ]);
+    }
+
+    public function votacionGuardar(Request $request, Mesa $mesa)
+    {
+        $user = $request->user();
+        if ((int) $mesa->delegado_id !== (int) $user->id) {
+            return response()->json(['message' => 'Mesa no asignada al usuario'], 403);
+        }
+
+        $data = $request->validate([
+            'finalizar' => 'nullable|boolean',
+            'observacion' => 'nullable|string',
+            'votos' => 'required',
+
+            'blancos_gobernador' => 'nullable|integer|min:0',
+            'nulos_gobernador' => 'nullable|integer|min:0',
+            'blancos_asambleista_distrito' => 'nullable|integer|min:0',
+            'nulos_asambleista_distrito' => 'nullable|integer|min:0',
+            'blancos_asambleista_poblacion' => 'nullable|integer|min:0',
+            'nulos_asambleista_poblacion' => 'nullable|integer|min:0',
+            'blancos_concejal' => 'nullable|integer|min:0',
+            'nulos_concejal' => 'nullable|integer|min:0',
+            'blancos_alcalde' => 'nullable|integer|min:0',
+            'nulos_alcalde' => 'nullable|integer|min:0',
+
+            'foto1' => 'nullable|image|max:4096',
+            'foto2' => 'nullable|image|max:4096',
+            'foto3' => 'nullable|image|max:4096',
+            'foto4' => 'nullable|image|max:4096',
+            'foto5' => 'nullable|image|max:4096',
+            'foto6' => 'nullable|image|max:4096',
+            'foto7' => 'nullable|image|max:4096',
+            'foto8' => 'nullable|image|max:4096',
+            'foto9' => 'nullable|image|max:4096',
+            'foto10' => 'nullable|image|max:4096',
+        ]);
+
+        $votos = $request->input('votos');
+        if (is_string($votos)) {
+            $votos = json_decode($votos, true);
+        }
+        if (!is_array($votos)) {
+            return response()->json(['message' => 'Formato de votos invalido'], 422);
+        }
+
+        $partidoIds = Partido::query()->pluck('id')->all();
+        $partidoSet = array_fill_keys($partidoIds, true);
+
+        $sum = [
+            'gobernador' => 0,
+            'asambleista_distrito' => 0,
+            'asambleista_poblacion' => 0,
+            'concejal' => 0,
+            'alcalde' => 0,
+        ];
+
+        foreach ($votos as $row) {
+            $pid = (int) ($row['partido_id'] ?? 0);
+            if (!isset($partidoSet[$pid])) {
+                return response()->json(['message' => "Partido invalido: {$pid}"], 422);
+            }
+            foreach ([
+                'votos_gobernador',
+                'votos_asambleista_distrito',
+                'votos_asambleista_poblacion',
+                'votos_concejal',
+                'votos_alcalde'
+            ] as $k) {
+                if (!isset($row[$k]) || (int) $row[$k] < 0) {
+                    return response()->json(['message' => "Voto invalido en {$k}"], 422);
+                }
+            }
+
+            $sum['gobernador'] += (int) $row['votos_gobernador'];
+            $sum['asambleista_distrito'] += (int) $row['votos_asambleista_distrito'];
+            $sum['asambleista_poblacion'] += (int) $row['votos_asambleista_poblacion'];
+            $sum['concejal'] += (int) $row['votos_concejal'];
+            $sum['alcalde'] += (int) $row['votos_alcalde'];
+        }
+
+        $blancos = [
+            'gobernador' => (int) ($data['blancos_gobernador'] ?? 0),
+            'asambleista_distrito' => (int) ($data['blancos_asambleista_distrito'] ?? 0),
+            'asambleista_poblacion' => (int) ($data['blancos_asambleista_poblacion'] ?? 0),
+            'concejal' => (int) ($data['blancos_concejal'] ?? 0),
+            'alcalde' => (int) ($data['blancos_alcalde'] ?? 0),
+        ];
+        $nulos = [
+            'gobernador' => (int) ($data['nulos_gobernador'] ?? 0),
+            'asambleista_distrito' => (int) ($data['nulos_asambleista_distrito'] ?? 0),
+            'asambleista_poblacion' => (int) ($data['nulos_asambleista_poblacion'] ?? 0),
+            'concejal' => (int) ($data['nulos_concejal'] ?? 0),
+            'alcalde' => (int) ($data['nulos_alcalde'] ?? 0),
+        ];
+
+        $finalizar = (bool) $request->boolean('finalizar');
+        if ($finalizar) {
+            foreach (['gobernador', 'asambleista_distrito', 'asambleista_poblacion', 'concejal', 'alcalde'] as $cat) {
+                $totalCat = $sum[$cat] + $blancos[$cat] + $nulos[$cat];
+                if ($totalCat !== 250) {
+                    return response()->json([
+                        'message' => "La categoria {$cat} debe sumar 250",
+                    ], 422);
+                }
+            }
+
+            $existing = ResultadoMesa::query()->where('mesa_id', $mesa->id)->first();
+            $allFotos = ['foto1', 'foto2', 'foto3', 'foto4', 'foto5', 'foto6', 'foto7', 'foto8', 'foto9', 'foto10'];
+            foreach ($allFotos as $f) {
+                $hasCurrent = $existing && !empty($existing->{$f});
+                $hasNew = $request->hasFile($f);
+                if (!$hasCurrent && !$hasNew) {
+                    return response()->json([
+                        'message' => 'Para finalizar debes tener las 10 fotos cargadas',
+                    ], 422);
+                }
+            }
+        }
+
+        DB::transaction(function () use ($mesa, $user, $data, $votos, $sum, $blancos, $nulos, $finalizar, $request) {
+            $rm = ResultadoMesa::updateOrCreate(
+                ['mesa_id' => $mesa->id],
+                [
+                    'registrado_por' => $user->id,
+                    'observacion' => $data['observacion'] ?? null,
+
+                    'etapa_1' => true,
+                    'etapa_2' => $finalizar,
+
+                    'blancos_gobernador' => $blancos['gobernador'],
+                    'nulos_gobernador' => $nulos['gobernador'],
+                    'blancos_asambleista_distrito' => $blancos['asambleista_distrito'],
+                    'nulos_asambleista_distrito' => $nulos['asambleista_distrito'],
+                    'blancos_asambleista_poblacion' => $blancos['asambleista_poblacion'],
+                    'nulos_asambleista_poblacion' => $nulos['asambleista_poblacion'],
+                    'blancos_concejal' => $blancos['concejal'],
+                    'nulos_concejal' => $nulos['concejal'],
+                    'blancos_alcalde' => $blancos['alcalde'],
+                    'nulos_alcalde' => $nulos['alcalde'],
+
+                    'total_validos' => array_sum($sum),
+                    'total_blancos' => array_sum($blancos),
+                    'total_nulos' => array_sum($nulos),
+                    'total_votos' => array_sum($sum),
+                ]
+            );
+
+            $dir = "resultados_mesa/mesa_{$mesa->id}";
+            foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto5', 'foto6', 'foto7', 'foto8', 'foto9', 'foto10'] as $f) {
+                if ($request->hasFile($f)) {
+                    if (!empty($rm->{$f})) {
+                        Storage::disk('public')->delete($rm->{$f});
+                    }
+                    $rm->{$f} = $request->file($f)->store($dir, 'public');
+                }
+            }
+            $rm->save();
+
+            foreach ($votos as $row) {
+                ResultadoMesaDetalle::updateOrCreate(
+                    [
+                        'resultado_mesa_id' => $rm->id,
+                        'partido_id' => (int) $row['partido_id'],
+                    ],
+                    [
+                        'votos_gobernador' => (int) $row['votos_gobernador'],
+                        'votos_asambleista_distrito' => (int) $row['votos_asambleista_distrito'],
+                        'votos_asambleista_poblacion' => (int) $row['votos_asambleista_poblacion'],
+                        'votos_concejal' => (int) $row['votos_concejal'],
+                        'votos_alcalde' => (int) $row['votos_alcalde'],
+                    ]
+                );
+            }
+
+            $mesa->estado = $finalizar ? 'FINALIZADA' : 'EN_PROCESO';
+            $mesa->save();
+        });
+
+        return response()->json([
+            'ok' => true,
+            'mesa_id' => $mesa->id,
+            'finalizada' => $finalizar,
         ]);
     }
 

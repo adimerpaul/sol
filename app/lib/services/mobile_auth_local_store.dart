@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:sqflite/sqflite.dart';
 
 import '../models/mobile_login_response.dart';
+import '../models/votacion_model.dart';
 
 class MobileAuthLocalStore {
   MobileAuthLocalStore._internal();
@@ -16,6 +19,9 @@ class MobileAuthLocalStore {
   static const String mesaEstadoRealizado = 'REALIZADO';
   static const String asistenciaSyncLocal = 'LOCAL';
   static const String asistenciaSyncSynced = 'SYNCED';
+  static const String votacionSyncLocal = 'LOCAL';
+  static const String votacionSyncError = 'ERROR';
+  static const String votacionSyncSynced = 'SYNCED';
 
   Future<Database> get database async {
     if (_db != null) return _db!;
@@ -65,6 +71,17 @@ class MobileAuthLocalStore {
         celular TEXT
       )
     ''');
+    await db.execute('''
+      CREATE TABLE auth_partidos (
+        id INTEGER PRIMARY KEY,
+        sigla TEXT NOT NULL,
+        nombre TEXT NOT NULL,
+        icono TEXT,
+        icono_url TEXT,
+        orden_municipal INTEGER NOT NULL DEFAULT 0,
+        orden_departamental INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
 
     await db.execute('''
       CREATE TABLE auth_jefe_supervisor (
@@ -111,6 +128,16 @@ class MobileAuthLocalStore {
         updated_at TEXT NOT NULL
       )
     ''');
+    await db.execute('''
+      CREATE TABLE votacion_draft (
+        mesa_id INTEGER PRIMARY KEY,
+        payload_json TEXT NOT NULL,
+        fotos_json TEXT,
+        sync_status TEXT NOT NULL DEFAULT 'LOCAL',
+        last_error TEXT,
+        updated_at TEXT NOT NULL
+      )
+    ''');
 
     await _ensureSchema(db);
   }
@@ -143,6 +170,17 @@ class MobileAuthLocalStore {
         name TEXT NOT NULL,
         nombres TEXT,
         celular TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auth_partidos (
+        id INTEGER PRIMARY KEY,
+        sigla TEXT NOT NULL,
+        nombre TEXT NOT NULL,
+        icono TEXT,
+        icono_url TEXT,
+        orden_municipal INTEGER NOT NULL DEFAULT 0,
+        orden_departamental INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute('''
@@ -189,11 +227,22 @@ class MobileAuthLocalStore {
         updated_at TEXT NOT NULL
       )
     ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS votacion_draft (
+        mesa_id INTEGER PRIMARY KEY,
+        payload_json TEXT NOT NULL,
+        fotos_json TEXT,
+        sync_status TEXT NOT NULL DEFAULT 'LOCAL',
+        last_error TEXT,
+        updated_at TEXT NOT NULL
+      )
+    ''');
 
     await _addColumnIfMissing(db, 'auth_session', 'user_celular', 'TEXT');
     await _addColumnIfMissing(db, 'auth_jefes', 'celular', 'TEXT');
     await _addColumnIfMissing(db, 'auth_supervisores', 'celular', 'TEXT');
     await _addColumnIfMissing(db, 'auth_mesas', 'recinto_id', 'INTEGER');
+    await _addColumnIfMissing(db, 'votacion_draft', 'fotos_json', 'TEXT');
   }
 
   Future<void> _addColumnIfMissing(
@@ -229,6 +278,7 @@ class MobileAuthLocalStore {
       batch.delete('auth_supervisores');
       batch.delete('auth_jefe_supervisor');
       batch.delete('auth_mesas');
+      batch.delete('auth_partidos');
 
       batch.insert('auth_session', {
         'id': 1,
@@ -300,6 +350,18 @@ class MobileAuthLocalStore {
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
 
+      for (final partido in data.partidos) {
+        batch.insert('auth_partidos', {
+          'id': partido.id,
+          'sigla': partido.sigla,
+          'nombre': partido.nombre,
+          'icono': partido.icono,
+          'icono_url': partido.iconoUrl,
+          'orden_municipal': partido.ordenMunicipal,
+          'orden_departamental': partido.ordenDepartamental,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
       await batch.commit(noResult: true);
     });
   }
@@ -322,6 +384,10 @@ class MobileAuthLocalStore {
     final supervisorRows = await db.query('auth_supervisores');
     final jefeSupervisorRows = await db.query('auth_jefe_supervisor');
     final mesasRows = await db.query('auth_mesas');
+    final partidosRows = await db.query(
+      'auth_partidos',
+      orderBy: 'orden_municipal ASC, sigla ASC',
+    );
 
     final supervisorsById = <int, MobilePersonaSimple>{};
     for (final row in supervisorRows) {
@@ -385,6 +451,20 @@ class MobileAuthLocalStore {
         )
         .toList();
 
+    final partidos = partidosRows
+        .map(
+          (row) => MobilePartido(
+            id: row['id'] as int? ?? 0,
+            sigla: (row['sigla'] as String?) ?? '',
+            nombre: (row['nombre'] as String?) ?? '',
+            icono: row['icono'] as String?,
+            iconoUrl: row['icono_url'] as String?,
+            ordenMunicipal: row['orden_municipal'] as int? ?? 0,
+            ordenDepartamental: row['orden_departamental'] as int? ?? 0,
+          ),
+        )
+        .toList();
+
     return MobileLoginResponse(
       token: (session['token'] as String?) ?? '',
       user: MobileUser(
@@ -400,6 +480,7 @@ class MobileAuthLocalStore {
         supervisores: supervisorsById.values.toList(),
       ),
       mesas: mesas,
+      partidos: partidos,
     );
   }
 
@@ -535,13 +616,22 @@ class MobileAuthLocalStore {
 
   Future<bool> hasMesasLocalPendientesSync() async {
     final db = await database;
-    final rows = await db.query(
+    final rowsMesas = await db.query(
       'auth_mesas',
       where: 'estado_local = ?',
       whereArgs: [mesaEstadoLocal],
       limit: 1,
     );
-    return rows.isNotEmpty;
+    if (rowsMesas.isNotEmpty) return true;
+    final rowsAsistencia = await db.query('asistencia_queue', limit: 1);
+    if (rowsAsistencia.isNotEmpty) return true;
+    final rowsVotacion = await db.query(
+      'votacion_draft',
+      where: 'sync_status != ?',
+      whereArgs: [votacionSyncSynced],
+      limit: 1,
+    );
+    return rowsVotacion.isNotEmpty;
   }
 
   Future<void> clearSession() async {
@@ -552,8 +642,10 @@ class MobileAuthLocalStore {
       await txn.delete('auth_supervisores');
       await txn.delete('auth_jefe_supervisor');
       await txn.delete('auth_mesas');
+      await txn.delete('auth_partidos');
       await txn.delete('asistencia_state');
       await txn.delete('asistencia_queue');
+      await txn.delete('votacion_draft');
     });
   }
 
@@ -643,6 +735,213 @@ class MobileAuthLocalStore {
     return rows.isNotEmpty;
   }
 
+  Future<List<MobileMesa>> readMesasLocal() async {
+    final db = await database;
+    final rows = await db.query('auth_mesas', orderBy: 'numero_mesa ASC');
+    return rows
+        .map(
+          (row) => MobileMesa(
+            id: row['id'] as int?,
+            idOriginal: row['id_original'] as int?,
+            recintoId: row['recinto_id'] as int?,
+            numeroMesa: row['numero_mesa'] as int?,
+            estado: row['estado_api'] as String?,
+            estadoLocal: row['estado_local'] as String?,
+            recintoNombre: row['recinto_nombre'] as String?,
+            localidadNombre: row['localidad_nombre'] as String?,
+            municipioNombre: row['municipio_nombre'] as String?,
+            provinciaNombre: row['provincia_nombre'] as String?,
+            departamentoNombre: row['departamento_nombre'] as String?,
+            recintoLatitud: row['recinto_latitud'] as String?,
+            recintoLongitud: row['recinto_longitud'] as String?,
+          ),
+        )
+        .toList();
+  }
+
+  Future<List<MobilePartido>> readPartidosLocal() async {
+    final db = await database;
+    final rows = await db.query(
+      'auth_partidos',
+      orderBy: 'orden_municipal ASC, sigla ASC',
+    );
+    return rows
+        .map(
+          (row) => MobilePartido(
+            id: row['id'] as int? ?? 0,
+            sigla: (row['sigla'] as String?) ?? '',
+            nombre: (row['nombre'] as String?) ?? '',
+            icono: row['icono'] as String?,
+            iconoUrl: row['icono_url'] as String?,
+            ordenMunicipal: row['orden_municipal'] as int? ?? 0,
+            ordenDepartamental: row['orden_departamental'] as int? ?? 0,
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> saveVotacionDraft(VotacionDraft draft) async {
+    final db = await database;
+    final payload = {
+      'finalizar': draft.finalizar,
+      'observacion': draft.observacion,
+      'blancos_gobernador': draft.blancosGobernador,
+      'nulos_gobernador': draft.nulosGobernador,
+      'blancos_asambleista_distrito': draft.blancosAsd,
+      'nulos_asambleista_distrito': draft.nulosAsd,
+      'blancos_asambleista_poblacion': draft.blancosAsp,
+      'nulos_asambleista_poblacion': draft.nulosAsp,
+      'blancos_concejal': draft.blancosConcejal,
+      'nulos_concejal': draft.nulosConcejal,
+      'blancos_alcalde': draft.blancosAlcalde,
+      'nulos_alcalde': draft.nulosAlcalde,
+      'votos': draft.votos
+          .map(
+            (v) => {
+              'partido_id': v.partidoId,
+              'sigla': v.sigla,
+              'nombre': v.nombre,
+              'icono_url': v.iconoUrl,
+              'votos_gobernador': v.votosGobernador,
+              'votos_asambleista_distrito': v.votosAsd,
+              'votos_asambleista_poblacion': v.votosAsp,
+              'votos_concejal': v.votosConcejal,
+              'votos_alcalde': v.votosAlcalde,
+            },
+          )
+          .toList(),
+    };
+    await db.insert('votacion_draft', {
+      'mesa_id': draft.mesaId,
+      'payload_json': jsonEncode(payload),
+      'fotos_json': jsonEncode(draft.fotos),
+      'sync_status': draft.syncStatus,
+      'last_error': null,
+      'updated_at': draft.updatedAt,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+    await updateMesaEstadoLocal(draft.mesaId, mesaEstadoLocal);
+  }
+
+  Future<VotacionDraft?> readVotacionDraft(int mesaId) async {
+    final db = await database;
+    final rows = await db.query(
+      'votacion_draft',
+      where: 'mesa_id = ?',
+      whereArgs: [mesaId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final row = rows.first;
+    final raw = (row['payload_json'] as String?) ?? '{}';
+    Map<String, dynamic> payload = {};
+    try {
+      payload = Map<String, dynamic>.from(jsonDecode(raw));
+    } catch (_) {}
+    Map<String, dynamic> fotosRaw = {};
+    final rawFotos = row['fotos_json'] as String?;
+    if (rawFotos?.isNotEmpty == true) {
+      try {
+        fotosRaw = Map<String, dynamic>.from(jsonDecode(rawFotos!));
+      } catch (_) {}
+    }
+    final fotos = <String, String?>{};
+    for (final f in votacionFotoSlots) {
+      final v = fotosRaw[f];
+      fotos[f] = v?.toString();
+    }
+    if ((fotos['foto1'] ?? '').isEmpty) {
+      final legacy = row['hoja_trabajo_path'] as String?;
+      if (legacy?.isNotEmpty == true) fotos['foto1'] = legacy;
+    }
+    if ((fotos['foto2'] ?? '').isEmpty) {
+      final legacy = row['acta_electoral_path'] as String?;
+      if (legacy?.isNotEmpty == true) fotos['foto2'] = legacy;
+    }
+    final votosRaw = (payload['votos'] as List?) ?? const [];
+    final votos = votosRaw.whereType<Map>().map((e) {
+      final m = Map<String, dynamic>.from(e);
+      return VotoPartidoItem(
+        partidoId: _asInt(m['partido_id']) ?? 0,
+        sigla: (m['sigla'] ?? '').toString(),
+        nombre: (m['nombre'] ?? '').toString(),
+        iconoUrl: m['icono_url']?.toString(),
+        votosGobernador: _asInt(m['votos_gobernador']) ?? 0,
+        votosAsd: _asInt(m['votos_asambleista_distrito']) ?? 0,
+        votosAsp: _asInt(m['votos_asambleista_poblacion']) ?? 0,
+        votosConcejal: _asInt(m['votos_concejal']) ?? 0,
+        votosAlcalde: _asInt(m['votos_alcalde']) ?? 0,
+      );
+    }).toList();
+    return VotacionDraft(
+      mesaId: mesaId,
+      finalizar: payload['finalizar'] == true,
+      observacion: payload['observacion']?.toString(),
+      blancosGobernador: _asInt(payload['blancos_gobernador']) ?? 0,
+      nulosGobernador: _asInt(payload['nulos_gobernador']) ?? 0,
+      blancosAsd: _asInt(payload['blancos_asambleista_distrito']) ?? 0,
+      nulosAsd: _asInt(payload['nulos_asambleista_distrito']) ?? 0,
+      blancosAsp: _asInt(payload['blancos_asambleista_poblacion']) ?? 0,
+      nulosAsp: _asInt(payload['nulos_asambleista_poblacion']) ?? 0,
+      blancosConcejal: _asInt(payload['blancos_concejal']) ?? 0,
+      nulosConcejal: _asInt(payload['nulos_concejal']) ?? 0,
+      blancosAlcalde: _asInt(payload['blancos_alcalde']) ?? 0,
+      nulosAlcalde: _asInt(payload['nulos_alcalde']) ?? 0,
+      votos: votos,
+      fotos: fotos,
+      syncStatus: (row['sync_status'] as String?) ?? votacionSyncLocal,
+      updatedAt: (row['updated_at'] as String?) ?? '',
+    );
+  }
+
+  Future<List<VotacionDraft>> readPendingVotacionDrafts() async {
+    final db = await database;
+    final rows = await db.query(
+      'votacion_draft',
+      where: 'sync_status != ?',
+      whereArgs: [votacionSyncSynced],
+      orderBy: 'updated_at ASC',
+    );
+    final out = <VotacionDraft>[];
+    for (final row in rows) {
+      final mesaId = row['mesa_id'] as int?;
+      if (mesaId == null) continue;
+      final d = await readVotacionDraft(mesaId);
+      if (d != null) out.add(d);
+    }
+    return out;
+  }
+
+  Future<void> markVotacionSynced(int mesaId) async {
+    final db = await database;
+    await db.update(
+      'votacion_draft',
+      {
+        'sync_status': votacionSyncSynced,
+        'last_error': null,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'mesa_id = ?',
+      whereArgs: [mesaId],
+    );
+    await updateMesaEstadoLocal(mesaId, mesaEstadoRealizado);
+  }
+
+  Future<void> markVotacionError(int mesaId, String error) async {
+    final db = await database;
+    await db.update(
+      'votacion_draft',
+      {
+        'sync_status': votacionSyncError,
+        'last_error': error,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'mesa_id = ?',
+      whereArgs: [mesaId],
+    );
+    await updateMesaEstadoLocal(mesaId, mesaEstadoLocal);
+  }
+
   String _estadoLocalInicial(String? estadoApi) {
     if (estadoApi?.toUpperCase() == mesaEstadoRealizado) {
       return mesaEstadoRealizado;
@@ -708,4 +1007,10 @@ class RecintoMesaPoint {
       realizados: realizados ?? this.realizados,
     );
   }
+}
+
+int? _asInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  return int.tryParse(value.toString());
 }

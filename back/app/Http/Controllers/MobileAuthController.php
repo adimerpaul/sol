@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Mesa;
+use App\Models\Partido;
 use Illuminate\Http\Request;
 
 class MobileAuthController extends Controller
@@ -30,7 +31,6 @@ class MobileAuthController extends Controller
         // ✅ Mesa asignada pendiente (la más simple)
         $mesas = Mesa::query()
             ->where('delegado_id', $user->id)
-            ->where('estado', 'PENDIENTE')
             ->with([
                 'recinto:id,nombre,latitud,longitud',
                 'localidad:id,nombre',
@@ -38,8 +38,32 @@ class MobileAuthController extends Controller
                 'provincia:id,nombre',
                 'departamento:id,nombre',
             ])
-            ->orderBy('id', 'desc')
+            ->orderBy('numero_mesa')
+            ->orderBy('id')
             ->get();
+
+        $partidos = Partido::query()
+            ->select('id', 'sigla', 'nombre', 'icono', 'orden_municipal', 'orden_departamental')
+            ->whereNull('deleted_at')
+            ->orderBy('orden_municipal')
+            ->orderBy('sigla')
+            ->get()
+            ->map(function ($p) {
+                $iconoUrl = null;
+                if (!empty($p->icono)) {
+                    $iconoUrl = url('/images/partidos/' . rawurlencode($p->icono));
+                }
+                return [
+                    'id' => $p->id,
+                    'sigla' => $p->sigla,
+                    'nombre' => $p->nombre,
+                    'icono' => $p->icono,
+                    'icono_url' => $iconoUrl,
+                    'orden_municipal' => (int) ($p->orden_municipal ?? 0),
+                    'orden_departamental' => (int) ($p->orden_departamental ?? 0),
+                ];
+            })
+            ->values();
 
         // Jerarquia via tablas pivote:
         // delegado -> jefe (jefe_delegado), jefe -> supervisor (supervisor_jefe)
@@ -86,7 +110,8 @@ class MobileAuthController extends Controller
                 'jefes' => $jefes,
                 'supervisor' => $supervisores,
             ],
-            'mesas' => $mesas
+            'mesas' => $mesas,
+            'partidos' => $partidos,
         ]);
     }
 
