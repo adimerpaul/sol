@@ -65,9 +65,9 @@ class _MenuViewState extends State<MenuView> {
       case _MenuSection.perfil:
         return 'Perfil';
       case _MenuSection.alcaldeConcejal:
-        return 'Alcalde y Concejal';
+        return 'Subir votacion y asistencia';
       case _MenuSection.gobernadorAsambleista:
-        return 'Gobernador y Asambleista';
+        return 'Subir votacion y asistencia';
       case _MenuSection.mapa:
         return 'Mapa';
     }
@@ -95,11 +95,11 @@ class _MenuViewState extends State<MenuView> {
               PopupMenuItem(value: 'perfil', child: Text('Perfil')),
               PopupMenuItem(
                 value: 'alcalde',
-                child: Text('Alcalde y Concejal'),
+                child: Text('Subir votacion y asistencia'),
               ),
               PopupMenuItem(
                 value: 'gobernador',
-                child: Text('Gobernador y Asambleista'),
+                child: Text('Subir votacion y asistencia'),
               ),
               PopupMenuItem(value: 'salir', child: Text('Salir')),
             ],
@@ -133,14 +133,14 @@ class _MenuViewState extends State<MenuView> {
               ),
               _NavButton(
                 icon: Icons.how_to_vote_outlined,
-                label: 'Alcalde',
+                label: 'Asistencia',
                 selected: _section == _MenuSection.alcaldeConcejal,
                 onTap: () => _onMenuAction(_MenuSection.alcaldeConcejal),
               ),
               const SizedBox(width: 36),
               _NavButton(
                 icon: Icons.account_balance_outlined,
-                label: 'Gobernador',
+                label: 'Asistencia',
                 selected: _section == _MenuSection.gobernadorAsambleista,
                 onTap: () => _onMenuAction(_MenuSection.gobernadorAsambleista),
               ),

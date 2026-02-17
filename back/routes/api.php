@@ -108,6 +108,8 @@ Route::prefix('mobile')->group(function () {
     Route::post('/login', [\App\Http\Controllers\MobileAuthController::class, 'login']);
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [\App\Http\Controllers\MobileAuthController::class, 'me']);
+        Route::get('/asistencia', [\App\Http\Controllers\MobileResultadosController::class, 'asistencia']);
+        Route::post('/asistencia/update', [\App\Http\Controllers\MobileResultadosController::class, 'asistenciaUpdate']);
         Route::post('/resultados/sync', [\App\Http\Controllers\MobileResultadosController::class, 'sync']);
     });
 });

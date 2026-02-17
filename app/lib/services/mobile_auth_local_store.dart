@@ -14,6 +14,8 @@ class MobileAuthLocalStore {
   static const String mesaEstadoPendiente = 'PENDIENTE';
   static const String mesaEstadoLocal = 'LOCAL';
   static const String mesaEstadoRealizado = 'REALIZADO';
+  static const String asistenciaSyncLocal = 'LOCAL';
+  static const String asistenciaSyncSynced = 'SYNCED';
 
   Future<Database> get database async {
     if (_db != null) return _db!;
@@ -89,6 +91,26 @@ class MobileAuthLocalStore {
         departamento_nombre TEXT
       )
     ''');
+    await db.execute('''
+      CREATE TABLE asistencia_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        aviso_antes INTEGER NOT NULL DEFAULT 0,
+        aviso_manana INTEGER NOT NULL DEFAULT 0,
+        aviso_mediodia INTEGER NOT NULL DEFAULT 0,
+        aviso_tarde INTEGER NOT NULL DEFAULT 0,
+        etapa_1 INTEGER NOT NULL DEFAULT 0,
+        etapa_2 INTEGER NOT NULL DEFAULT 0,
+        sync_status TEXT NOT NULL DEFAULT 'SYNCED',
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE asistencia_queue (
+        field TEXT PRIMARY KEY,
+        value INTEGER NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
 
     await _ensureSchema(db);
   }
@@ -145,6 +167,26 @@ class MobileAuthLocalStore {
         municipio_nombre TEXT,
         provincia_nombre TEXT,
         departamento_nombre TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS asistencia_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        aviso_antes INTEGER NOT NULL DEFAULT 0,
+        aviso_manana INTEGER NOT NULL DEFAULT 0,
+        aviso_mediodia INTEGER NOT NULL DEFAULT 0,
+        aviso_tarde INTEGER NOT NULL DEFAULT 0,
+        etapa_1 INTEGER NOT NULL DEFAULT 0,
+        etapa_2 INTEGER NOT NULL DEFAULT 0,
+        sync_status TEXT NOT NULL DEFAULT 'SYNCED',
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS asistencia_queue (
+        field TEXT PRIMARY KEY,
+        value INTEGER NOT NULL,
+        updated_at TEXT NOT NULL
       )
     ''');
 
@@ -510,7 +552,95 @@ class MobileAuthLocalStore {
       await txn.delete('auth_supervisores');
       await txn.delete('auth_jefe_supervisor');
       await txn.delete('auth_mesas');
+      await txn.delete('asistencia_state');
+      await txn.delete('asistencia_queue');
     });
+  }
+
+  Future<String?> readAuthToken() async {
+    final db = await database;
+    final rows = await db.query('auth_session', where: 'id = 1', limit: 1);
+    if (rows.isEmpty) return null;
+    return rows.first['token'] as String?;
+  }
+
+  Future<void> saveAsistenciaState({
+    required bool avisoAntes,
+    required bool avisoManana,
+    required bool avisoMediodia,
+    required bool avisoTarde,
+    required bool etapa1,
+    required bool etapa2,
+    required String syncStatus,
+  }) async {
+    final db = await database;
+    await db.insert('asistencia_state', {
+      'id': 1,
+      'aviso_antes': avisoAntes ? 1 : 0,
+      'aviso_manana': avisoManana ? 1 : 0,
+      'aviso_mediodia': avisoMediodia ? 1 : 0,
+      'aviso_tarde': avisoTarde ? 1 : 0,
+      'etapa_1': etapa1 ? 1 : 0,
+      'etapa_2': etapa2 ? 1 : 0,
+      'sync_status': syncStatus,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<Map<String, dynamic>> readAsistenciaState() async {
+    final db = await database;
+    final rows = await db.query('asistencia_state', where: 'id = 1', limit: 1);
+    if (rows.isEmpty) {
+      return {
+        'aviso_antes': false,
+        'aviso_manana': false,
+        'aviso_mediodia': false,
+        'aviso_tarde': false,
+        'etapa_1': false,
+        'etapa_2': false,
+        'sync_status': asistenciaSyncSynced,
+      };
+    }
+    final r = rows.first;
+    return {
+      'aviso_antes': (r['aviso_antes'] as int? ?? 0) == 1,
+      'aviso_manana': (r['aviso_manana'] as int? ?? 0) == 1,
+      'aviso_mediodia': (r['aviso_mediodia'] as int? ?? 0) == 1,
+      'aviso_tarde': (r['aviso_tarde'] as int? ?? 0) == 1,
+      'etapa_1': (r['etapa_1'] as int? ?? 0) == 1,
+      'etapa_2': (r['etapa_2'] as int? ?? 0) == 1,
+      'sync_status': (r['sync_status'] as String?) ?? asistenciaSyncSynced,
+    };
+  }
+
+  Future<void> enqueueAsistenciaChange(String field, bool value) async {
+    final db = await database;
+    await db.insert('asistencia_queue', {
+      'field': field,
+      'value': value ? 1 : 0,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> dequeueAsistenciaField(String field) async {
+    final db = await database;
+    await db.delete('asistencia_queue', where: 'field = ?', whereArgs: [field]);
+  }
+
+  Future<List<Map<String, dynamic>>> readAsistenciaQueue() async {
+    final db = await database;
+    final rows = await db.query('asistencia_queue', orderBy: 'updated_at ASC');
+    return rows
+        .map(
+          (r) => {'field': r['field'], 'value': (r['value'] as int? ?? 0) == 1},
+        )
+        .toList();
+  }
+
+  Future<bool> hasAsistenciaPendiente() async {
+    final db = await database;
+    final rows = await db.query('asistencia_queue', limit: 1);
+    return rows.isNotEmpty;
   }
 
   String _estadoLocalInicial(String? estadoApi) {
