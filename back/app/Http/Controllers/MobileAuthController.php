@@ -16,7 +16,7 @@ class MobileAuthController extends Controller
         ]);
 
         $fecha = substr($data['fecha_nacimiento'], 0, 10);
-        error_log("Login attempt - CI: {$data['ci']}, Fecha Nacimiento: {$fecha}");
+//        error_log("Login attempt - CI: {$data['ci']}, Fecha Nacimiento: {$fecha}");
 
         $user = User::query()
             ->where('ci', $data['ci'])
@@ -43,10 +43,30 @@ class MobileAuthController extends Controller
 
         // Jerarquia via tablas pivote:
         // delegado -> jefe (jefe_delegado), jefe -> supervisor (supervisor_jefe)
-        $jefe = $user->jefes()->select('users.id', 'users.name', 'users.nombres')->first();
-        $supervisor = $jefe
-            ? $jefe->supervisores()->select('users.id', 'users.name', 'users.nombres')->first()
-            : null;
+        // Se devuelve cada jefe con sus supervisores.
+        $jefes = $user->jefes()
+            ->select('users.id', 'users.name', 'users.nombres', 'users.celular')
+            ->get()
+            ->map(function ($jefe) {
+                $supervisores = $jefe->supervisores()
+                    ->select('users.id', 'users.name', 'users.nombres', 'users.celular')
+                    ->get();
+
+                return [
+                    'id' => $jefe->id,
+                    'name' => $jefe->name,
+                    'nombres' => $jefe->nombres,
+                    'celular' => $jefe->celular,
+                    'supervisores' => $supervisores,
+                ];
+            })
+            ->values();
+
+        // Compatibilidad: lista unica de supervisores a partir de los jefes.
+        $supervisores = $jefes
+            ->flatMap(fn ($j) => $j['supervisores'])
+            ->unique('id')
+            ->values();
 
         // Token Sanctum
         $token = $user->createToken('mobile')->plainTextToken;
@@ -60,10 +80,11 @@ class MobileAuthController extends Controller
                 'ci' => $user->ci,
                 'fecha_nacimiento' => $user->fecha_nacimiento,
                 'role' => $user->role ?? null,
+                'celular' => $user->celular ?? null,
             ],
             'jerarquia' => [
-                'jefe' => $jefe ? ['id'=>$jefe->id, 'name'=>$jefe->name ?? $jefe->nombres] : null,
-                'supervisor' => $supervisor ? ['id'=>$supervisor->id, 'name'=>$supervisor->name ?? $supervisor->nombres] : null,
+                'jefes' => $jefes,
+                'supervisor' => $supervisores,
             ],
             'mesas' => $mesas
         ]);
@@ -78,6 +99,7 @@ class MobileAuthController extends Controller
                 'name' => $u->name ?? trim(($u->nombres ?? '').' '.($u->apellido_paterno ?? '').' '.($u->apellido_materno ?? '')),
                 'ci' => $u->ci,
                 'role' => $u->role ?? null,
+                'celular' => $u->celular ?? null,
             ],
         ]);
     }

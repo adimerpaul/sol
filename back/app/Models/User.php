@@ -25,6 +25,7 @@ class User extends Authenticatable
         'apellido_materno',
         'ci',
         'fecha_nacimiento',
+        'celular',
         'bloque',
 
         'ci_anverso',

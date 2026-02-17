@@ -105,6 +105,7 @@ class UserController extends Controller{
             'ci' => 'required|string|max:30|unique:users,ci',
             'fecha_nacimiento' => 'required|date',
             'bloque' => 'required|string|max:180',
+            'celular' => 'nullable|string|max:30',
 
             'username' => 'required|string|max:120|unique:users,username',
             'password' => 'required|string|min:4',
@@ -134,6 +135,7 @@ class UserController extends Controller{
             'ci' => 'required|string|max:30|unique:users,ci,'.$user->id,
             'fecha_nacimiento' => 'required|date',
             'bloque' => 'required|string|max:180',
+            'celular' => 'nullable|string|max:30',
 
             'username' => 'required|string|max:120|unique:users,username,'.$user->id,
             'role' => 'required|string|max:60',
