@@ -49,114 +49,227 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login Mobile')),
-      body: AnimatedBuilder(
-        animation: _vm,
-        builder: (context, _) {
-          final data = _vm.result;
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextField(
-                  controller: _ciController,
-                  decoration: const InputDecoration(
-                    labelText: 'CI',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.text,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _fechaController,
-                  readOnly: true,
-                  onTap: _pickDate,
-                  decoration: const InputDecoration(
-                    labelText: 'Fecha de nacimiento',
-                    hintText: 'YYYY-MM-DD',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _vm.isLoading
-                      ? null
-                      : () async {
-                          final ci = _ciController.text.trim();
-                          final fecha = _fechaController.text.trim();
-                          if (ci.isEmpty || fecha.isEmpty) {
-                            ScaffoldMessenger.of(this.context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Completa CI y fecha de nacimiento',
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0A2A66), Color(0xFF0E3A8A), Color(0xFFE9EEF8)],
+            stops: [0.0, 0.45, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: AnimatedBuilder(
+                animation: _vm,
+                builder: (context, _) {
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 430),
+                    child: Card(
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 92,
+                                height: 92,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(22),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x1A000000),
+                                      blurRadius: 14,
+                                      offset: Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  fit: BoxFit.contain,
                                 ),
                               ),
-                            );
-                            return;
-                          }
-                          await _vm.login(ci: ci, fechaNacimiento: fecha);
-                          if (!mounted) return;
-                          if (_vm.result != null) {
-                            Navigator.pushReplacementNamed(
-                              this.context,
-                              '/menu',
-                            );
-                          }
-                        },
-                  child: _vm.isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Ingresar'),
-                ),
-                const SizedBox(height: 16),
-                if (_vm.error != null) ...[
-                  Text(_vm.error!, style: const TextStyle(color: Colors.red)),
-                  const SizedBox(height: 8),
-                ],
-                if (data != null) ...[
-                  if (_vm.isOfflineSession)
-                    const Text(
-                      'Sesion cargada desde SQLite (modo offline)',
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Bienvenido',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0B1F4A),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Inicia sesion para continuar',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF5A6680),
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            TextField(
+                              controller: _ciController,
+                              decoration: _inputDecoration(
+                                label: 'CI',
+                                icon: Icons.badge_outlined,
+                              ),
+                              keyboardType: TextInputType.text,
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _fechaController,
+                              readOnly: true,
+                              onTap: _pickDate,
+                              decoration: _inputDecoration(
+                                label: 'Fecha de nacimiento',
+                                icon: Icons.calendar_month_outlined,
+                              ).copyWith(hintText: 'YYYY-MM-DD'),
+                            ),
+                            const SizedBox(height: 16),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF0B5ED7),
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              onPressed: _vm.isLoading
+                                  ? null
+                                  : () async {
+                                      final ci = _ciController.text.trim();
+                                      final fecha = _fechaController.text.trim();
+                                      if (ci.isEmpty || fecha.isEmpty) {
+                                        ScaffoldMessenger.of(
+                                          this.context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Completa CI y fecha de nacimiento',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      await _vm.login(
+                                        ci: ci,
+                                        fechaNacimiento: fecha,
+                                      );
+                                      if (!mounted) return;
+                                      if (_vm.result != null) {
+                                        Navigator.pushReplacementNamed(
+                                          this.context,
+                                          '/menu',
+                                        );
+                                      }
+                                    },
+                              child: _vm.isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Ingresar',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                            ),
+                            if (_vm.error != null) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFEBEE),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFEF9A9A),
+                                  ),
+                                ),
+                                child: Text(
+                                  _vm.error!,
+                                  style: const TextStyle(
+                                    color: Color(0xFFB71C1C),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (_vm.isOfflineSession) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF8E1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFFFE082),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Sesion cargada desde SQLite (modo offline)',
+                                  style: TextStyle(
+                                    color: Color(0xFF8D6E00),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
-                  if (_vm.isOfflineSession) const SizedBox(height: 8),
-                  const Text(
-                    'Resultado:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Token: ${data.token}'),
-                  Text('Nombre: ${data.user.name}'),
-                  Text('CI: ${data.user.ci}'),
-                  if (data.user.role != null) Text('Rol: ${data.user.role}'),
-                  Text('Jefes: ${data.jerarquia.jefes.length}'),
-                  Text('Supervisores: ${data.jerarquia.supervisores.length}'),
-                  Text('Mesas asignadas: ${data.mesas.length}'),
-                  if (data.mesas.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Mesas:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    ...data.mesas.map(
-                      (mesa) => Text(
-                        'Mesa ${mesa.numeroMesa ?? '-'} | ${mesa.estado ?? '-'} | ${mesa.recintoNombre ?? '-'}',
-                      ),
-                    ),
-                  ],
-                ],
-              ],
+                  );
+                },
+              ),
             ),
-          );
-        },
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String label,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: const Color(0xFF1C4CA3)),
+      filled: true,
+      fillColor: const Color(0xFFF7F9FD),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFD6DEEC)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFD6DEEC)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF0B5ED7), width: 1.6),
       ),
     );
   }
