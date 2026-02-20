@@ -74,9 +74,7 @@ class MobileResultadosController extends Controller
         'aviso_antes',
         'aviso_manana',
         'aviso_mediodia',
-        'aviso_tarde',
-        'etapa_1',
-        'etapa_2',
+        'hora_apertura_mesa',
     ];
 
     public function asistencia(Request $request)
@@ -93,9 +91,10 @@ class MobileResultadosController extends Controller
                     'aviso_antes' => false,
                     'aviso_manana' => false,
                     'aviso_mediodia' => false,
-                    'aviso_tarde' => false,
-                    'etapa_1' => false,
-                    'etapa_2' => false,
+                    'hora_apertura_mesa' => null,
+                    'aviso_tarde' => null,
+                    'etapa_1' => null,
+                    'etapa_2' => null,
                 ],
             ]);
         }
@@ -107,12 +106,17 @@ class MobileResultadosController extends Controller
         $state = [];
         foreach ($this->asistenciaFields as $f) {
             if ($rows->isEmpty()) {
-                $state[$f] = false;
+                $state[$f] = $f === 'hora_apertura_mesa' ? null : false;
                 continue;
             }
             $allTrue = $rows->every(fn ($r) => (bool) ($r->{$f} ?? false));
-            $state[$f] = $allTrue;
+            $state[$f] = $f === 'hora_apertura_mesa'
+                ? $rows->pluck('hora_apertura_mesa')->filter()->first()
+                : $allTrue;
         }
+        $state['aviso_tarde'] = null;
+        $state['etapa_1'] = null;
+        $state['etapa_2'] = null;
 
         return response()->json([
             'mesas' => $mesas->count(),
@@ -123,9 +127,18 @@ class MobileResultadosController extends Controller
     public function asistenciaUpdate(Request $request)
     {
         $data = $request->validate([
-            'field' => 'required|string|in:aviso_antes,aviso_manana,aviso_mediodia,aviso_tarde,etapa_1,etapa_2',
+            'field' => 'required|string|in:aviso_antes,aviso_manana,aviso_mediodia',
             'value' => 'required|boolean',
+            'hora_apertura_mesa' => 'nullable|string|max:5',
         ]);
+
+        if (($data['field'] ?? null) === 'aviso_manana' && (bool) ($data['value'] ?? false)) {
+            if (!$this->isHoraAperturaValida($data['hora_apertura_mesa'] ?? null)) {
+                return response()->json([
+                    'message' => 'La hora de apertura debe estar entre 08:00 y 04:00',
+                ], 422);
+            }
+        }
 
         $user = $request->user();
         $mesas = Mesa::query()
@@ -157,17 +170,19 @@ class MobileResultadosController extends Controller
                 );
 
                 $rm->{$data['field']} = (bool) $data['value'];
+                if (($data['field'] ?? null) === 'aviso_manana') {
+                    $rm->hora_apertura_mesa = $data['hora_apertura_mesa'] ?? null;
+                }
+                $rm->aviso_tarde = null;
+                $rm->etapa_1 = null;
+                $rm->etapa_2 = null;
                 $rm->registrado_por = $user->id;
                 $rm->save();
 
-                if ((bool) $rm->etapa_2) {
-                    $mesa->estado = 'FINALIZADA';
-                } elseif (
-                    (bool) $rm->etapa_1 ||
+                if (
                     (bool) $rm->aviso_antes ||
                     (bool) $rm->aviso_manana ||
-                    (bool) $rm->aviso_mediodia ||
-                    (bool) $rm->aviso_tarde
+                    (bool) $rm->aviso_mediodia
                 ) {
                     $mesa->estado = 'EN_PROCESO';
                 } else {
@@ -181,8 +196,24 @@ class MobileResultadosController extends Controller
             'ok' => true,
             'field' => $data['field'],
             'value' => (bool) $data['value'],
+            'hora_apertura_mesa' => $data['hora_apertura_mesa'] ?? null,
             'updated_mesas' => $mesas->count(),
         ]);
+    }
+
+    private function isHoraAperturaValida(?string $hora): bool
+    {
+        if ($hora === null || $hora === '') {
+            return false;
+        }
+
+        $dt = \DateTime::createFromFormat('H:i', $hora);
+        if (!$dt || $dt->format('H:i') !== $hora) {
+            return false;
+        }
+
+        $h = (int) $dt->format('G');
+        return $h >= 8 || $h <= 4;
     }
 
     public function votacionCatalogo(Request $request)

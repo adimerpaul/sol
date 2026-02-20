@@ -115,6 +115,7 @@ class MobileAuthLocalStore {
         aviso_antes INTEGER NOT NULL DEFAULT 0,
         aviso_manana INTEGER NOT NULL DEFAULT 0,
         aviso_mediodia INTEGER NOT NULL DEFAULT 0,
+        hora_apertura_mesa TEXT,
         aviso_tarde INTEGER NOT NULL DEFAULT 0,
         etapa_1 INTEGER NOT NULL DEFAULT 0,
         etapa_2 INTEGER NOT NULL DEFAULT 0,
@@ -126,6 +127,7 @@ class MobileAuthLocalStore {
       CREATE TABLE asistencia_queue (
         field TEXT PRIMARY KEY,
         value INTEGER NOT NULL,
+        hora_apertura_mesa TEXT,
         updated_at TEXT NOT NULL
       )
     ''');
@@ -215,6 +217,7 @@ class MobileAuthLocalStore {
         aviso_antes INTEGER NOT NULL DEFAULT 0,
         aviso_manana INTEGER NOT NULL DEFAULT 0,
         aviso_mediodia INTEGER NOT NULL DEFAULT 0,
+        hora_apertura_mesa TEXT,
         aviso_tarde INTEGER NOT NULL DEFAULT 0,
         etapa_1 INTEGER NOT NULL DEFAULT 0,
         etapa_2 INTEGER NOT NULL DEFAULT 0,
@@ -226,6 +229,7 @@ class MobileAuthLocalStore {
       CREATE TABLE IF NOT EXISTS asistencia_queue (
         field TEXT PRIMARY KEY,
         value INTEGER NOT NULL,
+        hora_apertura_mesa TEXT,
         updated_at TEXT NOT NULL
       )
     ''');
@@ -246,6 +250,8 @@ class MobileAuthLocalStore {
     await _addColumnIfMissing(db, 'auth_mesas', 'recinto_id', 'INTEGER');
     await _addColumnIfMissing(db, 'votacion_draft', 'fotos_json', 'TEXT');
     await _addColumnIfMissing(db, 'auth_partidos', 'icono_base64', 'TEXT');
+    await _addColumnIfMissing(db, 'asistencia_state', 'hora_apertura_mesa', 'TEXT');
+    await _addColumnIfMissing(db, 'asistencia_queue', 'hora_apertura_mesa', 'TEXT');
   }
 
   Future<void> _addColumnIfMissing(
@@ -684,6 +690,7 @@ class MobileAuthLocalStore {
     required bool avisoAntes,
     required bool avisoManana,
     required bool avisoMediodia,
+    String? horaAperturaMesa,
     required bool avisoTarde,
     required bool etapa1,
     required bool etapa2,
@@ -695,6 +702,7 @@ class MobileAuthLocalStore {
       'aviso_antes': avisoAntes ? 1 : 0,
       'aviso_manana': avisoManana ? 1 : 0,
       'aviso_mediodia': avisoMediodia ? 1 : 0,
+      'hora_apertura_mesa': horaAperturaMesa,
       'aviso_tarde': avisoTarde ? 1 : 0,
       'etapa_1': etapa1 ? 1 : 0,
       'etapa_2': etapa2 ? 1 : 0,
@@ -711,6 +719,7 @@ class MobileAuthLocalStore {
         'aviso_antes': false,
         'aviso_manana': false,
         'aviso_mediodia': false,
+        'hora_apertura_mesa': null,
         'aviso_tarde': false,
         'etapa_1': false,
         'etapa_2': false,
@@ -722,6 +731,7 @@ class MobileAuthLocalStore {
       'aviso_antes': (r['aviso_antes'] as int? ?? 0) == 1,
       'aviso_manana': (r['aviso_manana'] as int? ?? 0) == 1,
       'aviso_mediodia': (r['aviso_mediodia'] as int? ?? 0) == 1,
+      'hora_apertura_mesa': r['hora_apertura_mesa'] as String?,
       'aviso_tarde': (r['aviso_tarde'] as int? ?? 0) == 1,
       'etapa_1': (r['etapa_1'] as int? ?? 0) == 1,
       'etapa_2': (r['etapa_2'] as int? ?? 0) == 1,
@@ -729,11 +739,16 @@ class MobileAuthLocalStore {
     };
   }
 
-  Future<void> enqueueAsistenciaChange(String field, bool value) async {
+  Future<void> enqueueAsistenciaChange(
+    String field,
+    bool value, {
+    String? horaAperturaMesa,
+  }) async {
     final db = await database;
     await db.insert('asistencia_queue', {
       'field': field,
       'value': value ? 1 : 0,
+      'hora_apertura_mesa': horaAperturaMesa,
       'updated_at': DateTime.now().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
@@ -748,7 +763,11 @@ class MobileAuthLocalStore {
     final rows = await db.query('asistencia_queue', orderBy: 'updated_at ASC');
     return rows
         .map(
-          (r) => {'field': r['field'], 'value': (r['value'] as int? ?? 0) == 1},
+          (r) => {
+            'field': r['field'],
+            'value': (r['value'] as int? ?? 0) == 1,
+            'hora_apertura_mesa': r['hora_apertura_mesa'],
+          },
         )
         .toList();
   }

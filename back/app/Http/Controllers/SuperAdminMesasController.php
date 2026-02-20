@@ -45,7 +45,7 @@ class SuperAdminMesasController extends Controller
             ->with([
                 'recinto:id,nombre',
                 'delegado:id,name,username',
-                'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos'
+                'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos'
             ])
             ->whereHas('recinto', function ($qq) {
                 $qq->whereNull('deleted_at')
@@ -90,9 +90,10 @@ class SuperAdminMesasController extends Controller
                     'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
                     'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
                     'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
-                    'aviso_tarde' => (bool) optional($m->resultado)->aviso_tarde,
-                    'etapa_1' => (bool) optional($m->resultado)->etapa_1,
-                    'etapa_2' => (bool) optional($m->resultado)->etapa_2,
+                    'hora_apertura_mesa' => optional($m->resultado)->hora_apertura_mesa,
+                    'aviso_tarde' => null,
+                    'etapa_1' => null,
+                    'etapa_2' => null,
 
                     'total_votos' => (int) (optional($m->resultado)->total_votos ?? 0),
                     'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
@@ -132,9 +133,10 @@ class SuperAdminMesasController extends Controller
                 'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
                 'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
                 'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
-                'aviso_tarde' => (bool) optional($m->resultado)->aviso_tarde,
-                'etapa_1' => (bool) optional($m->resultado)->etapa_1,
-                'etapa_2' => (bool) optional($m->resultado)->etapa_2,
+                'hora_apertura_mesa' => optional($m->resultado)->hora_apertura_mesa,
+                'aviso_tarde' => null,
+                'etapa_1' => null,
+                'etapa_2' => null,
                 'total_votos' => (int) (optional($m->resultado)->total_votos ?? 0),
                 'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
                 'total_blancos' => (int) (optional($m->resultado)->total_blancos ?? 0),
@@ -280,6 +282,7 @@ class SuperAdminMesasController extends Controller
             'aviso_antes' => 'nullable|boolean',
             'aviso_manana' => 'nullable|boolean',
             'aviso_mediodia' => 'nullable|boolean',
+            'hora_apertura_mesa' => 'nullable|string|max:5',
             'aviso_tarde' => 'nullable|boolean',
             'etapa_1' => 'nullable|boolean',
             'etapa_2' => 'nullable|boolean',
@@ -301,10 +304,8 @@ class SuperAdminMesasController extends Controller
             'blancos_alcalde' => 'nullable|integer|min:0',
             'nulos_alcalde' => 'nullable|integer|min:0',
 
-            // viene como string JSON
             'votos' => 'required',
 
-            // fotos
             'foto1' => 'nullable|image|max:2048',
             'foto2' => 'nullable|image|max:2048',
             'foto3' => 'nullable|image|max:2048',
@@ -322,7 +323,13 @@ class SuperAdminMesasController extends Controller
             $votos = json_decode($votos, true);
         }
         if (!is_array($votos)) {
-            return response()->json(['message' => 'Formato inválido de votos'], 422);
+            return response()->json(['message' => 'Formato invalido de votos'], 422);
+        }
+
+        if (!$this->isHoraAperturaValida($data['hora_apertura_mesa'] ?? null)) {
+            return response()->json([
+                'message' => 'La hora de apertura debe estar entre 08:00 y 04:00',
+            ], 422);
         }
 
         $votosFields = [
@@ -333,7 +340,6 @@ class SuperAdminMesasController extends Controller
             'votos_alcalde',
         ];
 
-        // validar estructura de votos
         foreach ($votos as $row) {
             if (!isset($row['partido_id'])) {
                 return response()->json(['message' => 'Votos incompletos'], 422);
@@ -342,17 +348,16 @@ class SuperAdminMesasController extends Controller
                 if (!isset($row[$vf])) {
                     return response()->json(['message' => 'Votos incompletos'], 422);
                 }
-                if ((int)$row[$vf] < 0) {
-                    return response()->json(['message' => 'Votos inválidos'], 422);
+                if ((int) $row[$vf] < 0) {
+                    return response()->json(['message' => 'Votos invalidos'], 422);
                 }
             }
             if (!Partido::whereKey($row['partido_id'])->exists()) {
-                return response()->json(['message' => 'Partido inválido'], 422);
+                return response()->json(['message' => 'Partido invalido'], 422);
             }
         }
 
         return DB::transaction(function () use ($request, $data, $mesa, $votos) {
-
             $res = ResultadoMesa::with('detalles')
                 ->firstOrCreate(
                     ['mesa_id' => $mesa->id],
@@ -361,32 +366,40 @@ class SuperAdminMesasController extends Controller
 
             $res->registrado_por = $request->user()->id;
 
-            // booleans (si no vienen, mantenemos)
-            foreach (['aviso_antes','aviso_manana','aviso_mediodia','aviso_tarde','etapa_1','etapa_2'] as $k) {
-                if ($request->has($k)) $res->{$k} = (bool)$request->boolean($k);
+            foreach (['aviso_antes', 'aviso_manana', 'aviso_mediodia'] as $k) {
+                if ($request->has($k)) {
+                    $res->{$k} = (bool) $request->boolean($k);
+                }
             }
 
-            if ($request->has('observacion'))   $res->observacion = $data['observacion'] ?? null;
-            if ($request->has('total_blancos')) $res->total_blancos = (int)($data['total_blancos'] ?? 0);
-            if ($request->has('total_nulos'))   $res->total_nulos   = (int)($data['total_nulos'] ?? 0);
-            if ($request->has('latitud'))       $res->latitud       = $data['latitud'] ?? null;
-            if ($request->has('longitud'))      $res->longitud      = $data['longitud'] ?? null;
-            if ($request->has('blancos_gobernador')) $res->blancos_gobernador = (int)($data['blancos_gobernador'] ?? 0);
-            if ($request->has('nulos_gobernador')) $res->nulos_gobernador = (int)($data['nulos_gobernador'] ?? 0);
-            if ($request->has('blancos_asambleista_distrito')) $res->blancos_asambleista_distrito = (int)($data['blancos_asambleista_distrito'] ?? 0);
-            if ($request->has('nulos_asambleista_distrito')) $res->nulos_asambleista_distrito = (int)($data['nulos_asambleista_distrito'] ?? 0);
-            if ($request->has('blancos_asambleista_poblacion')) $res->blancos_asambleista_poblacion = (int)($data['blancos_asambleista_poblacion'] ?? 0);
-            if ($request->has('nulos_asambleista_poblacion')) $res->nulos_asambleista_poblacion = (int)($data['nulos_asambleista_poblacion'] ?? 0);
-            if ($request->has('blancos_concejal')) $res->blancos_concejal = (int)($data['blancos_concejal'] ?? 0);
-            if ($request->has('nulos_concejal')) $res->nulos_concejal = (int)($data['nulos_concejal'] ?? 0);
-            if ($request->has('blancos_alcalde')) $res->blancos_alcalde = (int)($data['blancos_alcalde'] ?? 0);
-            if ($request->has('nulos_alcalde')) $res->nulos_alcalde = (int)($data['nulos_alcalde'] ?? 0);
+            if ($request->has('hora_apertura_mesa')) {
+                $res->hora_apertura_mesa = $data['hora_apertura_mesa'] ?: null;
+            }
 
-            // guardar / reemplazar fotos si llegan
+            // Campos fuera del flujo actual
+            $res->aviso_tarde = null;
+            $res->etapa_1 = null;
+            $res->etapa_2 = null;
+
+            if ($request->has('observacion')) $res->observacion = $data['observacion'] ?? null;
+            if ($request->has('total_blancos')) $res->total_blancos = (int) ($data['total_blancos'] ?? 0);
+            if ($request->has('total_nulos')) $res->total_nulos = (int) ($data['total_nulos'] ?? 0);
+            if ($request->has('latitud')) $res->latitud = $data['latitud'] ?? null;
+            if ($request->has('longitud')) $res->longitud = $data['longitud'] ?? null;
+            if ($request->has('blancos_gobernador')) $res->blancos_gobernador = (int) ($data['blancos_gobernador'] ?? 0);
+            if ($request->has('nulos_gobernador')) $res->nulos_gobernador = (int) ($data['nulos_gobernador'] ?? 0);
+            if ($request->has('blancos_asambleista_distrito')) $res->blancos_asambleista_distrito = (int) ($data['blancos_asambleista_distrito'] ?? 0);
+            if ($request->has('nulos_asambleista_distrito')) $res->nulos_asambleista_distrito = (int) ($data['nulos_asambleista_distrito'] ?? 0);
+            if ($request->has('blancos_asambleista_poblacion')) $res->blancos_asambleista_poblacion = (int) ($data['blancos_asambleista_poblacion'] ?? 0);
+            if ($request->has('nulos_asambleista_poblacion')) $res->nulos_asambleista_poblacion = (int) ($data['nulos_asambleista_poblacion'] ?? 0);
+            if ($request->has('blancos_concejal')) $res->blancos_concejal = (int) ($data['blancos_concejal'] ?? 0);
+            if ($request->has('nulos_concejal')) $res->nulos_concejal = (int) ($data['nulos_concejal'] ?? 0);
+            if ($request->has('blancos_alcalde')) $res->blancos_alcalde = (int) ($data['blancos_alcalde'] ?? 0);
+            if ($request->has('nulos_alcalde')) $res->nulos_alcalde = (int) ($data['nulos_alcalde'] ?? 0);
+
             $dir = "resultados_mesa/mesa_{$mesa->id}";
-            foreach (['foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8','foto9','foto10'] as $f) {
+            foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto5', 'foto6', 'foto7', 'foto8', 'foto9', 'foto10'] as $f) {
                 if ($request->hasFile($f)) {
-                    // borra anterior
                     if (!empty($res->{$f})) {
                         Storage::disk('public')->delete($res->{$f});
                     }
@@ -395,14 +408,13 @@ class SuperAdminMesasController extends Controller
                 }
             }
 
-            // detalles votos
             $totalVotos = 0;
             foreach ($votos as $row) {
-                $vvGob = (int)$row['votos_gobernador'];
-                $vvAsd = (int)$row['votos_asambleista_distrito'];
-                $vvAsp = (int)$row['votos_asambleista_poblacion'];
-                $vvCon = (int)$row['votos_concejal'];
-                $vvAlc = (int)$row['votos_alcalde'];
+                $vvGob = (int) $row['votos_gobernador'];
+                $vvAsd = (int) $row['votos_asambleista_distrito'];
+                $vvAsp = (int) $row['votos_asambleista_poblacion'];
+                $vvCon = (int) $row['votos_concejal'];
+                $vvAlc = (int) $row['votos_alcalde'];
 
                 $totalVotos += ($vvGob + $vvAsd + $vvAsp + $vvCon + $vvAlc);
 
@@ -422,20 +434,15 @@ class SuperAdminMesasController extends Controller
             }
 
             $res->total_votos = $totalVotos;
-
-            // validos: si viene explícito usamos, si no = suma votos partidos
             if ($request->has('total_validos')) {
-                $res->total_validos = (int)($data['total_validos'] ?? 0);
+                $res->total_validos = (int) ($data['total_validos'] ?? 0);
             } else {
                 $res->total_validos = $totalVotos;
             }
 
             $res->save();
 
-            // estado automático
-            if ($res->etapa_2) {
-                $mesa->estado = 'FINALIZADA';
-            } elseif ($res->etapa_1 || $res->aviso_antes || $res->aviso_manana || $res->aviso_mediodia || $res->aviso_tarde) {
+            if ($res->aviso_antes || $res->aviso_manana || $res->aviso_mediodia) {
                 $mesa->estado = 'EN_PROCESO';
             } else {
                 $mesa->estado = $mesa->delegado_id ? 'ASIGNADA' : 'PENDIENTE';
@@ -444,5 +451,20 @@ class SuperAdminMesasController extends Controller
 
             return response()->json(['message' => 'Resultado guardado']);
         });
+    }
+
+    private function isHoraAperturaValida(?string $hora): bool
+    {
+        if ($hora === null || $hora === '') {
+            return true;
+        }
+
+        $dt = \DateTime::createFromFormat('H:i', $hora);
+        if (!$dt || $dt->format('H:i') !== $hora) {
+            return false;
+        }
+
+        $h = (int) $dt->format('G');
+        return $h >= 8 || $h <= 4;
     }
 }

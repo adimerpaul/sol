@@ -139,7 +139,7 @@
             <th class="text-left">Delegado</th>
             <th class="text-left">Estado</th>
             <th class="text-left">Resultado</th>
-            <th class="text-left">Avisos / Etapas</th>
+            <th class="text-left">Control de Mesa</th>
           </tr>
           </thead>
 
@@ -193,12 +193,12 @@
 
             <td class="text-left">
               <div class="row items-center q-gutter-xs">
-                <q-chip dense size="11px" :color="b(r.aviso_antes)" text-color="white">Antes</q-chip>
-                <q-chip dense size="11px" :color="b(r.aviso_manana)" text-color="white">Mañana</q-chip>
-                <q-chip dense size="11px" :color="b(r.aviso_mediodia)" text-color="white">Mediodía</q-chip>
-                <q-chip dense size="11px" :color="b(r.aviso_tarde)" text-color="white">Tarde</q-chip>
-                <q-chip dense size="11px" :color="b(r.etapa_1)" text-color="white">Etapa 1</q-chip>
-                <q-chip dense size="11px" :color="b(r.etapa_2)" text-color="white">Etapa 2</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_antes)" text-color="white">Estoy presente</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_manana)" text-color="white">Mesa abierta</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_mediodia)" text-color="white">Tengo el acta</q-chip>
+                <q-chip v-if="r.hora_apertura_mesa" dense size="11px" color="indigo" text-color="white">
+                  {{ r.hora_apertura_mesa }}
+                </q-chip>
               </div>
             </td>
 
@@ -307,16 +307,20 @@
             <!-- PANEL IZQ -->
             <div class="col-12 col-md-4">
               <q-card flat bordered>
-                <q-card-section class="text-weight-bold">Avisos / Etapas</q-card-section>
+                <q-card-section class="text-weight-bold">Control de Mesa</q-card-section>
                 <q-separator />
                 <q-card-section class="q-gutter-sm">
-                  <q-toggle v-model="resForm.aviso_antes" label="Aviso antes de comenzar" />
-                  <q-toggle v-model="resForm.aviso_manana" label="Aviso mañana" />
-                  <q-toggle v-model="resForm.aviso_mediodia" label="Aviso mediodía" />
-                  <q-toggle v-model="resForm.aviso_tarde" label="Aviso tarde" />
-                  <q-separator />
-                  <q-toggle v-model="resForm.etapa_1" label="Etapa 1 (reconocimiento)" />
-                  <q-toggle v-model="resForm.etapa_2" label="Etapa 2 (final)" />
+                  <q-toggle v-model="resForm.aviso_antes" label="Estoy presente en mi mesa" />
+                  <q-toggle v-model="resForm.aviso_manana" label="Abrí la mesa" />
+                  <q-input
+                    v-model="resForm.hora_apertura_mesa"
+                    type="time"
+                    dense
+                    outlined
+                    label="Hora de apertura (08:00 a 04:00)"
+                    :disable="!resForm.aviso_manana"
+                  />
+                  <q-toggle v-model="resForm.aviso_mediodia" label="Tengo el acta en mi poder" />
                 </q-card-section>
               </q-card>
 
@@ -652,6 +656,7 @@ export default {
         aviso_antes: false,
         aviso_manana: false,
         aviso_mediodia: false,
+        hora_apertura_mesa: '',
         aviso_tarde: false,
         etapa_1: false,
         etapa_2: false,
@@ -988,6 +993,7 @@ export default {
           aviso_antes: false,
           aviso_manana: false,
           aviso_mediodia: false,
+          hora_apertura_mesa: '',
           aviso_tarde: false,
           etapa_1: false,
           etapa_2: false,
@@ -1019,6 +1025,7 @@ export default {
           this.resForm.aviso_antes = !!r.aviso_antes
           this.resForm.aviso_manana = !!r.aviso_manana
           this.resForm.aviso_mediodia = !!r.aviso_mediodia
+          this.resForm.hora_apertura_mesa = r.hora_apertura_mesa || ''
           this.resForm.aviso_tarde = !!r.aviso_tarde
           this.resForm.etapa_1 = !!r.etapa_1
           this.resForm.etapa_2 = !!r.etapa_2
@@ -1084,6 +1091,18 @@ export default {
       if (!this.resMesa?.id) return
       this.saving = true
       try {
+        if (this.resForm.aviso_manana) {
+          const hhmm = this.resForm.hora_apertura_mesa || ''
+          const okFmt = /^\d{2}:\d{2}$/.test(hhmm)
+          const hh = okFmt ? Number(hhmm.slice(0, 2)) : -1
+          if (!okFmt || !(hh >= 8 || hh <= 4)) {
+            this.$alert.error('La hora de apertura debe estar entre 08:00 y 04:00')
+            return
+          }
+        } else {
+          this.resForm.hora_apertura_mesa = ''
+        }
+
         const votos = (this.partidos || []).map(p => ({
           partido_id: p.id,
           votos_gobernador: Number(this.votosMap[p.id]?.votos_gobernador || 0),
@@ -1101,9 +1120,7 @@ export default {
         fd.append('aviso_antes', this.resForm.aviso_antes ? '1' : '0')
         fd.append('aviso_manana', this.resForm.aviso_manana ? '1' : '0')
         fd.append('aviso_mediodia', this.resForm.aviso_mediodia ? '1' : '0')
-        fd.append('aviso_tarde', this.resForm.aviso_tarde ? '1' : '0')
-        fd.append('etapa_1', this.resForm.etapa_1 ? '1' : '0')
-        fd.append('etapa_2', this.resForm.etapa_2 ? '1' : '0')
+        fd.append('hora_apertura_mesa', this.resForm.hora_apertura_mesa || '')
 
         const totalBlancos =
           Number(this.resForm.blancos_gobernador || 0) +

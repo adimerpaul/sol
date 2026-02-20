@@ -15,6 +15,7 @@ class ResultadoMesa extends Model
         'mesa_id','registrado_por',
         'aviso_antes','aviso_manana','aviso_mediodia','aviso_tarde',
         'etapa_1','etapa_2',
+        'hora_apertura_mesa',
         'foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8','foto9','foto10',
         'latitud','longitud',
         'total_votos','total_validos','total_blancos','total_nulos',
@@ -33,6 +34,7 @@ class ResultadoMesa extends Model
         'aviso_tarde' => 'boolean',
         'etapa_1' => 'boolean',
         'etapa_2' => 'boolean',
+        'hora_apertura_mesa' => 'string',
     ];
 
     public function mesa()     { return $this->belongsTo(Mesa::class); }

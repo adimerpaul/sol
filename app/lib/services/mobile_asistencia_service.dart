@@ -52,6 +52,7 @@ class MobileAsistenciaService {
   Future<void> sendAsistenciaToggle({
     required String field,
     required bool value,
+    String? horaAperturaMesa,
   }) async {
     final token = await _localStore.readAuthToken();
     if (token == null || token.isEmpty) {
@@ -66,7 +67,11 @@ class MobileAsistenciaService {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
-          body: jsonEncode({'field': field, 'value': value}),
+          body: jsonEncode({
+            'field': field,
+            'value': value,
+            if (horaAperturaMesa != null) 'hora_apertura_mesa': horaAperturaMesa,
+          }),
         )
         .timeout(const Duration(seconds: 8));
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -87,9 +92,16 @@ class MobileAsistenciaService {
     for (final item in queue) {
       final field = item['field']?.toString() ?? '';
       final value = item['value'] == true;
+      final horaAperturaMesa = item['hora_apertura_mesa']?.toString();
       if (field.isEmpty) continue;
       try {
-        await sendAsistenciaToggle(field: field, value: value);
+        await sendAsistenciaToggle(
+          field: field,
+          value: value,
+          horaAperturaMesa: horaAperturaMesa?.isEmpty == true
+              ? null
+              : horaAperturaMesa,
+        );
         await _localStore.dequeueAsistenciaField(field);
         ok++;
       } catch (_) {

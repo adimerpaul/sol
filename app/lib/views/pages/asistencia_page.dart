@@ -26,9 +26,8 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   bool _avisoAntes = false;
   bool _avisoManana = false;
   bool _avisoMediodia = false;
-  bool _avisoTarde = false;
-  bool _etapa1 = false;
-  bool _etapa2 = false;
+  String? _horaAperturaMesa;
+
   final Set<String> _lockedFields = <String>{};
   Timer? _autoSyncTimer;
 
@@ -78,9 +77,10 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         avisoAntes: state['aviso_antes'] == true,
         avisoManana: state['aviso_manana'] == true,
         avisoMediodia: state['aviso_mediodia'] == true,
-        avisoTarde: state['aviso_tarde'] == true,
-        etapa1: state['etapa_1'] == true,
-        etapa2: state['etapa_2'] == true,
+        horaAperturaMesa: state['hora_apertura_mesa']?.toString(),
+        avisoTarde: false,
+        etapa1: false,
+        etapa2: false,
         syncStatus: MobileAuthLocalStore.asistenciaSyncSynced,
       );
       _applyState(state);
@@ -94,17 +94,12 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     _avisoAntes = state['aviso_antes'] == true;
     _avisoManana = state['aviso_manana'] == true;
     _avisoMediodia = state['aviso_mediodia'] == true;
-    _avisoTarde = state['aviso_tarde'] == true;
-    _etapa1 = state['etapa_1'] == true;
-    _etapa2 = state['etapa_2'] == true;
+    _horaAperturaMesa = state['hora_apertura_mesa']?.toString();
 
     _lockedFields.clear();
     if (_avisoAntes) _lockedFields.add('aviso_antes');
     if (_avisoManana) _lockedFields.add('aviso_manana');
     if (_avisoMediodia) _lockedFields.add('aviso_mediodia');
-    if (_avisoTarde) _lockedFields.add('aviso_tarde');
-    if (_etapa1) _lockedFields.add('etapa_1');
-    if (_etapa2) _lockedFields.add('etapa_2');
   }
 
   Future<void> _toggleUpdate({
@@ -112,37 +107,55 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     required bool value,
   }) async {
     if (_lockedFields.contains(field)) return;
-
     if (!value) return;
+
+    String? horaForRequest;
+    if (field == 'aviso_manana') {
+      final selected = await _pickHoraApertura();
+      if (selected == null) return;
+      horaForRequest = selected;
+      _horaAperturaMesa = selected;
+    }
 
     final ok = await _confirmIrreversible();
     if (ok != true) return;
 
     _lockedFields.add(field);
     _setLocalField(field, value);
+
     await _localStore.saveAsistenciaState(
       avisoAntes: _avisoAntes,
       avisoManana: _avisoManana,
       avisoMediodia: _avisoMediodia,
-      avisoTarde: _avisoTarde,
-      etapa1: _etapa1,
-      etapa2: _etapa2,
+      horaAperturaMesa: _horaAperturaMesa,
+      avisoTarde: false,
+      etapa1: false,
+      etapa2: false,
       syncStatus: MobileAuthLocalStore.asistenciaSyncLocal,
     );
-    await _localStore.enqueueAsistenciaChange(field, value);
+    await _localStore.enqueueAsistenciaChange(
+      field,
+      value,
+      horaAperturaMesa: horaForRequest,
+    );
     setState(() => _hasPending = true);
 
     try {
-      await _service.sendAsistenciaToggle(field: field, value: value);
+      await _service.sendAsistenciaToggle(
+        field: field,
+        value: value,
+        horaAperturaMesa: horaForRequest,
+      );
       await _localStore.dequeueAsistenciaField(field);
       _hasPending = await _localStore.hasAsistenciaPendiente();
       await _localStore.saveAsistenciaState(
         avisoAntes: _avisoAntes,
         avisoManana: _avisoManana,
         avisoMediodia: _avisoMediodia,
-        avisoTarde: _avisoTarde,
-        etapa1: _etapa1,
-        etapa2: _etapa2,
+        horaAperturaMesa: _horaAperturaMesa,
+        avisoTarde: false,
+        etapa1: false,
+        etapa2: false,
         syncStatus: _hasPending
             ? MobileAuthLocalStore.asistenciaSyncLocal
             : MobileAuthLocalStore.asistenciaSyncSynced,
@@ -191,17 +204,36 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         case 'aviso_mediodia':
           _avisoMediodia = value;
           break;
-        case 'aviso_tarde':
-          _avisoTarde = value;
-          break;
-        case 'etapa_1':
-          _etapa1 = value;
-          break;
-        case 'etapa_2':
-          _etapa2 = value;
-          break;
       }
     });
+  }
+
+  Future<String?> _pickHoraApertura() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 8, minute: 0),
+    );
+    if (picked == null) return null;
+
+    final hh = picked.hour.toString().padLeft(2, '0');
+    final mm = picked.minute.toString().padLeft(2, '0');
+    final value = '$hh:$mm';
+    if (!_horaValida(value)) {
+      if (mounted) {
+        showError(context, 'La hora debe estar entre 08:00 y 04:00');
+      }
+      return null;
+    }
+    return value;
+  }
+
+  bool _horaValida(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) return false;
+    final hh = int.tryParse(parts[0]);
+    final mm = int.tryParse(parts[1]);
+    if (hh == null || mm == null || mm < 0 || mm > 59) return false;
+    return hh >= 8 || hh <= 4;
   }
 
   Future<void> _syncPending({bool silent = false}) async {
@@ -214,9 +246,10 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         avisoAntes: _avisoAntes,
         avisoManana: _avisoManana,
         avisoMediodia: _avisoMediodia,
-        avisoTarde: _avisoTarde,
-        etapa1: _etapa1,
-        etapa2: _etapa2,
+        horaAperturaMesa: _horaAperturaMesa,
+        avisoTarde: false,
+        etapa1: false,
+        etapa2: false,
         syncStatus: _hasPending
             ? MobileAuthLocalStore.asistenciaSyncLocal
             : MobileAuthLocalStore.asistenciaSyncSynced,
@@ -273,35 +306,25 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         ),
         const SizedBox(height: 8),
         _buildToggleTile(
-          label: 'Aviso antes de comenzar',
+          label: 'Estoy presente en mi mesa',
           field: 'aviso_antes',
           value: _avisoAntes,
         ),
         _buildToggleTile(
-          label: 'Aviso de la manana',
+          label: 'Abri la mesa',
           field: 'aviso_manana',
           value: _avisoManana,
         ),
+        if (_avisoManana && _horaAperturaMesa != null)
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.access_time),
+            title: Text('Hora de apertura: $_horaAperturaMesa'),
+          ),
         _buildToggleTile(
-          label: 'Aviso de mediodia',
+          label: 'Tengo el acta en mi poder',
           field: 'aviso_mediodia',
           value: _avisoMediodia,
-        ),
-        _buildToggleTile(
-          label: 'Aviso en la tarde',
-          field: 'aviso_tarde',
-          value: _avisoTarde,
-        ),
-        const Divider(),
-        _buildToggleTile(
-          label: 'Etapa 1 (Reconocimiento)',
-          field: 'etapa_1',
-          value: _etapa1,
-        ),
-        _buildToggleTile(
-          label: 'Etapa 2 (Final)',
-          field: 'etapa_2',
-          value: _etapa2,
         ),
       ],
     );
