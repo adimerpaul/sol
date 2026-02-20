@@ -328,37 +328,31 @@
                 <q-card-section class="text-weight-bold">Totales</q-card-section>
                 <q-separator />
                 <q-card-section class="row q-col-gutter-sm">
-                  <div class="col-12 text-caption text-grey-7">Gobernador</div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.blancos_gobernador" type="number" dense outlined label="Blancos" min="0" />
-                  </div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.nulos_gobernador" type="number" dense outlined label="Nulos" min="0" />
-                  </div>
+<!--                  <div class="col-12 text-caption text-grey-7">Gobernador</div>-->
+<!--                  <div class="col-6">-->
+<!--                    <q-input v-model.number="resForm.blancos_gobernador" type="number" dense outlined label="Blancos" min="0" />-->
+<!--                  </div>-->
+<!--                  <div class="col-6">-->
+<!--                    <q-input v-model.number="resForm.nulos_gobernador" type="number" dense outlined label="Nulos" min="0" />-->
+<!--                  </div>-->
 
-                  <div class="col-12 text-caption text-grey-7">Asambleísta Distrito</div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.blancos_asambleista_distrito" type="number" dense outlined label="Blancos" min="0" />
-                  </div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.nulos_asambleista_distrito" type="number" dense outlined label="Nulos" min="0" />
-                  </div>
+<!--                  <div class="col-12 text-caption text-grey-7">Asambleísta Distrito  </div>-->
+<!--                  <div class="col-6">-->
+<!--                    <q-input v-model.number="resForm.blancos_asambleista_distrito" type="number" dense outlined label="Blancos" min="0" />-->
+<!--                  </div>-->
+<!--                  <div class="col-6">-->
+<!--                    <q-input v-model.number="resForm.nulos_asambleista_distrito" type="number" dense outlined label="Nulos" min="0" />-->
+<!--                  </div>-->
 
-                  <div class="col-12 text-caption text-grey-7">Asambleísta Población</div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.blancos_asambleista_poblacion" type="number" dense outlined label="Blancos" min="0" />
-                  </div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.nulos_asambleista_poblacion" type="number" dense outlined label="Nulos" min="0" />
-                  </div>
+<!--                  <div class="col-12 text-caption text-grey-7">Asambleísta Población</div>-->
+<!--                  <div class="col-6">-->
+<!--                    <q-input v-model.number="resForm.blancos_asambleista_poblacion" type="number" dense outlined label="Blancos" min="0" />-->
+<!--                  </div>-->
+<!--                  <div class="col-6">-->
+<!--                    <q-input v-model.number="resForm.nulos_asambleista_poblacion" type="number" dense outlined label="Nulos" min="0" />-->
+<!--                  </div>-->
 
-                  <div class="col-12 text-caption text-grey-7">Concejal</div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.blancos_concejal" type="number" dense outlined label="Blancos" min="0" />
-                  </div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.nulos_concejal" type="number" dense outlined label="Nulos" min="0" />
-                  </div>
+
 
                   <div class="col-12 text-caption text-grey-7">Alcalde</div>
                   <div class="col-6">
@@ -366,6 +360,13 @@
                   </div>
                   <div class="col-6">
                     <q-input v-model.number="resForm.nulos_alcalde" type="number" dense outlined label="Nulos" min="0" />
+                  </div>
+                  <div class="col-12 text-caption text-grey-7">Concejal</div>
+                  <div class="col-6">
+                    <q-input v-model.number="resForm.blancos_concejal" type="number" dense outlined label="Blancos" min="0" />
+                  </div>
+                  <div class="col-6">
+                    <q-input v-model.number="resForm.nulos_concejal" type="number" dense outlined label="Nulos" min="0" />
                   </div>
 
                   <div class="col-12">
@@ -422,110 +423,85 @@
                 </q-card-section>
                 <q-separator />
 
-                <q-card-section class="q-pt-sm q-pb-none">
-                  <q-banner v-if="totalMismatchAny" dense class="bg-orange-2 text-black">
-                    Hay categorías que no suman 250. Revisa: {{ mismatchLabels.join(', ') }}.
-                  </q-banner>
-                </q-card-section>
+<!--                <q-card-section class="q-pt-sm q-pb-none">-->
+<!--                  <q-banner v-if="totalMismatchAny" dense class="bg-orange-2 text-black">-->
+<!--                    Hay categorías que no suman 250. Revisa: {{ mismatchLabels.join(', ') }}.-->
+<!--                  </q-banner>-->
+<!--                </q-card-section>-->
 
                 <q-card-section style="max-height: 55vh; overflow:auto;">
                   <div class="row q-col-gutter-sm">
-                    <div class="col-12 col-md-6">
-                      <q-card flat bordered class="q-pa-sm">
-                        <div class="text-weight-bold q-mb-xs">Gobernador</div>
-                        <div v-for="p in partidosDepartamental" :key="'gob_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
-                          <div class="col-12 col-md-7 row items-center">
-                            <div v-if="p.icono" class="q-mr-sm">
-                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
-                            </div>
-                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
-                              {{ p.sigla }}
-                            </q-badge>
-                            <span class="q-ml-sm">{{ p.nombre }}</span>
-                          </div>
-                          <div class="col-12 col-md-5">
-                            <q-input v-model.number="votosMap[p.id].votos_gobernador" type="number" dense outlined label="Votos" min="0" />
-                          </div>
-                        </div>
-                        <q-separator />
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                          Total: {{ sumGobernador }} · Blancos: {{ resForm.blancos_gobernador }} · Nulos: {{ resForm.nulos_gobernador }}
-                        </div>
-                      </q-card>
-                    </div>
+<!--                    <div class="col-12 col-md-6">-->
+<!--                      <q-card flat bordered class="q-pa-sm">-->
+<!--                        <div class="text-weight-bold q-mb-xs">Gobernador</div>-->
+<!--                        <div v-for="p in partidosDepartamental" :key="'gob_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">-->
+<!--                          <div class="col-12 col-md-7 row items-center">-->
+<!--                            <div v-if="p.icono" class="q-mr-sm">-->
+<!--                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />-->
+<!--                            </div>-->
+<!--                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">-->
+<!--                              {{ p.sigla }}-->
+<!--                            </q-badge>-->
+<!--                            <span class="q-ml-sm">{{ p.nombre }}</span>-->
+<!--                          </div>-->
+<!--                          <div class="col-12 col-md-5">-->
+<!--                            <q-input v-model.number="votosMap[p.id].votos_gobernador" type="number" dense outlined label="Votos" min="0" />-->
+<!--                          </div>-->
+<!--                        </div>-->
+<!--                        <q-separator />-->
+<!--                        <div class="text-caption text-grey-7 q-mt-xs">-->
+<!--                          Total: {{ sumGobernador }} · Blancos: {{ resForm.blancos_gobernador }} · Nulos: {{ resForm.nulos_gobernador }}-->
+<!--                        </div>-->
+<!--                      </q-card>-->
+<!--                    </div>-->
 
-                    <div class="col-12 col-md-6">
-                      <q-card flat bordered class="q-pa-sm">
-                        <div class="text-weight-bold q-mb-xs">Asambleísta Distrito</div>
-                        <div v-for="p in partidosDepartamental" :key="'asd_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
-                          <div class="col-12 col-md-7 row items-center">
-                            <div v-if="p.icono" class="q-mr-sm">
-                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
-                            </div>
-                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
-                              {{ p.sigla }}
-                            </q-badge>
-                            <span class="q-ml-sm">{{ p.nombre }}</span>
-                          </div>
-                          <div class="col-12 col-md-5">
-                            <q-input v-model.number="votosMap[p.id].votos_asambleista_distrito" type="number" dense outlined label="Votos" min="0" />
-                          </div>
-                        </div>
-                        <q-separator />
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                          Total: {{ sumAsd }} · Blancos: {{ resForm.blancos_asambleista_distrito }} · Nulos: {{ resForm.nulos_asambleista_distrito }}
-                        </div>
-                      </q-card>
-                    </div>
+<!--                    <div class="col-12 col-md-6">-->
+<!--                      <q-card flat bordered class="q-pa-sm">-->
+<!--                        <div class="text-weight-bold q-mb-xs">Asambleísta Distrito xxx</div>-->
+<!--                        <div v-for="p in partidosDepartamental" :key="'asd_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">-->
+<!--                          <div class="col-12 col-md-7 row items-center">-->
+<!--                            <div v-if="p.icono" class="q-mr-sm">-->
+<!--                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />-->
+<!--                            </div>-->
+<!--                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">-->
+<!--                              {{ p.sigla }}-->
+<!--                            </q-badge>-->
+<!--                            <span class="q-ml-sm">{{ p.nombre }}</span>-->
+<!--                          </div>-->
+<!--                          <div class="col-12 col-md-5">-->
+<!--                            <q-input v-model.number="votosMap[p.id].votos_asambleista_distrito" type="number" dense outlined label="Votos" min="0" />-->
+<!--                          </div>-->
+<!--                        </div>-->
+<!--                        <q-separator />-->
+<!--                        <div class="text-caption text-grey-7 q-mt-xs">-->
+<!--                          Total: {{ sumAsd }} · Blancos: {{ resForm.blancos_asambleista_distrito }} · Nulos: {{ resForm.nulos_asambleista_distrito }}-->
+<!--                        </div>-->
+<!--                      </q-card>-->
+<!--                    </div>-->
 
-                    <div class="col-12 col-md-6">
-                      <q-card flat bordered class="q-pa-sm">
-                        <div class="text-weight-bold q-mb-xs">Asambleísta Población</div>
-                        <div v-for="p in partidosDepartamental" :key="'asp_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
-                          <div class="col-12 col-md-7 row items-center">
-                            <div v-if="p.icono" class="q-mr-sm">
-                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
-                            </div>
-                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
-                              {{ p.sigla }}
-                            </q-badge>
-                            <span class="q-ml-sm">{{ p.nombre }}</span>
-                          </div>
-                          <div class="col-12 col-md-5">
-                            <q-input v-model.number="votosMap[p.id].votos_asambleista_poblacion" type="number" dense outlined label="Votos" min="0" />
-                          </div>
-                        </div>
-                        <q-separator />
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                          Total: {{ sumAsp }} · Blancos: {{ resForm.blancos_asambleista_poblacion }} · Nulos: {{ resForm.nulos_asambleista_poblacion }}
-                        </div>
-                      </q-card>
-                    </div>
-
-                    <div class="col-12 col-md-6">
-                      <q-card flat bordered class="q-pa-sm">
-                        <div class="text-weight-bold q-mb-xs">Concejal</div>
-                        <div v-for="p in partidosMunicipal" :key="'con_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
-                          <div class="col-12 col-md-7 row items-center">
-                            <div v-if="p.icono" class="q-mr-sm">
-                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
-                            </div>
-                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
-                              {{ p.sigla }}
-                            </q-badge>
-                            <span class="q-ml-sm">{{ p.nombre }}</span>
-                          </div>
-                          <div class="col-12 col-md-5">
-                            <q-input v-model.number="votosMap[p.id].votos_concejal" type="number" dense outlined label="Votos" min="0" />
-                          </div>
-                        </div>
-                        <q-separator />
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                          Total: {{ sumCon }} · Blancos: {{ resForm.blancos_concejal }} · Nulos: {{ resForm.nulos_concejal }}
-                        </div>
-                      </q-card>
-                    </div>
-
+<!--                    <div class="col-12 col-md-6">-->
+<!--                      <q-card flat bordered class="q-pa-sm">-->
+<!--                        <div class="text-weight-bold q-mb-xs">Asambleísta Población</div>-->
+<!--                        <div v-for="p in partidosDepartamental" :key="'asp_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">-->
+<!--                          <div class="col-12 col-md-7 row items-center">-->
+<!--                            <div v-if="p.icono" class="q-mr-sm">-->
+<!--                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />-->
+<!--                            </div>-->
+<!--                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">-->
+<!--                              {{ p.sigla }}-->
+<!--                            </q-badge>-->
+<!--                            <span class="q-ml-sm">{{ p.nombre }}</span>-->
+<!--                          </div>-->
+<!--                          <div class="col-12 col-md-5">-->
+<!--                            <q-input v-model.number="votosMap[p.id].votos_asambleista_poblacion" type="number" dense outlined label="Votos" min="0" />-->
+<!--                          </div>-->
+<!--                        </div>-->
+<!--                        <q-separator />-->
+<!--                        <div class="text-caption text-grey-7 q-mt-xs">-->
+<!--                          Total: {{ sumAsp }} · Blancos: {{ resForm.blancos_asambleista_poblacion }} · Nulos: {{ resForm.nulos_asambleista_poblacion }}-->
+<!--                        </div>-->
+<!--                      </q-card>-->
+<!--                    </div>-->
                     <div class="col-12 col-md-6">
                       <q-card flat bordered class="q-pa-sm">
                         <div class="text-weight-bold q-mb-xs">Alcalde</div>
@@ -546,6 +522,29 @@
                         <q-separator />
                         <div class="text-caption text-grey-7 q-mt-xs">
                           Total: {{ sumAlc }} · Blancos: {{ resForm.blancos_alcalde }} · Nulos: {{ resForm.nulos_alcalde }}
+                        </div>
+                      </q-card>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <q-card flat bordered class="q-pa-sm">
+                        <div class="text-weight-bold q-mb-xs">Concejal</div>
+                        <div v-for="p in partidosMunicipal" :key="'con_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
+                          <div class="col-12 col-md-7 row items-center">
+                            <div v-if="p.icono" class="q-mr-sm">
+                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
+                            </div>
+                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
+                              {{ p.sigla }}
+                            </q-badge>
+                            <span class="q-ml-sm">{{ p.nombre }}</span>
+                          </div>
+                          <div class="col-12 col-md-5">
+                            <q-input v-model.number="votosMap[p.id].votos_concejal" type="number" dense outlined label="Votos" min="0" />
+                          </div>
+                        </div>
+                        <q-separator />
+                        <div class="text-caption text-grey-7 q-mt-xs">
+                          Total: {{ sumCon }} · Blancos: {{ resForm.blancos_concejal }} · Nulos: {{ resForm.nulos_concejal }}
                         </div>
                       </q-card>
                     </div>
