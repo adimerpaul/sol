@@ -9,6 +9,9 @@ class SocketEmitter
 {
     public static function emit(string $event, array $payload = []): void
     {
+        error_log('url socket_io: ' . config('services.socket_io.url', ''));
+        error_log('timeout socket_io: ' . config('services.socket_io.timeout', 2));
+
         $baseUrl = rtrim((string) config('services.socket_io.url', ''), '/');
         if ($baseUrl === '') {
             return;
