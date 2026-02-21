@@ -23,7 +23,9 @@ class ResultadoMesa extends Model
         'blancos_asambleista_distrito','nulos_asambleista_distrito',
         'blancos_asambleista_poblacion','nulos_asambleista_poblacion',
         'blancos_concejal','nulos_concejal',
+        'papeletas_no_utilizadas_concejal',
         'blancos_alcalde','nulos_alcalde',
+        'papeletas_no_utilizadas_alcalde',
         'observacion'
     ];
 

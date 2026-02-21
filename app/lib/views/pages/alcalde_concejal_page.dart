@@ -48,8 +48,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final TextEditingController _naspCtrl = TextEditingController();
   final TextEditingController _bconCtrl = TextEditingController();
   final TextEditingController _nconCtrl = TextEditingController();
+  final TextEditingController _pnuConCtrl = TextEditingController();
   final TextEditingController _balcCtrl = TextEditingController();
   final TextEditingController _nalcCtrl = TextEditingController();
+  final TextEditingController _pnuAlcCtrl = TextEditingController();
   final TextEditingController _obsCtrl = TextEditingController();
 
   final Map<String, String?> _localFotos = {
@@ -89,8 +91,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     _naspCtrl.dispose();
     _bconCtrl.dispose();
     _nconCtrl.dispose();
+    _pnuConCtrl.dispose();
     _balcCtrl.dispose();
     _nalcCtrl.dispose();
+    _pnuAlcCtrl.dispose();
     _obsCtrl.dispose();
     for (final m in [_gobCtrl, _asdCtrl, _aspCtrl, _conCtrl, _alcCtrl]) {
       for (final c in m.values) {
@@ -219,8 +223,12 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool get _okGob => _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl) == 250;
   bool get _okAsd => _sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl) == 250;
   bool get _okAsp => _sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl) == 250;
-  bool get _okCon => _sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) == 250;
-  bool get _okAlc => _sumAlc + _ival(_balcCtrl) + _ival(_nalcCtrl) == 250;
+  bool get _okCon =>
+      _sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl) ==
+      250;
+  bool get _okAlc =>
+      _sumAlc + _ival(_balcCtrl) + _ival(_nalcCtrl) + _ival(_pnuAlcCtrl) ==
+      250;
 
   bool get _allFotosReady {
     for (final slot in votacionFotoSlots) {
@@ -308,8 +316,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     _setCtrlInt(_naspCtrl, d.nulosAsp);
     _setCtrlInt(_bconCtrl, d.blancosConcejal);
     _setCtrlInt(_nconCtrl, d.nulosConcejal);
+    _setCtrlInt(_pnuConCtrl, d.papeletasNoUtilizadasConcejal);
     _setCtrlInt(_balcCtrl, d.blancosAlcalde);
     _setCtrlInt(_nalcCtrl, d.nulosAlcalde);
+    _setCtrlInt(_pnuAlcCtrl, d.papeletasNoUtilizadasAlcalde);
     for (final slot in votacionFotoSlots) {
       _localFotos[slot] = d.fotos[slot];
     }
@@ -338,8 +348,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       _naspCtrl,
       _bconCtrl,
       _nconCtrl,
+      _pnuConCtrl,
       _balcCtrl,
       _nalcCtrl,
+      _pnuAlcCtrl,
     ]) {
       c.text = '';
     }
@@ -408,9 +420,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         sigla: (p['sigla'] ?? '').toString(),
         nombre: (p['nombre'] ?? '').toString(),
         iconoUrl: p['icono_url']?.toString(),
-        votosGobernador: _ivalOrZero(_gobCtrl[id]),
-        votosAsd: _ivalOrZero(_asdCtrl[id]),
-        votosAsp: _ivalOrZero(_aspCtrl[id]),
+        votosGobernador: 0,
+        votosAsd: 0,
+        votosAsp: 0,
         votosConcejal: _ivalOrZero(_conCtrl[id]),
         votosAlcalde: _ivalOrZero(_alcCtrl[id]),
       );
@@ -420,16 +432,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       mesaId: _mesaId ?? 0,
       finalizar: finalizar,
       observacion: _obsCtrl.text.trim().isEmpty ? null : _obsCtrl.text.trim(),
-      blancosGobernador: _ival(_bgCtrl),
-      nulosGobernador: _ival(_ngCtrl),
-      blancosAsd: _ival(_basdCtrl),
-      nulosAsd: _ival(_nasdCtrl),
-      blancosAsp: _ival(_baspCtrl),
-      nulosAsp: _ival(_naspCtrl),
+      blancosGobernador: 0,
+      nulosGobernador: 0,
+      blancosAsd: 0,
+      nulosAsd: 0,
+      blancosAsp: 0,
+      nulosAsp: 0,
       blancosConcejal: _ival(_bconCtrl),
       nulosConcejal: _ival(_nconCtrl),
+      papeletasNoUtilizadasConcejal: _ival(_pnuConCtrl),
       blancosAlcalde: _ival(_balcCtrl),
       nulosAlcalde: _ival(_nalcCtrl),
+      papeletasNoUtilizadasAlcalde: _ival(_pnuAlcCtrl),
       votos: votos,
       fotos: Map<String, String?>.from(_localFotos),
       syncStatus: syncStatus,
@@ -442,23 +456,12 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       showError(context, 'Selecciona una mesa');
       return;
     }
-    final warnings = <String>[
-      if (!_okAlc) 'Alcalde no suma 250',
-      if (!_okCon) 'Concejal no suma 250',
-      if (!_okGob) 'Gobernador no suma 250',
-      if (!_okAsd) 'Asambleista por Distrito no suma 250',
-      if (!_okAsp) 'Asambleista por Poblacion no suma 250',
-      if (!_allFotosReady) 'Faltan fotos requeridas',
-    ];
-
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar envio'),
-        content: Text(
-          warnings.isEmpty
-              ? 'Se enviaran datos de votacion. Si no hay internet quedaran pendientes para sincronizar.'
-              : 'Se enviaran datos de votacion con advertencias:\n- ${warnings.join('\n- ')}\n\nSi no hay internet quedaran pendientes para sincronizar.',
+        content: const Text(
+          'Se enviaran datos de votacion. Si no hay internet quedaran pendientes para sincronizar.',
         ),
         actions: [
           TextButton(
@@ -562,6 +565,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           voteMap: _alcCtrl,
           blancosCtrl: _balcCtrl,
           nulosCtrl: _nalcCtrl,
+          papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
           sum: _sumAlc,
           ok: _okAlc,
         ),
@@ -575,6 +579,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           voteMap: _conCtrl,
           blancosCtrl: _bconCtrl,
           nulosCtrl: _nconCtrl,
+          papeletasNoUtilizadasCtrl: _pnuConCtrl,
           sum: _sumCon,
           ok: _okCon,
         ),
@@ -583,35 +588,38 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           config: _fotoConcejalConfig,
         ),
         _buildGuardarMandarActions(),
-        _buildCategoryCard(
-          title: '3) Gobernador',
-          voteMap: _gobCtrl,
-          blancosCtrl: _bgCtrl,
-          nulosCtrl: _ngCtrl,
-          sum: _sumGob,
-          ok: _okGob,
-        ),
-        _buildCategoryCard(
-          title: '4) Asambleista por Distrito',
-          voteMap: _asdCtrl,
-          blancosCtrl: _basdCtrl,
-          nulosCtrl: _nasdCtrl,
-          sum: _sumAsd,
-          ok: _okAsd,
-        ),
-        _buildCategoryCard(
-          title: '5) Asambleista por Poblacion',
-          voteMap: _aspCtrl,
-          blancosCtrl: _baspCtrl,
-          nulosCtrl: _naspCtrl,
-          sum: _sumAsp,
-          ok: _okAsp,
-        ),
-        _buildFotosCard(
-          title: 'Fotos complementarias',
-          config: _fotoComplementariasConfig,
-        ),
-        _buildGuardarMandarActions(),
+        // _buildCategoryCard(
+        //   title: '3) Gobernador',
+        //   voteMap: _gobCtrl,
+        //   blancosCtrl: _bgCtrl,
+        //   nulosCtrl: _ngCtrl,
+        //   papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+        //   sum: _sumGob,
+        //   ok: _okGob,
+        // ),
+        // _buildCategoryCard(
+        //   title: '4) Asambleista por Distrito',
+        //   voteMap: _asdCtrl,
+        //   blancosCtrl: _basdCtrl,
+        //   nulosCtrl: _nasdCtrl,
+        //   papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+        //   sum: _sumAsd,
+        //   ok: _okAsd,
+        // ),
+        // _buildCategoryCard(
+        //   title: '5) Asambleista por Poblacion',
+        //   voteMap: _aspCtrl,
+        //   blancosCtrl: _baspCtrl,
+        //   nulosCtrl: _naspCtrl,
+        //   papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+        //   sum: _sumAsp,
+        //   ok: _okAsp,
+        // ),
+        // _buildFotosCard(
+        //   title: 'Fotos complementarias',
+        //   config: _fotoComplementariasConfig,
+        // ),
+        // _buildGuardarMandarActions(),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(10),
@@ -723,7 +731,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Control: cada categoria debe sumar 250. Fotos requeridas: 10.',
+              'Control activo: solo Alcalde y Concejal. Funciona online/offline.',
               style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
             ),
           ],
@@ -737,6 +745,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     required Map<int, TextEditingController> voteMap,
     required TextEditingController blancosCtrl,
     required TextEditingController nulosCtrl,
+    required TextEditingController papeletasNoUtilizadasCtrl,
     required int sum,
     required bool ok,
   }) {
@@ -825,9 +834,20 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: papeletasNoUtilizadasCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Papeletas no utilizadas',
+                isDense: true,
+              ),
+              onChanged: (_) => _onDataChanged(),
+            ),
             const SizedBox(height: 6),
             Text(
-              'Total ${sum + _ival(blancosCtrl) + _ival(nulosCtrl)}/250',
+              'Total ${sum + _ival(blancosCtrl) + _ival(nulosCtrl) + _ival(papeletasNoUtilizadasCtrl)}/250',
               style: TextStyle(
                 color: ok ? Colors.green : Colors.red,
                 fontWeight: FontWeight.w700,

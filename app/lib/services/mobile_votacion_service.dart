@@ -96,8 +96,12 @@ class MobileVotacionService {
           ..fields['nulos_asambleista_poblacion'] = '${draft.nulosAsp}'
           ..fields['blancos_concejal'] = '${draft.blancosConcejal}'
           ..fields['nulos_concejal'] = '${draft.nulosConcejal}'
+          ..fields['papeletas_no_utilizadas_concejal'] =
+              '${draft.papeletasNoUtilizadasConcejal}'
           ..fields['blancos_alcalde'] = '${draft.blancosAlcalde}'
           ..fields['nulos_alcalde'] = '${draft.nulosAlcalde}'
+          ..fields['papeletas_no_utilizadas_alcalde'] =
+              '${draft.papeletasNoUtilizadasAlcalde}'
           ..fields['votos'] = jsonEncode(
             draft.votos
                 .map(

@@ -318,8 +318,10 @@ class MobileResultadosController extends Controller
             'nulos_asambleista_poblacion' => 'nullable|integer|min:0',
             'blancos_concejal' => 'nullable|integer|min:0',
             'nulos_concejal' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_concejal' => 'nullable|integer|min:0',
             'blancos_alcalde' => 'nullable|integer|min:0',
             'nulos_alcalde' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_alcalde' => 'nullable|integer|min:0',
 
             'foto1' => 'nullable|image|max:4096',
             'foto2' => 'nullable|image|max:4096',
@@ -345,9 +347,6 @@ class MobileResultadosController extends Controller
         $partidoSet = array_fill_keys($partidoIds, true);
 
         $sum = [
-            'gobernador' => 0,
-            'asambleista_distrito' => 0,
-            'asambleista_poblacion' => 0,
             'concejal' => 0,
             'alcalde' => 0,
         ];
@@ -358,9 +357,6 @@ class MobileResultadosController extends Controller
                 return response()->json(['message' => "Partido invalido: {$pid}"], 422);
             }
             foreach ([
-                'votos_gobernador',
-                'votos_asambleista_distrito',
-                'votos_asambleista_poblacion',
                 'votos_concejal',
                 'votos_alcalde'
             ] as $k) {
@@ -369,53 +365,26 @@ class MobileResultadosController extends Controller
                 }
             }
 
-            $sum['gobernador'] += (int) $row['votos_gobernador'];
-            $sum['asambleista_distrito'] += (int) $row['votos_asambleista_distrito'];
-            $sum['asambleista_poblacion'] += (int) $row['votos_asambleista_poblacion'];
             $sum['concejal'] += (int) $row['votos_concejal'];
             $sum['alcalde'] += (int) $row['votos_alcalde'];
         }
 
         $blancos = [
-            'gobernador' => (int) ($data['blancos_gobernador'] ?? 0),
-            'asambleista_distrito' => (int) ($data['blancos_asambleista_distrito'] ?? 0),
-            'asambleista_poblacion' => (int) ($data['blancos_asambleista_poblacion'] ?? 0),
             'concejal' => (int) ($data['blancos_concejal'] ?? 0),
             'alcalde' => (int) ($data['blancos_alcalde'] ?? 0),
         ];
         $nulos = [
-            'gobernador' => (int) ($data['nulos_gobernador'] ?? 0),
-            'asambleista_distrito' => (int) ($data['nulos_asambleista_distrito'] ?? 0),
-            'asambleista_poblacion' => (int) ($data['nulos_asambleista_poblacion'] ?? 0),
             'concejal' => (int) ($data['nulos_concejal'] ?? 0),
             'alcalde' => (int) ($data['nulos_alcalde'] ?? 0),
         ];
+        $pnu = [
+            'concejal' => (int) ($data['papeletas_no_utilizadas_concejal'] ?? 0),
+            'alcalde' => (int) ($data['papeletas_no_utilizadas_alcalde'] ?? 0),
+        ];
 
         $finalizar = (bool) $request->boolean('finalizar');
-        if ($finalizar) {
-            foreach (['gobernador', 'asambleista_distrito', 'asambleista_poblacion', 'concejal', 'alcalde'] as $cat) {
-                $totalCat = $sum[$cat] + $blancos[$cat] + $nulos[$cat];
-                if ($totalCat !== 250) {
-                    return response()->json([
-                        'message' => "La categoria {$cat} debe sumar 250",
-                    ], 422);
-                }
-            }
 
-            $existing = ResultadoMesa::query()->where('mesa_id', $mesa->id)->first();
-            $allFotos = ['foto1', 'foto2', 'foto3', 'foto4', 'foto5', 'foto6', 'foto7', 'foto8', 'foto9', 'foto10'];
-            foreach ($allFotos as $f) {
-                $hasCurrent = $existing && !empty($existing->{$f});
-                $hasNew = $request->hasFile($f);
-                if (!$hasCurrent && !$hasNew) {
-                    return response()->json([
-                        'message' => 'Para finalizar debes tener las 10 fotos cargadas',
-                    ], 422);
-                }
-            }
-        }
-
-        DB::transaction(function () use ($mesa, $user, $data, $votos, $sum, $blancos, $nulos, $finalizar, $request) {
+        DB::transaction(function () use ($mesa, $user, $data, $votos, $sum, $blancos, $nulos, $pnu, $finalizar, $request) {
             $rm = ResultadoMesa::updateOrCreate(
                 ['mesa_id' => $mesa->id],
                 [
@@ -425,20 +394,22 @@ class MobileResultadosController extends Controller
                     'etapa_1' => true,
                     'etapa_2' => $finalizar,
 
-                    'blancos_gobernador' => $blancos['gobernador'],
-                    'nulos_gobernador' => $nulos['gobernador'],
-                    'blancos_asambleista_distrito' => $blancos['asambleista_distrito'],
-                    'nulos_asambleista_distrito' => $nulos['asambleista_distrito'],
-                    'blancos_asambleista_poblacion' => $blancos['asambleista_poblacion'],
-                    'nulos_asambleista_poblacion' => $nulos['asambleista_poblacion'],
+                    'blancos_gobernador' => 0,
+                    'nulos_gobernador' => 0,
+                    'blancos_asambleista_distrito' => 0,
+                    'nulos_asambleista_distrito' => 0,
+                    'blancos_asambleista_poblacion' => 0,
+                    'nulos_asambleista_poblacion' => 0,
                     'blancos_concejal' => $blancos['concejal'],
                     'nulos_concejal' => $nulos['concejal'],
+                    'papeletas_no_utilizadas_concejal' => $pnu['concejal'],
                     'blancos_alcalde' => $blancos['alcalde'],
                     'nulos_alcalde' => $nulos['alcalde'],
+                    'papeletas_no_utilizadas_alcalde' => $pnu['alcalde'],
 
                     'total_validos' => array_sum($sum),
                     'total_blancos' => array_sum($blancos),
-                    'total_nulos' => array_sum($nulos),
+                    'total_nulos' => array_sum($nulos) + array_sum($pnu),
                     'total_votos' => array_sum($sum),
                 ]
             );
@@ -461,9 +432,9 @@ class MobileResultadosController extends Controller
                         'partido_id' => (int) $row['partido_id'],
                     ],
                     [
-                        'votos_gobernador' => (int) $row['votos_gobernador'],
-                        'votos_asambleista_distrito' => (int) $row['votos_asambleista_distrito'],
-                        'votos_asambleista_poblacion' => (int) $row['votos_asambleista_poblacion'],
+                        'votos_gobernador' => 0,
+                        'votos_asambleista_distrito' => 0,
+                        'votos_asambleista_poblacion' => 0,
                         'votos_concejal' => (int) $row['votos_concejal'],
                         'votos_alcalde' => (int) $row['votos_alcalde'],
                     ]

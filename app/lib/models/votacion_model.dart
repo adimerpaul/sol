@@ -11,8 +11,10 @@ class VotacionDraft {
     required this.nulosAsp,
     required this.blancosConcejal,
     required this.nulosConcejal,
+    required this.papeletasNoUtilizadasConcejal,
     required this.blancosAlcalde,
     required this.nulosAlcalde,
+    required this.papeletasNoUtilizadasAlcalde,
     required this.votos,
     required this.fotos,
     required this.syncStatus,
@@ -31,8 +33,10 @@ class VotacionDraft {
   final int nulosAsp;
   final int blancosConcejal;
   final int nulosConcejal;
+  final int papeletasNoUtilizadasConcejal;
   final int blancosAlcalde;
   final int nulosAlcalde;
+  final int papeletasNoUtilizadasAlcalde;
 
   final List<VotoPartidoItem> votos;
   final Map<String, String?> fotos;

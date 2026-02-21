@@ -301,8 +301,10 @@ class SuperAdminMesasController extends Controller
             'nulos_asambleista_poblacion' => 'nullable|integer|min:0',
             'blancos_concejal' => 'nullable|integer|min:0',
             'nulos_concejal' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_concejal' => 'nullable|integer|min:0',
             'blancos_alcalde' => 'nullable|integer|min:0',
             'nulos_alcalde' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_alcalde' => 'nullable|integer|min:0',
 
             'votos' => 'required',
 
@@ -333,9 +335,6 @@ class SuperAdminMesasController extends Controller
         }
 
         $votosFields = [
-            'votos_gobernador',
-            'votos_asambleista_distrito',
-            'votos_asambleista_poblacion',
             'votos_concejal',
             'votos_alcalde',
         ];
@@ -394,8 +393,10 @@ class SuperAdminMesasController extends Controller
             if ($request->has('nulos_asambleista_poblacion')) $res->nulos_asambleista_poblacion = (int) ($data['nulos_asambleista_poblacion'] ?? 0);
             if ($request->has('blancos_concejal')) $res->blancos_concejal = (int) ($data['blancos_concejal'] ?? 0);
             if ($request->has('nulos_concejal')) $res->nulos_concejal = (int) ($data['nulos_concejal'] ?? 0);
+            if ($request->has('papeletas_no_utilizadas_concejal')) $res->papeletas_no_utilizadas_concejal = (int) ($data['papeletas_no_utilizadas_concejal'] ?? 0);
             if ($request->has('blancos_alcalde')) $res->blancos_alcalde = (int) ($data['blancos_alcalde'] ?? 0);
             if ($request->has('nulos_alcalde')) $res->nulos_alcalde = (int) ($data['nulos_alcalde'] ?? 0);
+            if ($request->has('papeletas_no_utilizadas_alcalde')) $res->papeletas_no_utilizadas_alcalde = (int) ($data['papeletas_no_utilizadas_alcalde'] ?? 0);
 
             $dir = "resultados_mesa/mesa_{$mesa->id}";
             foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto5', 'foto6', 'foto7', 'foto8', 'foto9', 'foto10'] as $f) {
@@ -410,13 +411,10 @@ class SuperAdminMesasController extends Controller
 
             $totalVotos = 0;
             foreach ($votos as $row) {
-                $vvGob = (int) $row['votos_gobernador'];
-                $vvAsd = (int) $row['votos_asambleista_distrito'];
-                $vvAsp = (int) $row['votos_asambleista_poblacion'];
                 $vvCon = (int) $row['votos_concejal'];
                 $vvAlc = (int) $row['votos_alcalde'];
 
-                $totalVotos += ($vvGob + $vvAsd + $vvAsp + $vvCon + $vvAlc);
+                $totalVotos += ($vvCon + $vvAlc);
 
                 ResultadoMesaDetalle::updateOrCreate(
                     [
@@ -424,9 +422,9 @@ class SuperAdminMesasController extends Controller
                         'partido_id' => $row['partido_id'],
                     ],
                     [
-                        'votos_gobernador' => $vvGob,
-                        'votos_asambleista_distrito' => $vvAsd,
-                        'votos_asambleista_poblacion' => $vvAsp,
+                        'votos_gobernador' => 0,
+                        'votos_asambleista_distrito' => 0,
+                        'votos_asambleista_poblacion' => 0,
                         'votos_concejal' => $vvCon,
                         'votos_alcalde' => $vvAlc,
                     ]

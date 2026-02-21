@@ -361,12 +361,32 @@
                   <div class="col-6">
                     <q-input v-model.number="resForm.nulos_alcalde" type="number" dense outlined label="Nulos" min="0" />
                   </div>
+                  <div class="col-12">
+                    <q-input
+                      v-model.number="resForm.papeletas_no_utilizadas_alcalde"
+                      type="number"
+                      dense
+                      outlined
+                      label="Papeletas no utilizadas"
+                      min="0"
+                    />
+                  </div>
                   <div class="col-12 text-caption text-grey-7">Concejal</div>
                   <div class="col-6">
                     <q-input v-model.number="resForm.blancos_concejal" type="number" dense outlined label="Blancos" min="0" />
                   </div>
                   <div class="col-6">
                     <q-input v-model.number="resForm.nulos_concejal" type="number" dense outlined label="Nulos" min="0" />
+                  </div>
+                  <div class="col-12">
+                    <q-input
+                      v-model.number="resForm.papeletas_no_utilizadas_concejal"
+                      type="number"
+                      dense
+                      outlined
+                      label="Papeletas no utilizadas"
+                      min="0"
+                    />
                   </div>
 
                   <div class="col-12">
@@ -385,7 +405,17 @@
                 <q-card-section class="q-pt-sm">
                   <div class="row q-col-gutter-sm">
                     <div v-for="n in 10" :key="n" class="col-6">
-                      <q-card flat bordered class="q-pa-xs">
+                      <q-card flat bordered class="q-pa-xs relative-position">
+                        <q-btn
+                          v-if="fotoPreview(n)"
+                          icon="zoom_in"
+                          dense
+                          round
+                          color="primary"
+                          class="absolute-top-right q-ma-xs"
+                          @click="openPhotoPreview(n)"
+                          style="z-index: 1000"
+                        />
 <!--                        <pre>{{fotoPreview(n)}}</pre>-->
                         <q-img
                           v-if="fotoPreview(n)"
@@ -521,7 +551,7 @@
                         </div>
                         <q-separator />
                         <div class="text-caption text-grey-7 q-mt-xs">
-                          Total: {{ sumAlc }} · Blancos: {{ resForm.blancos_alcalde }} · Nulos: {{ resForm.nulos_alcalde }}
+                          Total: {{ sumAlc }} · Blancos: {{ resForm.blancos_alcalde }} · Nulos: {{ resForm.nulos_alcalde }} · PNU: {{ resForm.papeletas_no_utilizadas_alcalde }}
                         </div>
                       </q-card>
                     </div>
@@ -544,7 +574,7 @@
                         </div>
                         <q-separator />
                         <div class="text-caption text-grey-7 q-mt-xs">
-                          Total: {{ sumCon }} · Blancos: {{ resForm.blancos_concejal }} · Nulos: {{ resForm.nulos_concejal }}
+                          Total: {{ sumCon }} · Blancos: {{ resForm.blancos_concejal }} · Nulos: {{ resForm.nulos_concejal }} · PNU: {{ resForm.papeletas_no_utilizadas_concejal }}
                         </div>
                       </q-card>
                     </div>
@@ -572,6 +602,30 @@
             @click="saveResultado"
           />
         </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="dlgFotoPreview" maximized>
+      <q-card class="bg-black">
+        <q-card-section class="row items-center q-pb-none">
+          <q-space />
+          <q-btn
+            icon="close"
+            flat
+            round
+            dense
+            color="white"
+            @click="dlgFotoPreview=false"
+          />
+        </q-card-section>
+        <q-card-section class="flex flex-center" style="height: calc(100vh - 56px);">
+          <q-img
+            v-if="fotoPreviewSrc"
+            :src="fotoPreviewSrc"
+            fit="contain"
+            style="max-width: 100%; max-height: 100%;"
+          />
+        </q-card-section>
       </q-card>
     </q-dialog>
   </q-page>
@@ -645,9 +699,6 @@ export default {
       partidos: [],
       votosMap: {},
       voteTypes: [
-        { key: 'votos_gobernador', label: 'Gobernador' },
-        { key: 'votos_asambleista_distrito', label: 'Asam. Distrito' },
-        { key: 'votos_asambleista_poblacion', label: 'Asam. Poblacion' },
         { key: 'votos_concejal', label: 'Concejal' },
         { key: 'votos_alcalde', label: 'Alcalde' }
       ],
@@ -667,8 +718,10 @@ export default {
         nulos_asambleista_poblacion: 0,
         blancos_concejal: 0,
         nulos_concejal: 0,
+        papeletas_no_utilizadas_concejal: 0,
         blancos_alcalde: 0,
         nulos_alcalde: 0,
+        papeletas_no_utilizadas_alcalde: 0,
         observacion: ''
       },
 
@@ -680,7 +733,9 @@ export default {
       fotosServer: {
         foto1_url: null, foto2_url: null, foto3_url: null, foto4_url: null, foto5_url: null,
         foto6_url: null, foto7_url: null, foto8_url: null, foto9_url: null, foto10_url: null
-      }
+      },
+      dlgFotoPreview: false,
+      fotoPreviewSrc: null
     }
   },
 
@@ -772,28 +827,19 @@ export default {
 
     sumTotal () {
       const b =
-        Number(this.resForm.blancos_gobernador || 0) +
-        Number(this.resForm.blancos_asambleista_distrito || 0) +
-        Number(this.resForm.blancos_asambleista_poblacion || 0) +
         Number(this.resForm.blancos_concejal || 0) +
         Number(this.resForm.blancos_alcalde || 0)
       const n =
-        Number(this.resForm.nulos_gobernador || 0) +
-        Number(this.resForm.nulos_asambleista_distrito || 0) +
-        Number(this.resForm.nulos_asambleista_poblacion || 0) +
         Number(this.resForm.nulos_concejal || 0) +
         Number(this.resForm.nulos_alcalde || 0)
-      return this.sumVotos + b + n
+      const p =
+        Number(this.resForm.papeletas_no_utilizadas_concejal || 0) +
+        Number(this.resForm.papeletas_no_utilizadas_alcalde || 0)
+      return this.sumVotos + b + n + p
     },
 
     mismatchLabels () {
-      const labels = []
-      if (this.sumGobernador + Number(this.resForm.blancos_gobernador || 0) + Number(this.resForm.nulos_gobernador || 0) !== 250) labels.push('Gobernador')
-      if (this.sumAsd + Number(this.resForm.blancos_asambleista_distrito || 0) + Number(this.resForm.nulos_asambleista_distrito || 0) !== 250) labels.push('Asambleísta Distrito')
-      if (this.sumAsp + Number(this.resForm.blancos_asambleista_poblacion || 0) + Number(this.resForm.nulos_asambleista_poblacion || 0) !== 250) labels.push('Asambleísta Población')
-      if (this.sumCon + Number(this.resForm.blancos_concejal || 0) + Number(this.resForm.nulos_concejal || 0) !== 250) labels.push('Concejal')
-      if (this.sumAlc + Number(this.resForm.blancos_alcalde || 0) + Number(this.resForm.nulos_alcalde || 0) !== 250) labels.push('Alcalde')
-      return labels
+      return []
     },
 
     totalMismatchAny () {
@@ -978,6 +1024,13 @@ export default {
       return serverUrl ? (this.$url + '/..' + serverUrl) : null
     },
 
+    openPhotoPreview (n) {
+      const src = this.fotoPreview(n)
+      if (!src) return
+      this.fotoPreviewSrc = src
+      this.dlgFotoPreview = true
+    },
+
     async openResultado (row) {
       this.saving = true
       try {
@@ -1004,8 +1057,10 @@ export default {
           nulos_asambleista_poblacion: 0,
           blancos_concejal: 0,
           nulos_concejal: 0,
+          papeletas_no_utilizadas_concejal: 0,
           blancos_alcalde: 0,
           nulos_alcalde: 0,
+          papeletas_no_utilizadas_alcalde: 0,
           observacion: ''
         }
 
@@ -1037,8 +1092,10 @@ export default {
           this.resForm.nulos_asambleista_poblacion = Number(r.nulos_asambleista_poblacion || 0)
           this.resForm.blancos_concejal = Number(r.blancos_concejal || 0)
           this.resForm.nulos_concejal = Number(r.nulos_concejal || 0)
+          this.resForm.papeletas_no_utilizadas_concejal = Number(r.papeletas_no_utilizadas_concejal || 0)
           this.resForm.blancos_alcalde = Number(r.blancos_alcalde || 0)
           this.resForm.nulos_alcalde = Number(r.nulos_alcalde || 0)
+          this.resForm.papeletas_no_utilizadas_alcalde = Number(r.papeletas_no_utilizadas_alcalde || 0)
           this.resForm.observacion = r.observacion || ''
 
           // fotos existentes
@@ -1104,51 +1161,40 @@ export default {
 
         const votos = (this.partidos || []).map(p => ({
           partido_id: p.id,
-          votos_gobernador: Number(this.votosMap[p.id]?.votos_gobernador || 0),
-          votos_asambleista_distrito: Number(this.votosMap[p.id]?.votos_asambleista_distrito || 0),
-          votos_asambleista_poblacion: Number(this.votosMap[p.id]?.votos_asambleista_poblacion || 0),
+          votos_gobernador: 0,
+          votos_asambleista_distrito: 0,
+          votos_asambleista_poblacion: 0,
           votos_concejal: Number(this.votosMap[p.id]?.votos_concejal || 0),
           votos_alcalde: Number(this.votosMap[p.id]?.votos_alcalde || 0)
         }))
 
         // multipart
         const fd = new FormData()
-        if (this.totalMismatchAny) {
-          this.$alert.warning('Hay categorías que no suman 250, se guardará igual')
-        }
         fd.append('aviso_antes', this.resForm.aviso_antes ? '1' : '0')
         fd.append('aviso_manana', this.resForm.aviso_manana ? '1' : '0')
         fd.append('aviso_mediodia', this.resForm.aviso_mediodia ? '1' : '0')
         fd.append('hora_apertura_mesa', this.resForm.hora_apertura_mesa || '')
 
         const totalBlancos =
-          Number(this.resForm.blancos_gobernador || 0) +
-          Number(this.resForm.blancos_asambleista_distrito || 0) +
-          Number(this.resForm.blancos_asambleista_poblacion || 0) +
           Number(this.resForm.blancos_concejal || 0) +
           Number(this.resForm.blancos_alcalde || 0)
         const totalNulos =
-          Number(this.resForm.nulos_gobernador || 0) +
-          Number(this.resForm.nulos_asambleista_distrito || 0) +
-          Number(this.resForm.nulos_asambleista_poblacion || 0) +
           Number(this.resForm.nulos_concejal || 0) +
-          Number(this.resForm.nulos_alcalde || 0)
+          Number(this.resForm.nulos_alcalde || 0) +
+          Number(this.resForm.papeletas_no_utilizadas_concejal || 0) +
+          Number(this.resForm.papeletas_no_utilizadas_alcalde || 0)
 
         fd.append('total_blancos', String(totalBlancos))
         fd.append('total_nulos', String(totalNulos))
         fd.append('total_validos', String(this.sumVotos || 0))
         fd.append('observacion', this.resForm.observacion || '')
 
-        fd.append('blancos_gobernador', String(this.resForm.blancos_gobernador || 0))
-        fd.append('nulos_gobernador', String(this.resForm.nulos_gobernador || 0))
-        fd.append('blancos_asambleista_distrito', String(this.resForm.blancos_asambleista_distrito || 0))
-        fd.append('nulos_asambleista_distrito', String(this.resForm.nulos_asambleista_distrito || 0))
-        fd.append('blancos_asambleista_poblacion', String(this.resForm.blancos_asambleista_poblacion || 0))
-        fd.append('nulos_asambleista_poblacion', String(this.resForm.nulos_asambleista_poblacion || 0))
         fd.append('blancos_concejal', String(this.resForm.blancos_concejal || 0))
         fd.append('nulos_concejal', String(this.resForm.nulos_concejal || 0))
+        fd.append('papeletas_no_utilizadas_concejal', String(this.resForm.papeletas_no_utilizadas_concejal || 0))
         fd.append('blancos_alcalde', String(this.resForm.blancos_alcalde || 0))
         fd.append('nulos_alcalde', String(this.resForm.nulos_alcalde || 0))
+        fd.append('papeletas_no_utilizadas_alcalde', String(this.resForm.papeletas_no_utilizadas_alcalde || 0))
 
         fd.append('votos', JSON.stringify(votos))
 

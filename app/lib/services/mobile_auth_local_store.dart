@@ -840,8 +840,10 @@ class MobileAuthLocalStore {
       'nulos_asambleista_poblacion': draft.nulosAsp,
       'blancos_concejal': draft.blancosConcejal,
       'nulos_concejal': draft.nulosConcejal,
+      'papeletas_no_utilizadas_concejal': draft.papeletasNoUtilizadasConcejal,
       'blancos_alcalde': draft.blancosAlcalde,
       'nulos_alcalde': draft.nulosAlcalde,
+      'papeletas_no_utilizadas_alcalde': draft.papeletasNoUtilizadasAlcalde,
       'votos': draft.votos
           .map(
             (v) => {
@@ -934,8 +936,12 @@ class MobileAuthLocalStore {
       nulosAsp: _asInt(payload['nulos_asambleista_poblacion']) ?? 0,
       blancosConcejal: _asInt(payload['blancos_concejal']) ?? 0,
       nulosConcejal: _asInt(payload['nulos_concejal']) ?? 0,
+      papeletasNoUtilizadasConcejal:
+          _asInt(payload['papeletas_no_utilizadas_concejal']) ?? 0,
       blancosAlcalde: _asInt(payload['blancos_alcalde']) ?? 0,
       nulosAlcalde: _asInt(payload['nulos_alcalde']) ?? 0,
+      papeletasNoUtilizadasAlcalde:
+          _asInt(payload['papeletas_no_utilizadas_alcalde']) ?? 0,
       votos: votos,
       fotos: fotos,
       syncStatus: (row['sync_status'] as String?) ?? votacionSyncLocal,
