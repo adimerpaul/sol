@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'socket_io' => [
+        'url' => env('URL_SOCKET_IO'),
+        'timeout' => env('SOCKET_IO_TIMEOUT', 2),
+    ],
+
 ];

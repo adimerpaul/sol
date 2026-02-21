@@ -632,6 +632,8 @@
 </template>
 
 <script>
+import { io } from 'socket.io-client'
+
 export default {
   name: 'AdminResultadosMesas',
   data () {
@@ -735,7 +737,9 @@ export default {
         foto6_url: null, foto7_url: null, foto8_url: null, foto9_url: null, foto10_url: null
       },
       dlgFotoPreview: false,
-      fotoPreviewSrc: null
+      fotoPreviewSrc: null,
+      socket: null,
+      socketRefreshTimer: null
     }
   },
 
@@ -850,9 +854,51 @@ export default {
   async mounted () {
     await this.loadOptions()
     this.refresh()
+    this.connectSocket()
+  },
+
+  beforeUnmount () {
+    const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
+    if (this.socketRefreshTimer) {
+      clearTimeout(this.socketRefreshTimer)
+      this.socketRefreshTimer = null
+    }
+    if (this.socket) {
+      this.socket.off(socketEvent)
+      this.socket.disconnect()
+      this.socket = null
+    }
   },
 
   methods: {
+    connectSocket () {
+      const socketUrl = import.meta.env.VITE_API_SOCKET
+      const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
+      if (!socketUrl) return
+
+      this.socket = io(socketUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true
+      })
+
+      this.socket.on(socketEvent, (evt) => {
+        this.onSocketVotacion(evt)
+      })
+    },
+
+    onSocketVotacion (evt) {
+      const data = typeof evt === 'string' ? { message: evt } : (evt || {})
+      const title = data.title || 'Nuevo dato registrado'
+      const caption = data.message || 'Se actualizó información de mesas'
+
+      this.$alert.info(title, caption)
+
+      if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
+      this.socketRefreshTimer = setTimeout(() => {
+        this.refresh()
+      }, 400)
+    },
+
     sumByKey (key) {
       let s = 0
       for (const k of Object.keys(this.votosMap || {})) {

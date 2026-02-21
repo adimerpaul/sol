@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SocketEmitter;
 use App\Models\Mesa;
 use App\Models\Partido;
 use App\Models\ResultadoMesa;
@@ -356,7 +357,7 @@ class SuperAdminMesasController extends Controller
             }
         }
 
-        return DB::transaction(function () use ($request, $data, $mesa, $votos) {
+        $socketPayload = DB::transaction(function () use ($request, $data, $mesa, $votos) {
             $res = ResultadoMesa::with('detalles')
                 ->firstOrCreate(
                     ['mesa_id' => $mesa->id],
@@ -447,8 +448,36 @@ class SuperAdminMesasController extends Controller
             }
             $mesa->save();
 
-            return response()->json(['message' => 'Resultado guardado']);
+            $actor = $request->user();
+            return [
+                'title' => 'Nuevo dato registrado',
+                'message' => trim(sprintf(
+                    '%s registró resultado en Mesa %s%s',
+                    $actor?->name ?: 'Usuario',
+                    $mesa->numero_mesa,
+                    $res->hora_apertura_mesa ? (' · Hora apertura: ' . $res->hora_apertura_mesa) : ''
+                )),
+                'kind' => 'resultado_admin',
+                'mesa_id' => $mesa->id,
+                'mesa_numero' => $mesa->numero_mesa,
+                'estado' => $mesa->estado,
+                'user_id' => $actor?->id,
+                'user_name' => $actor?->name,
+                'username' => $actor?->username,
+                'aviso_antes' => (bool) $res->aviso_antes,
+                'aviso_manana' => (bool) $res->aviso_manana,
+                'aviso_mediodia' => (bool) $res->aviso_mediodia,
+                'hora_apertura_mesa' => $res->hora_apertura_mesa,
+                'total_votos' => (int) ($res->total_votos ?? 0),
+                'total_validos' => (int) ($res->total_validos ?? 0),
+                'total_blancos' => (int) ($res->total_blancos ?? 0),
+                'total_nulos' => (int) ($res->total_nulos ?? 0),
+            ];
         });
+
+        SocketEmitter::votacion($socketPayload);
+
+        return response()->json(['message' => 'Resultado guardado']);
     }
 
     private function isHoraAperturaValida(?string $hora): bool

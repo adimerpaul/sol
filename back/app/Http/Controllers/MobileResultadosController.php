@@ -6,6 +6,7 @@ use App\Models\Mesa;
 use App\Models\Partido;
 use App\Models\ResultadoMesa;
 use App\Models\ResultadoMesaDetalle;
+use App\Services\SocketEmitter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -191,6 +192,36 @@ class MobileResultadosController extends Controller
                 $mesa->save();
             }
         });
+
+        $labels = [
+            'aviso_antes' => 'Estoy presente en mi mesa',
+            'aviso_manana' => 'Abrí la mesa',
+            'aviso_mediodia' => 'Tengo el acta en mi poder',
+        ];
+        $field = $data['field'];
+        $message = trim(sprintf(
+            '%s actualizó "%s" en %d mesa(s)%s',
+            $user->name ?? 'Usuario',
+            $labels[$field] ?? $field,
+            $mesas->count(),
+            (!empty($data['hora_apertura_mesa']) && $field === 'aviso_manana')
+                ? (' · Hora: ' . $data['hora_apertura_mesa'])
+                : ''
+        ));
+
+        SocketEmitter::votacion([
+            'title' => 'Nuevo dato registrado',
+            'message' => $message,
+            'kind' => 'asistencia',
+            'field' => $field,
+            'field_label' => $labels[$field] ?? $field,
+            'value' => (bool) $data['value'],
+            'hora_apertura_mesa' => $data['hora_apertura_mesa'] ?? null,
+            'updated_mesas' => $mesas->count(),
+            'user_id' => $user->id ?? null,
+            'user_name' => $user->name ?? null,
+            'username' => $user->username ?? null,
+        ]);
 
         return response()->json([
             'ok' => true,
@@ -445,6 +476,27 @@ class MobileResultadosController extends Controller
             $mesa->save();
         });
 
+        SocketEmitter::votacion([
+            'title' => 'Nuevo dato registrado',
+            'message' => trim(sprintf(
+                '%s registró votación en Mesa %s%s',
+                $user->name ?? 'Usuario',
+                $mesa->numero_mesa,
+                $finalizar ? ' · Finalizada' : ''
+            )),
+            'kind' => 'resultado_mobile',
+            'mesa_id' => $mesa->id,
+            'mesa_numero' => $mesa->numero_mesa,
+            'estado' => $finalizar ? 'FINALIZADA' : 'EN_PROCESO',
+            'finalizada' => $finalizar,
+            'user_id' => $user->id ?? null,
+            'user_name' => $user->name ?? null,
+            'username' => $user->username ?? null,
+            'total_validos' => array_sum($sum),
+            'total_blancos' => array_sum($blancos),
+            'total_nulos' => array_sum($nulos) + array_sum($pnu),
+        ]);
+
         return response()->json([
             'ok' => true,
             'mesa_id' => $mesa->id,
@@ -506,6 +558,23 @@ class MobileResultadosController extends Controller
                 );
             }
         });
+
+        SocketEmitter::votacion([
+            'title' => 'Nuevo dato sincronizado',
+            'message' => trim(sprintf(
+                '%s sincronizó datos offline en mesa %s',
+                $user->name ?? 'Usuario',
+                $data['mesa_id']
+            )),
+            'kind' => 'sync_offline',
+            'mesa_id' => (int) $data['mesa_id'],
+            'user_id' => $user->id ?? null,
+            'user_name' => $user->name ?? null,
+            'username' => $user->username ?? null,
+            'total_validos' => (int) ($data['payload']['total_validos'] ?? 0),
+            'total_blancos' => (int) ($data['payload']['total_blancos'] ?? 0),
+            'total_nulos' => (int) ($data['payload']['total_nulos'] ?? 0),
+        ]);
 
         return response()->json(['ok' => true]);
     }

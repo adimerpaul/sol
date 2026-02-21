@@ -17,6 +17,14 @@ require('dotenv').config();
 app.use(cors({
     origin: '*'
 }));
+app.use(express.json({ limit: '1mb' }));
+
+function emitEvent(eventName, payload) {
+    const event = (eventName || 'votacion').toString().trim() || 'votacion';
+    io.emit(event, payload ?? {});
+    return event;
+}
+
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
 });
@@ -26,8 +34,26 @@ app.get('/', (req, res) => {
 //     res.send('Mensaje enviado');
 // });
 app.get('/votacion', (req, res) => {
-    io.emit('votacion', 'Hola desde el servidor');
-    res.send('Mensaje enviado');
+    emitEvent('votacion', {
+        title: 'Nuevo dato registrado',
+        message: 'Evento manual de votacion',
+        kind: 'manual'
+    });
+    res.json({ ok: true, event: 'votacion' });
+});
+
+// app.get('/silSolicitud', (req, res) => {
+//     emitEvent('votacion', {
+//         title: 'Nuevo dato registrado',
+//         message: 'Evento legacy silSolicitud',
+//         kind: 'legacy'
+//     });
+//     res.json({ ok: true, event: 'votacion' });
+// });
+
+app.post('/emit', (req, res) => {
+    const event = emitEvent(req.body?.event, req.body?.payload ?? {});
+    res.json({ ok: true, event });
 });
 io.on('connection', (socket) => {
     // console.log('a user connected');
