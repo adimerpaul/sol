@@ -3,7 +3,7 @@
         "laravel-boost": {
             "command": "C:\\xampp8.2\\php\\php.exe",
             "args": [
-                "C:\\proyectos\\chicken\\back\\artisan",
+                "C:\\proyectos\\sol\\back\\artisan",
                 "boost:mcp"
             ]
         }
