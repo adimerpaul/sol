@@ -14,6 +14,7 @@ use App\Http\Controllers\AdminUserRecintoController;
 use App\Http\Controllers\ResultadoMesaController;
 use App\Http\Controllers\RecintoMapaController;
 use App\Http\Controllers\EleccionesDashboardController;
+use App\Http\Controllers\GraficosController;
 use App\Http\Controllers\AdminUserJerarquiaController;
 use App\Http\Controllers\AdminRecintoJefeMapaController;
 use App\Http\Controllers\SuperAdminMesasController;
@@ -71,6 +72,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('mapas/recintos/{recinto}', [RecintoMapaController::class, 'update']);
 
     Route::middleware('auth:sanctum')->get('/dashboard/elecciones/resumen', [EleccionesDashboardController::class, 'resumen']);
+    Route::middleware('auth:sanctum')->get('/dashboard/graficos', [GraficosController::class, 'index']);
 
     Route::get('admin/jerarquia/supervisores', [AdminUserJerarquiaController::class, 'supervisores']);
     Route::get('admin/jerarquia/jefes', [AdminUserJerarquiaController::class, 'jefes']);

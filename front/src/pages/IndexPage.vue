@@ -1,155 +1,87 @@
 <template>
-  <q-page class="q-pa-md bg-grey-3">
+  <q-page class="q-pa-md bg-grey-2">
     <q-card flat bordered class="bg-white">
-
-      <!-- HEADER -->
-      <q-card-section class="row items-center q-col-gutter-md">
+      <q-card-section class="row items-center">
         <div class="col">
-          <div class="text-h6 text-weight-bold">Dashboard Elecciones</div>
+          <div class="text-h6 text-weight-bold">Dashboard Graficos</div>
           <div class="text-caption text-grey-7">
-            Resumen en tiempo real • Totales por partido • Gráficos ApexCharts
+            Votos validos por partido y mesas faltantes en tiempo real
           </div>
         </div>
-
-        <div class="col-auto">
+        <div class="col-auto row items-center q-gutter-sm">
+          <q-chip outline color="primary">Validos: {{ votosValidosTotal }}</q-chip>
+          <q-chip outline color="orange">Mesas faltantes: {{ mesas.faltantes }}</q-chip>
           <q-btn
             color="primary"
             icon="refresh"
             label="Actualizar"
             no-caps
             :loading="loading"
-            @click="loadResumen"
+            @click="loadGraficos"
           />
         </div>
       </q-card-section>
 
       <q-separator />
 
-      <!-- FILTROS -->
-      <q-card-section class="q-pa-md">
-        <div class="row q-col-gutter-md items-end">
-          <div class="col-12 col-md-3">
-            <q-input v-model.number="filters.pais_id" dense outlined label="pais_id (opcional)" />
-          </div>
-          <div class="col-12 col-md-3">
-            <q-input v-model.number="filters.departamento_id" dense outlined label="departamento_id (opcional)" />
-          </div>
-          <div class="col-12 col-md-3">
-            <q-input v-model.number="filters.municipio_id" dense outlined label="municipio_id (opcional)" />
-          </div>
-          <div class="col-12 col-md-3">
-            <q-toggle v-model="filters.solo_realizado" label="Solo REALIZADO" />
-          </div>
-        </div>
-      </q-card-section>
-
-      <!-- STATS -->
       <q-card-section class="q-pa-md">
         <div class="row q-col-gutter-md">
-          <div class="col-12 col-md-3">
-            <q-card flat bordered class="q-pa-md">
-              <div class="text-caption text-grey-7">Votos totales</div>
-              <div class="text-h5 text-weight-bold">{{ stats.votos_totales }}</div>
-            </q-card>
-          </div>
-
-          <div class="col-12 col-md-3">
-            <q-card flat bordered class="q-pa-md">
-              <div class="text-caption text-grey-7">Mesas (REALIZADO + PENDIENTE)</div>
-              <div class="text-h5 text-weight-bold">{{ stats.mesas_total }}</div>
-            </q-card>
-          </div>
-
-          <div class="col-12 col-md-3">
-            <q-card flat bordered class="q-pa-md">
-              <div class="text-caption text-grey-7">Mesas REALIZADAS</div>
-              <div class="text-h5 text-weight-bold text-positive">{{ stats.mesas_realizadas }}</div>
-            </q-card>
-          </div>
-
-          <div class="col-12 col-md-3">
-            <q-card flat bordered class="q-pa-md">
-              <div class="text-caption text-grey-7">Mesas PENDIENTES</div>
-              <div class="text-h5 text-weight-bold text-warning">{{ stats.mesas_pendientes }}</div>
-            </q-card>
-          </div>
-        </div>
-
-        <q-banner v-if="ganador" class="q-mt-md bg-blue-1 text-blue-10" rounded>
-          <template v-slot:avatar>
-            <q-icon name="emoji_events" />
-          </template>
-
-          <div class="text-subtitle2">
-            Va ganando: <b>{{ ganador.sigla }}</b> — {{ ganador.nombre }}
-            <q-badge outline color="primary" class="q-ml-sm">{{ ganador.votos }} votos</q-badge>
-          </div>
-        </q-banner>
-      </q-card-section>
-
-      <q-separator />
-
-      <!-- CHARTS -->
-      <q-card-section class="q-pa-md">
-        <div class="row q-col-gutter-md">
-          <!-- PIE -->
-          <div class="col-12 col-lg-5">
+          <div class="col-12 col-lg-6">
             <q-card flat bordered class="q-pa-sm">
-              <div class="text-subtitle2 text-weight-bold q-pa-sm">Distribución de votos (Pie)</div>
+              <div class="text-subtitle2 text-weight-bold q-pa-sm">
+                Votos validos por partido (Torta)
+              </div>
               <apexchart
                 type="pie"
-                height="340"
-                :options="pieOptions"
-                :series="pieSeries"
+                height="320"
+                :options="pieValidosOptions"
+                :series="pieValidosSeries"
               />
             </q-card>
           </div>
 
-          <!-- BAR -->
-          <div class="col-12 col-lg-7">
+          <div class="col-12 col-lg-6">
             <q-card flat bordered class="q-pa-sm">
-              <div class="text-subtitle2 text-weight-bold q-pa-sm">Ranking por partido (Barras)</div>
+              <div class="text-subtitle2 text-weight-bold q-pa-sm">
+                Votos validos por partido (Histograma)
+              </div>
               <apexchart
                 type="bar"
-                height="340"
-                :options="barOptions"
-                :series="barSeries"
+                height="320"
+                :options="barValidosOptions"
+                :series="barValidosSeries"
+              />
+            </q-card>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <q-card flat bordered class="q-pa-sm">
+              <div class="text-subtitle2 text-weight-bold q-pa-sm">
+                Mesas: con resultado vs faltantes (Torta)
+              </div>
+              <apexchart
+                type="pie"
+                height="320"
+                :options="pieMesasOptions"
+                :series="pieMesasSeries"
+              />
+            </q-card>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <q-card flat bordered class="q-pa-sm">
+              <div class="text-subtitle2 text-weight-bold q-pa-sm">
+                Mesas: con resultado vs faltantes (Histograma)
+              </div>
+              <apexchart
+                type="bar"
+                height="320"
+                :options="barMesasOptions"
+                :series="barMesasSeries"
               />
             </q-card>
           </div>
         </div>
-
-        <!-- TABLA TOP -->
-        <q-card flat bordered class="q-mt-md">
-          <q-card-section class="row items-center">
-            <div class="text-subtitle2 text-weight-bold">Top partidos</div>
-            <q-space />
-            <q-badge outline color="grey-8">{{ ranking.length }} partidos</q-badge>
-          </q-card-section>
-
-          <q-separator />
-
-          <q-markup-table flat>
-            <thead>
-            <tr>
-              <th class="text-left">#</th>
-              <th class="text-left">Sigla</th>
-              <th class="text-left">Nombre</th>
-              <th class="text-right">Votos</th>
-              <th class="text-right">%</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="(r, i) in ranking" :key="r.id">
-              <td class="text-left">{{ i + 1 }}</td>
-              <td class="text-left"><b>{{ r.sigla }}</b></td>
-              <td class="text-left">{{ r.nombre }}</td>
-              <td class="text-right">{{ r.votos }}</td>
-              <td class="text-right">{{ porcentaje(r.votos) }}%</td>
-            </tr>
-            </tbody>
-          </q-markup-table>
-        </q-card>
       </q-card-section>
 
       <q-inner-loading :showing="loading">
@@ -160,101 +92,176 @@
 </template>
 
 <script>
+import { io } from 'socket.io-client'
+
+const FALLBACK_COLORS = [
+  '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#e53935',
+  '#00897b', '#6d4c41', '#3949ab', '#546e7a', '#7cb342'
+]
+
 export default {
   name: 'IndexPage',
 
   data () {
     return {
       loading: false,
-
-      filters: {
-        pais_id: null,
-        departamento_id: null,
-        municipio_id: null,
-        solo_realizado: true
+      ranking: [],
+      votosValidosTotal: 0,
+      mesas: {
+        total: 0,
+        con_resultado: 0,
+        faltantes: 0
       },
-
-      stats: {
-        votos_totales: 0,
-        mesas_total: 0,
-        mesas_realizadas: 0,
-        mesas_pendientes: 0
-      },
-
-      ganador: null,
-      ranking: []
+      socket: null,
+      socketRefreshTimer: null
     }
   },
 
   computed: {
-    pieSeries () {
-      return this.ranking.map(r => Number(r.votos || 0))
+    rankingColors () {
+      return this.ranking.map((r, i) => r.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length])
     },
 
-    pieOptions () {
+    pieValidosSeries () {
+      return this.ranking.map(r => Number(r.votos_validos || 0))
+    },
+    pieValidosOptions () {
       return {
-        labels: this.ranking.map(r => r.sigla),
+        labels: this.ranking.map(r => r.sigla || '-'),
+        colors: this.rankingColors,
         legend: { position: 'bottom' },
         dataLabels: { enabled: true }
       }
     },
 
-    barSeries () {
-      return [{ name: 'Votos', data: this.ranking.map(r => Number(r.votos || 0)) }]
+    barValidosSeries () {
+      return [{ name: 'Votos validos', data: this.ranking.map(r => Number(r.votos_validos || 0)) }]
     },
-
-    barOptions () {
+    barValidosOptions () {
       return {
         chart: { toolbar: { show: false } },
+        colors: ['#1e88e5'],
         plotOptions: {
           bar: {
-            horizontal: true,
-            borderRadius: 6
+            horizontal: false,
+            borderRadius: 5,
+            columnWidth: '55%'
           }
         },
-        xaxis: {
-          categories: this.ranking.map(r => `${r.sigla}`)
+        xaxis: { categories: this.ranking.map(r => r.sigla || '-') },
+        dataLabels: { enabled: true }
+      }
+    },
+
+    pieMesasSeries () {
+      return [
+        Number(this.mesas.con_resultado || 0),
+        Number(this.mesas.faltantes || 0)
+      ]
+    },
+    pieMesasOptions () {
+      return {
+        labels: ['Con resultado', 'Faltantes'],
+        colors: ['#43a047', '#fb8c00'],
+        legend: { position: 'bottom' },
+        dataLabels: { enabled: true }
+      }
+    },
+
+    barMesasSeries () {
+      return [{
+        name: 'Mesas',
+        data: [
+          Number(this.mesas.con_resultado || 0),
+          Number(this.mesas.faltantes || 0)
+        ]
+      }]
+    },
+    barMesasOptions () {
+      return {
+        chart: { toolbar: { show: false } },
+        colors: ['#546e7a'],
+        plotOptions: {
+          bar: {
+            horizontal: false,
+            borderRadius: 5,
+            columnWidth: '45%'
+          }
         },
+        xaxis: { categories: ['Con resultado', 'Faltantes'] },
         dataLabels: { enabled: true }
       }
     }
   },
 
   async mounted () {
-    // await this.loadResumen()
+    await this.loadGraficos()
+    this.connectSocket()
+  },
+
+  beforeUnmount () {
+    const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
+    if (this.socketRefreshTimer) {
+      clearTimeout(this.socketRefreshTimer)
+      this.socketRefreshTimer = null
+    }
+    if (this.socket) {
+      this.socket.off(socketEvent)
+      this.socket.disconnect()
+      this.socket = null
+    }
   },
 
   methods: {
-    porcentaje (votos) {
-      const total = Number(this.stats.votos_totales || 0)
-      if (!total) return '0.00'
-      return ((Number(votos || 0) * 100) / total).toFixed(2)
+    connectSocket () {
+      const socketUrl = import.meta.env.VITE_API_SOCKET
+      const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
+      if (!socketUrl) return
+
+      this.socket = io(socketUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true
+      })
+
+      this.socket.on(socketEvent, (evt) => {
+        this.onSocketVotacion(evt)
+      })
     },
 
-    async loadResumen () {
+    onSocketVotacion (evt) {
+      const data = typeof evt === 'string' ? { message: evt } : (evt || {})
+      const title = data.title || 'Nuevo dato registrado'
+      const caption = data.message || 'Dashboard actualizado'
+
+      if (this.$alert?.info) {
+        this.$alert.info(title, caption)
+      } else {
+        this.$q.notify({ type: 'info', message: title, caption, position: 'top' })
+      }
+
+      if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
+      this.socketRefreshTimer = setTimeout(() => {
+        this.loadGraficos()
+      }, 400)
+    },
+
+    async loadGraficos () {
       this.loading = true
       try {
-        const params = {
-          ...this.filters
-        }
-
-        // limpia null para no mandar basura
-        Object.keys(params).forEach(k => {
-          if (params[k] === null || params[k] === '' || typeof params[k] === 'undefined') {
-            delete params[k]
-          }
-        })
-
-        const res = await this.$axios.get('dashboard/elecciones/resumen', { params })
+        const res = await this.$axios.get('dashboard/graficos')
         const data = res.data || {}
 
-        this.stats = data.stats || this.stats
-        this.ganador = data.ganador || null
-        this.ranking = Array.isArray(data.ranking) ? data.ranking : []
+        this.votosValidosTotal = Number(data.votos_validos_total || 0)
+        this.ranking = Array.isArray(data.ranking_validos) ? data.ranking_validos : []
+        this.mesas = {
+          total: Number(data?.mesas?.total || 0),
+          con_resultado: Number(data?.mesas?.con_resultado || 0),
+          faltantes: Number(data?.mesas?.faltantes || 0)
+        }
       } catch (e) {
         this.$q.notify({
           type: 'negative',
-          message: e?.response?.data?.message || 'No se pudo cargar el dashboard'
+          message: e?.response?.data?.message || 'No se pudo cargar graficos'
         })
       } finally {
         this.loading = false
