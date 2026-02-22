@@ -11,10 +11,31 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Storage;
 
-class UserController extends Controller{
-    function permissions(){
+class UserController extends Controller
+{
+    private function resolvedPermissions(User $user)
+    {
+        return $user->getAllPermissions()
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+            ])
+            ->values();
+    }
+
+    private function userPayload(User $user): array
+    {
+        $data = $user->toArray();
+        $data['permissions'] = $this->resolvedPermissions($user);
+
+        return $data;
+    }
+
+    function permissions()
+    {
         return Permission::all();
     }
+
     public function updateAvatar(Request $request, $userId)
     {
         $user = User::find($userId);
@@ -27,13 +48,11 @@ class UserController extends Controller{
             $filename = time() . '.' . $file->getClientOriginalExtension();
             $path = public_path('images/' . $filename);
 
-            // Crear instancia del gestor de imágenes
-            $manager = new ImageManager(new Driver()); // O new Imagick\Driver()
+            $manager = new ImageManager(new Driver());
 
-            // Redimensionar y comprimir
             $manager->read($file->getPathname())
-                ->resize(300, 300) // o no pongas resize si no quieres cambiar tamaño
-                ->toJpeg(70)       // calidad 70%
+                ->resize(300, 300)
+                ->toJpeg(70)
                 ->save($path);
 
             $user->avatar = $filename;
@@ -44,31 +63,42 @@ class UserController extends Controller{
 
         return response()->json(['message' => 'No se ha enviado un archivo'], 400);
     }
-    function login(Request $request){
+
+    function login(Request $request)
+    {
         $credentials = $request->only('username', 'password');
-        $user = User::where('username', $credentials['username'])->with('permissions:id,name')->first();
+        $user = User::where('username', $credentials['username'])->first();
+
         if (!$user || !password_verify($credentials['password'], $user->password)) {
             return response()->json([
-                'message' => 'Usuario o contraseña incorrectos',
+                'message' => 'Usuario o contrasena incorrectos',
             ], 401);
         }
+
         $token = $user->createToken('auth_token')->plainTextToken;
+
         return response()->json([
             'token' => $token,
-            'user' => $user,
+            'user' => $this->userPayload($user),
         ]);
     }
-    function logout(Request $request){
+
+    function logout(Request $request)
+    {
         $request->user()->currentAccessToken()->delete();
+
         return response()->json([
             'message' => 'Token eliminado',
         ]);
     }
-    function me(Request $request){
+
+    function me(Request $request)
+    {
         $user = $request->user();
-        $user->load('permissions:id,name');
-        return response()->json($user);
+
+        return response()->json($this->userPayload($user));
     }
+
     public function index()
     {
         return User::query()
@@ -77,25 +107,32 @@ class UserController extends Controller{
             ->orderBy('id', 'desc')
             ->get()
             ->map(function ($u) {
-                $u->ci_anverso_url   = $u->ci_anverso ? Storage::url($u->ci_anverso) : null;
-                $u->ci_reverso_url   = $u->ci_reverso ? Storage::url($u->ci_reverso) : null;
-                $u->foto_personal_url= $u->foto_personal ? Storage::url($u->foto_personal) : null;
+                $u->ci_anverso_url = $u->ci_anverso ? Storage::url($u->ci_anverso) : null;
+                $u->ci_reverso_url = $u->ci_reverso ? Storage::url($u->ci_reverso) : null;
+                $u->foto_personal_url = $u->foto_personal ? Storage::url($u->foto_personal) : null;
+                $u->permissions = $this->resolvedPermissions($u);
+
                 return $u;
             });
     }
+
 //    function update(Request $request, $id){
 //        $user = User::find($id);
 //        $user->update($request->except('password'));
 //        error_log('User' . json_encode($user));
 //        return $user;
 //    }
-    function updatePassword(Request $request, $id){
+
+    function updatePassword(Request $request, $id)
+    {
         $user = User::find($id);
         $user->update([
             'password' => bcrypt($request->password),
         ]);
+
         return $user;
     }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -114,9 +151,7 @@ class UserController extends Controller{
         ]);
 
         $data['password'] = bcrypt($data['password']);
-
-        // opcional: compatibilidad con tu "name" viejo
-        $data['name'] = trim($data['nombres'].' '.$data['apellido_paterno'].' '.$data['apellido_materno']);
+        $data['name'] = trim($data['nombres'] . ' ' . $data['apellido_paterno'] . ' ' . $data['apellido_materno']);
 
         $user = User::create($data);
         $user->load('permissions:id,name');
@@ -132,38 +167,38 @@ class UserController extends Controller{
             'nombres' => 'required|string|max:120',
             'apellido_paterno' => 'nullable|string|max:120',
             'apellido_materno' => 'required|string|max:120',
-            'ci' => 'required|string|max:30|unique:users,ci,'.$user->id,
+            'ci' => 'required|string|max:30|unique:users,ci,' . $user->id,
             'fecha_nacimiento' => 'required|date',
             'bloque' => 'required|string|max:180',
             'celular' => 'nullable|string|max:30',
 
-            'username' => 'required|string|max:120|unique:users,username,'.$user->id,
+            'username' => 'required|string|max:120|unique:users,username,' . $user->id,
             'role' => 'required|string|max:60',
             'email' => 'nullable|max:180',
         ]);
 
-        $data['name'] = trim($data['nombres'].' '.$data['apellido_paterno'].' '.$data['apellido_materno']);
+        $data['name'] = trim($data['nombres'] . ' ' . $data['apellido_paterno'] . ' ' . $data['apellido_materno']);
 
         $user->update($data);
         $user->load('permissions:id,name');
 
         return response()->json($user);
     }
+
     public function updateFiles(Request $request, $userId)
     {
         $user = User::findOrFail($userId);
 
         $request->validate([
-            'ci_anverso'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
-            'ci_reverso'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
-            'foto_personal'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
+            'ci_anverso' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
+            'ci_reverso' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
+            'foto_personal' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
 
         $dir = "usuarios/user_{$user->id}";
 
-        foreach (['ci_anverso','ci_reverso','foto_personal'] as $k) {
+        foreach (['ci_anverso', 'ci_reverso', 'foto_personal'] as $k) {
             if ($request->hasFile($k)) {
-                // borrar anterior
                 if (!empty($user->{$k})) {
                     Storage::disk('public')->delete($user->{$k});
                 }
@@ -181,13 +216,16 @@ class UserController extends Controller{
             'foto_personal_url' => $user->foto_personal ? Storage::url($user->foto_personal) : null,
         ]);
     }
-    function destroy($id){
+
+    function destroy($id)
+    {
         return User::destroy($id);
     }
+
     public function getPermissions($userId)
     {
         $user = User::findOrFail($userId);
-        // devuelve IDs de permisos del usuario
+
         return $user->permissions()->pluck('id');
     }
 
@@ -204,7 +242,7 @@ class UserController extends Controller{
 
         return response()->json([
             'message' => 'Permisos actualizados',
-            'permissions' => $user->permissions()->pluck('name'),
+            'permissions' => $this->resolvedPermissions($user),
         ]);
     }
 }

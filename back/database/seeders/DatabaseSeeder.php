@@ -170,6 +170,7 @@ class DatabaseSeeder extends Seeder
         // =========================
         $this->call([
             PartidoSeeder::class,
+            MenuPermissionsSeeder::class,
         ]);
     }
 }

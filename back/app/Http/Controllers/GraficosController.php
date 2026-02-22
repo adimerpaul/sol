@@ -15,6 +15,8 @@ class GraficosController extends Controller
                 $join->on('d.partido_id', '=', 'p.id')
                     ->whereNull('d.deleted_at');
             })
+//            solo de orruo
+//                ->where('p.departamento_id', 9)
             ->whereNull('p.deleted_at')
             ->groupBy('p.id', 'p.sigla', 'p.nombre', 'p.color')
             ->selectRaw('

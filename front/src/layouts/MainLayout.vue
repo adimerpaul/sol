@@ -1,6 +1,5 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <!-- HEADER -->
     <q-header class="bg-white text-black" bordered>
       <q-toolbar>
         <q-btn
@@ -76,7 +75,6 @@
       </q-toolbar>
     </q-header>
 
-    <!-- DRAWER -->
     <q-drawer
       v-model="leftDrawerOpen"
       bordered
@@ -95,11 +93,19 @@
         </q-item-label>
 
         <q-item-label header class="q-px-md text-grey-3 q-mt-sm">
-          Módulos del Sistema
+          Modulos del Sistema
         </q-item-label>
 
-        <!-- Dashboard -->
-        <q-item dense to="/" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+        <q-item
+          dense
+          to="/"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.DASHBOARD)"
+        >
           <q-item-section avatar>
             <q-icon name="dashboard" class="text-white"/>
           </q-item-section>
@@ -108,8 +114,16 @@
           </q-item-section>
         </q-item>
 
-        <!-- Recintos -->
-        <q-item dense to="/recintos" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+        <q-item
+          dense
+          to="/recintos"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.RECINTOS)"
+        >
           <q-item-section avatar>
             <q-icon name="location_on" class="text-white"/>
           </q-item-section>
@@ -117,8 +131,17 @@
             <q-item-label class="text-white">Recintos</q-item-label>
           </q-item-section>
         </q-item>
-<!--        { path: 'admin-recintos-mapa', component: () => import('pages/geo/AdminRecintosMapa.vue'), meta: { requiresAuth: true } }-->
-        <q-item dense to="/admin-recintos-mapa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+
+        <q-item
+          dense
+          to="/admin-recintos-mapa"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.RECINTOS_MAPA)"
+        >
           <q-item-section avatar>
             <q-icon name="map" class="text-white"/>
           </q-item-section>
@@ -127,8 +150,6 @@
           </q-item-section>
         </q-item>
 
-        <!-- Usuarios -->
-<!--        v-if="canPermission('Usuarios')"-->
         <q-item
           dense
           to="/usuarios"
@@ -137,7 +158,7 @@
           class="menu-item"
           active-class="menu-active"
           v-close-popup
-
+          v-if="canPermission(PERM.DELEGADOS_MESA)"
         >
           <q-item-section avatar>
             <q-icon name="people" class="text-white"/>
@@ -146,8 +167,17 @@
             <q-item-label class="text-white">Delegados de Mesa</q-item-label>
           </q-item-section>
         </q-item>
-<!--        partidos-->
-        <q-item dense to="/partidos" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+
+        <q-item
+          dense
+          to="/partidos"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.PARTIDOS)"
+        >
           <q-item-section avatar>
             <q-icon name="how_to_reg" class="text-white"/>
           </q-item-section>
@@ -155,8 +185,17 @@
             <q-item-label class="text-white">Partidos</q-item-label>
           </q-item-section>
         </q-item>
-<!--        { path: 'admin-user-recintos', component: () => import('pages/usuarios/AdminUserRecintos.vue'), meta: { requiresAuth: true } }-->
-        <q-item dense to="/admin-user-recintos" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+
+        <q-item
+          dense
+          to="/admin-user-recintos"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.ASIGNAR_RECINTOS)"
+        >
           <q-item-section avatar>
             <q-icon name="admin_panel_settings" class="text-white"/>
           </q-item-section>
@@ -164,15 +203,35 @@
             <q-item-label class="text-white">Asignar Recintos</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item dense to="/admin-jerarquia-usuarios" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+
+        <q-item
+          dense
+          to="/admin-jerarquia-usuarios"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.JERARQUIA_USUARIOS)"
+        >
           <q-item-section avatar>
             <q-icon name="account_tree" class="text-white"/>
           </q-item-section>
           <q-item-section>
-            <q-item-label class="text-white">Jerarquía Usuarios</q-item-label>
+            <q-item-label class="text-white">Jerarquia Usuarios</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item dense to="/admin-recinto-jefe-mapa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+
+        <q-item
+          dense
+          to="/admin-recinto-jefe-mapa"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.MAPA_ASIGNAR_JEFES)"
+        >
           <q-item-section avatar>
             <q-icon name="pin_drop" class="text-white"/>
           </q-item-section>
@@ -180,6 +239,7 @@
             <q-item-label class="text-white">Mapa Asignar Jefes</q-item-label>
           </q-item-section>
         </q-item>
+
         <q-item
           dense
           to="/admin-resultados-mesas"
@@ -188,7 +248,7 @@
           class="menu-item"
           active-class="menu-active"
           v-close-popup
-          v-if="canPermission('SuperAdmin Mesas') || ($store.user?.role === 'Administrador')"
+          v-if="canPermission(PERM.SUPERADMIN_MESAS)"
         >
           <q-item-section avatar>
             <q-icon name="table_view" class="text-white"/>
@@ -198,52 +258,12 @@
           </q-item-section>
         </q-item>
 
-        <!--        { path: 'resultados-mesa', component: () => import('pages/resultados/ResultadosMesa.vue'), meta: { requiresAuth: true } },-->
-<!--        <q-item dense to="/resultados-mesa" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
-<!--          <q-item-section avatar>-->
-<!--            <q-icon name="assignment_turned_in" class="text-white"/>-->
-<!--          </q-item-section>-->
-<!--          <q-item-section>-->
-<!--            <q-item-label class="text-white">Resultados por Mesa</q-item-label>-->
-<!--          </q-item-section>-->
-<!--        </q-item>-->
-
-<!--        &lt;!&ndash; Resultados &ndash;&gt;-->
-<!--        <q-item dense to="/resultados" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
-<!--          <q-item-section avatar>-->
-<!--            <q-icon name="how_to_vote" class="text-white"/>-->
-<!--          </q-item-section>-->
-<!--          <q-item-section>-->
-<!--            <q-item-label class="text-white">Resultados</q-item-label>-->
-<!--          </q-item-section>-->
-<!--        </q-item>-->
-
-<!--        &lt;!&ndash; Reportes &ndash;&gt;-->
-<!--        <q-item dense to="/reportes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
-<!--          <q-item-section avatar>-->
-<!--            <q-icon name="summarize" class="text-white"/>-->
-<!--          </q-item-section>-->
-<!--          <q-item-section>-->
-<!--            <q-item-label class="text-white">Reportes</q-item-label>-->
-<!--          </q-item-section>-->
-<!--        </q-item>-->
-
-<!--        &lt;!&ndash; Mesas faltantes &ndash;&gt;-->
-<!--        <q-item dense to="/mesas-faltantes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
-<!--          <q-item-section avatar>-->
-<!--            <q-icon name="warning_amber" class="text-white"/>-->
-<!--          </q-item-section>-->
-<!--          <q-item-section>-->
-<!--            <q-item-label class="text-white">Mesas faltantes</q-item-label>-->
-<!--          </q-item-section>-->
-<!--        </q-item>-->
-
         <div class="q-pa-md">
           <div class="text-white-7 text-caption">
             Resultados v{{ $version }}
           </div>
           <div class="text-white-7 text-caption">
-            © {{ new Date().getFullYear() }} Resultados · Electorales
+            @ {{ new Date().getFullYear() }} Resultados  Electorales
           </div>
         </div>
 
@@ -258,7 +278,6 @@
       </q-list>
     </q-drawer>
 
-    <!-- PAGE -->
     <q-page-container class="bg-grey-2">
       <router-view />
     </q-page-container>
@@ -272,6 +291,18 @@ import { useCounterStore } from 'stores/example-store'
 const { proxy } = getCurrentInstance()
 useCounterStore()
 
+const PERM = {
+  DASHBOARD: 'Dashboard',
+  RECINTOS: 'Recintos',
+  RECINTOS_MAPA: 'Recintos Mapa',
+  DELEGADOS_MESA: 'Delegados de Mesa',
+  PARTIDOS: 'Partidos',
+  ASIGNAR_RECINTOS: 'Asignar Recintos',
+  JERARQUIA_USUARIOS: 'Jerarquia Usuarios',
+  MAPA_ASIGNAR_JEFES: 'Mapa Asignar Jefes',
+  SUPERADMIN_MESAS: 'SuperAdmin Mesas'
+}
+
 const leftDrawerOpen = ref(false)
 
 function toggleLeftDrawer () {
@@ -283,7 +314,7 @@ function canPermission (permission) {
 }
 
 function logout () {
-  proxy.$alert.dialog('¿Desea salir del sistema?')
+  proxy.$alert.dialog('�Desea salir del sistema?')
     .onOk(() => {
       proxy.$axios.post('/logout')
         .then(() => {
@@ -293,7 +324,7 @@ function logout () {
           localStorage.removeItem('tokenResultados')
           proxy.$router.push('/login')
         })
-        .catch(() => proxy.$alert.error('Error al cerrar sesión. Intente nuevamente.'))
+        .catch(() => proxy.$alert.error('Error al cerrar sesion. Intente nuevamente.'))
     })
 }
 </script>
@@ -304,6 +335,7 @@ function logout () {
   margin: 4px 8px;
   padding: 4px 6px;
 }
+
 .menu-active {
   background: rgba(255, 255, 255, 0.15);
   color: #fff !important;
