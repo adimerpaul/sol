@@ -13,6 +13,29 @@ use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
+    private function makeUniqueUsername(string $base, ?int $ignoreUserId = null): string
+    {
+        $base = trim($base);
+        if ($base === '') {
+            $base = 'user';
+        }
+
+        $candidate = $base;
+        $i = 1;
+
+        while (true) {
+            $query = User::query()->where('username', $candidate);
+            if ($ignoreUserId) {
+                $query->where('id', '!=', $ignoreUserId);
+            }
+            if (!$query->exists()) {
+                return $candidate;
+            }
+            $candidate = $base . '_' . $i;
+            $i++;
+        }
+    }
+
     private function resolvedPermissions(User $user)
     {
         return $user->getAllPermissions()
@@ -66,12 +89,19 @@ class UserController extends Controller
 
     function login(Request $request)
     {
-        $credentials = $request->only('username', 'password');
-        $user = User::where('username', $credentials['username'])->first();
+        $data = $request->validate([
+            'ci' => 'required|string|max:30',
+            'fecha_nacimiento' => 'required|date',
+        ]);
 
-        if (!$user || !password_verify($credentials['password'], $user->password)) {
+        $user = User::query()
+            ->where('ci', $data['ci'])
+            ->whereDate('fecha_nacimiento', $data['fecha_nacimiento'])
+            ->first();
+
+        if (!$user) {
             return response()->json([
-                'message' => 'Usuario o contrasena incorrectos',
+                'message' => 'CI o fecha de nacimiento incorrectos',
             ], 401);
         }
 
@@ -144,13 +174,15 @@ class UserController extends Controller
             'bloque' => 'required|string|max:180',
             'celular' => 'nullable|string|max:30',
 
-            'username' => 'required|string|max:120|unique:users,username',
-            'password' => 'required|string|min:4',
+            'username' => 'nullable|string|max:120|unique:users,username',
+            'password' => 'nullable|string|min:4',
             'role' => 'required|string|max:60',
             'email' => 'nullable|max:180',
         ]);
 
-        $data['password'] = bcrypt($data['password']);
+        $usernameBase = $data['username'] ?? $data['ci'];
+        $data['username'] = $this->makeUniqueUsername((string) $usernameBase);
+        $data['password'] = bcrypt($data['password'] ?? str()->random(12));
         $data['name'] = trim($data['nombres'] . ' ' . $data['apellido_paterno'] . ' ' . $data['apellido_materno']);
 
         $user = User::create($data);
@@ -172,10 +204,14 @@ class UserController extends Controller
             'bloque' => 'required|string|max:180',
             'celular' => 'nullable|string|max:30',
 
-            'username' => 'required|string|max:120|unique:users,username,' . $user->id,
+            'username' => 'nullable|string|max:120|unique:users,username,' . $user->id,
             'role' => 'required|string|max:60',
             'email' => 'nullable|max:180',
         ]);
+
+        if (empty($data['username'])) {
+            $data['username'] = $this->makeUniqueUsername((string) ($data['ci'] ?? 'user'), $user->id);
+        }
 
         $data['name'] = trim($data['nombres'] . ' ' . $data['apellido_paterno'] . ' ' . $data['apellido_materno']);
 

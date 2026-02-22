@@ -49,12 +49,6 @@
                 <q-item-section avatar><q-icon name="delete"/></q-item-section>
                 <q-item-section><q-item-label>Eliminar</q-item-label></q-item-section>
               </q-item>
-
-              <q-item clickable @click="userEditPassword(props.row)" v-close-popup>
-                <q-item-section avatar><q-icon name="lock_reset"/></q-item-section>
-                <q-item-section><q-item-label>Cambiar contraseña</q-item-label></q-item-section>
-              </q-item>
-
               <q-item clickable @click="cambiarAvatar(props.row)" v-close-popup>
                 <q-item-section avatar><q-icon name="image"/></q-item-section>
                 <q-item-section><q-item-label>Cambiar avatar</q-item-label></q-item-section>
@@ -193,16 +187,6 @@
                   :rules="[v => !!v || 'Campo requerido']"
                 />
               </div>
-
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model="user.username"
-                  label="Usuario *"
-                  dense outlined
-                  :rules="[v => !!v || 'Campo requerido']"
-                />
-              </div>
-
               <div class="col-12 col-md-4">
                 <q-input v-model="user.celular" label="Celular" dense outlined />
               </div>
@@ -214,16 +198,6 @@
                   dense outlined
                   :options="roles"
                   :rules="[v => !!v || 'Campo requerido']"
-                />
-              </div>
-
-              <div class="col-12 col-md-6" v-if="!user.id">
-                <q-input
-                  v-model="user.password"
-                  label="Contraseña *"
-                  dense outlined
-                  :rules="[v => !!v || 'Campo requerido']"
-                  type="password"
                 />
               </div>
             </div>
@@ -325,7 +299,7 @@
     <q-dialog v-model="dialogPermisos" persistent>
       <q-card style="min-width: 420px">
         <q-card-section class="q-pb-none row items-center text-bold">
-          Permisos de {{ user.username }}
+          Permisos de {{ user.nombres || user.name || user.ci }}
           <q-space />
           <q-btn icon="close" flat round dense @click="dialogPermisos = false" />
         </q-card-section>
@@ -383,7 +357,6 @@ export default {
         { name: 'ci', label: 'CI', align: 'left', field: 'ci' },
         { name: 'fecha_nacimiento', label: 'Nacimiento', align: 'left', field: 'fecha_nacimiento' },
         { name: 'bloque', label: 'Bloque', align: 'left', field: 'bloque' },
-        { name: 'username', label: 'Usuario', align: 'left', field: 'username' },
         { name: 'avatar', label: 'Avatar', align: 'left', field: row => row.avatar },
         { name: 'role', label: 'Rol', align: 'left', field: 'role' },
         { name: 'ci_files', label: 'Docs', align: 'left', field: row => row.id },
@@ -431,9 +404,7 @@ export default {
         ci: '',
         fecha_nacimiento: '',
         bloque: '',
-        username: '',
         celular: '',
-        password: '',
         role: 'Supervisor',
       }
       this.actionUser = 'Nuevo'
@@ -519,19 +490,6 @@ export default {
             })
             .catch(err => this.$alert.error(err.response?.data?.message || 'Error'))
             .finally(() => { this.loading = false })
-        })
-    },
-
-    userEditPassword(user) {
-      this.user = { ...user }
-      this.$alert.dialogPrompt('Nueva contraseña', 'Ingrese la nueva contraseña', 'password')
-        .onOk(password => {
-          this.$axios.put('updatePassword/' + user.id, { password })
-            .then(() => {
-              this.usersGet()
-              this.$alert.success('Contraseña actualizada de ' + user.username)
-            })
-            .catch(err => this.$alert.error(err.response?.data?.message || 'Error'))
         })
     },
 

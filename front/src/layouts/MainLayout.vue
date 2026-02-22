@@ -314,7 +314,7 @@ function canPermission (permission) {
 }
 
 function logout () {
-  proxy.$alert.dialog('�Desea salir del sistema?')
+  proxy.$alert.dialog('Desea salir del sistema?')
     .onOk(() => {
       proxy.$axios.post('/logout')
         .then(() => {
