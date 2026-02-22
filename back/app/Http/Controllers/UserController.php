@@ -62,8 +62,10 @@ class UserController extends Controller
 
     private function userPayload(User $user): array
     {
+        $user->loadMissing('recinto:id,nombre');
         $data = $user->toArray();
         $data['permissions'] = $this->resolvedPermissions($user);
+        $data['recinto_nombre'] = $user->recinto?->nombre;
 
         return $data;
     }
@@ -157,7 +159,7 @@ class UserController extends Controller
         }
 
         return $q
-            ->with('permissions:id,name')
+            ->with(['permissions:id,name', 'recinto:id,nombre'])
             ->orderBy('id', 'desc')
             ->get()
             ->map(function ($u) {
@@ -165,6 +167,7 @@ class UserController extends Controller
                 $u->ci_reverso_url = $u->ci_reverso ? Storage::url($u->ci_reverso) : null;
                 $u->foto_personal_url = $u->foto_personal ? Storage::url($u->foto_personal) : null;
                 $u->permissions = $this->resolvedPermissions($u);
+                $u->recinto_nombre = $u->recinto?->nombre;
 
                 return $u;
             });
@@ -207,6 +210,7 @@ class UserController extends Controller
             'fecha_nacimiento' => 'required|date',
             'bloque' => 'required|string|max:180',
             'celular' => 'nullable|string|max:30',
+            'recinto_id' => 'nullable|integer|exists:recintos,id',
 
             'username' => 'nullable|string|max:120|unique:users,username',
             'password' => 'nullable|string|min:4',
@@ -250,6 +254,7 @@ class UserController extends Controller
             'fecha_nacimiento' => 'required|date',
             'bloque' => 'required|string|max:180',
             'celular' => 'nullable|string|max:30',
+            'recinto_id' => 'nullable|integer|exists:recintos,id',
 
             'username' => 'nullable|string|max:120|unique:users,username,' . $user->id,
             'role' => 'required|string|max:60',

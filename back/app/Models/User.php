@@ -23,6 +23,7 @@ class User extends Authenticatable implements Auditable
      */
     protected $fillable = [
         'created_by',
+        'recinto_id',
         'nombres',
         'apellido_paterno',
         'apellido_materno',
@@ -126,6 +127,11 @@ class User extends Authenticatable implements Auditable
             'jefe_id',
             'recinto_id'
         );
+    }
+
+    public function recinto()
+    {
+        return $this->belongsTo(Recinto::class, 'recinto_id');
     }
 
     public function creator()

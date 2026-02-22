@@ -200,6 +200,25 @@
                   :rules="[v => !!v || 'Campo requerido']"
                 />
               </div>
+
+              <div class="col-12 col-md-4">
+                <q-select
+                  v-model="user.recinto_id"
+                  label="Recinto (ID)"
+                  dense
+                  outlined
+                  use-input
+                  clearable
+                  map-options
+                  emit-value
+                  option-label="label"
+                  option-value="value"
+                  :options="recintoOptions"
+                  :loading="loadingRecintos"
+                  input-debounce="300"
+                  @filter="filterRecintos"
+                />
+              </div>
             </div>
 
             <q-separator class="q-my-md" />
@@ -340,6 +359,8 @@ export default {
       actionUser: '',
       filter: '',
       roles: ['Administrador', 'Supervisor', 'Jefe de Recinto', 'Delegado de Mesa'],
+      recintoOptions: [],
+      loadingRecintos: false,
 
       // archivos nuevos (temporal)
       files: {
@@ -357,6 +378,7 @@ export default {
         { name: 'ci', label: 'CI', align: 'left', field: 'ci' },
         { name: 'fecha_nacimiento', label: 'Nacimiento', align: 'left', field: 'fecha_nacimiento' },
         { name: 'bloque', label: 'Bloque', align: 'left', field: 'bloque' },
+        { name: 'recinto_nombre', label: 'Recinto', align: 'left', field: row => row.recinto_nombre || row.recinto?.nombre || '-' },
         { name: 'avatar', label: 'Avatar', align: 'left', field: row => row.avatar },
         { name: 'role', label: 'Rol', align: 'left', field: 'role' },
         { name: 'ci_files', label: 'Docs', align: 'left', field: row => row.id },
@@ -413,16 +435,20 @@ export default {
         bloque: '',
         celular: '',
         role: 'Supervisor',
+        recinto_id: null,
       }
       this.actionUser = 'Nuevo'
       this.files = { ci_anverso: null, ci_reverso: null, foto_personal: null }
+      this.recintosGet()
       this.userDialog = true
     },
 
     userEdit(row) {
-      this.user = { ...row }
+      this.user = { ...row, recinto_id: row.recinto_id ?? null }
       this.actionUser = 'Editar'
       this.files = { ci_anverso: null, ci_reverso: null, foto_personal: null }
+      this.ensureSelectedRecintoOption()
+      this.recintosGet()
       this.userDialog = true
     },
 
@@ -433,6 +459,50 @@ export default {
         .then(res => { this.users = res.data })
         .catch(err => { this.$alert.error(err.response?.data?.message || 'Error') })
         .finally(() => { this.loading = false })
+    },
+
+    ensureSelectedRecintoOption () {
+      const recintoId = this.user?.recinto_id
+      if (!recintoId) return
+
+      const exists = this.recintoOptions.some(opt => opt.value === recintoId)
+      if (exists) return
+
+      const labelName = this.user?.recinto_nombre || this.user?.recinto?.nombre || `ID ${recintoId}`
+      this.recintoOptions = [
+        ...this.recintoOptions,
+        { label: `${labelName} (ID: ${recintoId})`, value: recintoId }
+      ]
+    },
+
+    async recintosGet (search = '') {
+      this.loadingRecintos = true
+      try {
+        const res = await this.$axios.get('recintos', {
+          params: {
+            per_page: 30,
+            search: search || undefined
+          }
+        })
+
+        const rows = Array.isArray(res?.data?.data) ? res.data.data : []
+        this.recintoOptions = rows.map(r => ({
+          label: `${r.nombre} (ID: ${r.id})`,
+          value: r.id
+        }))
+
+        this.ensureSelectedRecintoOption()
+      } catch (err) {
+        this.$alert.error(err.response?.data?.message || 'Error cargando recintos')
+      } finally {
+        this.loadingRecintos = false
+      }
+    },
+
+    filterRecintos (val, update) {
+      update(async () => {
+        await this.recintosGet(val)
+      })
     },
 
     async uploadFilesIfNeeded (userId) {
