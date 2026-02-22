@@ -54,7 +54,7 @@
                 <q-item-section><q-item-label>Cambiar avatar</q-item-label></q-item-section>
               </q-item>
 
-              <q-item clickable @click="permisosShow(props.row)" v-close-popup>
+              <q-item clickable @click="permisosShow(props.row)" v-close-popup v-if="$store?.user?.role === 'Administrador'">
                 <q-item-section avatar><q-icon name="lock"/></q-item-section>
                 <q-item-section><q-item-label>Permisos</q-item-label></q-item-section>
               </q-item>
@@ -196,7 +196,7 @@
                   v-model="user.role"
                   label="Rol *"
                   dense outlined
-                  :options="roles"
+                  :options="availableRoles"
                   :rules="[v => !!v || 'Campo requerido']"
                 />
               </div>
@@ -383,6 +383,13 @@ export default {
   },
 
   computed: {
+    availableRoles() {
+      const role = this.$store?.user?.role
+      if (role === 'Administrador') {
+        return this.roles
+      }
+      return this.roles.filter(r => r !== 'Administrador')
+    },
     filteredPermissions() {
       if (!this.permFilter) return this.permissions
       const t = this.permFilter.toLowerCase()

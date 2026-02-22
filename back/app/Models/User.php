@@ -22,6 +22,7 @@ class User extends Authenticatable implements Auditable
      * @var list<string>
      */
     protected $fillable = [
+        'created_by',
         'nombres',
         'apellido_paterno',
         'apellido_materno',
@@ -125,6 +126,16 @@ class User extends Authenticatable implements Auditable
             'jefe_id',
             'recinto_id'
         );
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function createdUsers()
+    {
+        return $this->hasMany(User::class, 'created_by');
     }
 
 

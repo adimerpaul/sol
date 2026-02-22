@@ -13,6 +13,20 @@ use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
+    private function isAdmin(User $user): bool
+    {
+        return (string) ($user->role ?? '') === 'Administrador';
+    }
+
+    private function canManageUser(User $actor, User $target): bool
+    {
+        if ($this->isAdmin($actor)) {
+            return true;
+        }
+
+        return (int) ($target->created_by ?? 0) === (int) $actor->id;
+    }
+
     private function makeUniqueUsername(string $base, ?int $ignoreUserId = null): string
     {
         $base = trim($base);
@@ -61,9 +75,13 @@ class UserController extends Controller
 
     public function updateAvatar(Request $request, $userId)
     {
+        $actor = $request->user();
         $user = User::find($userId);
         if (!$user) {
             return response()->json(['message' => 'Usuario no encontrado'], 404);
+        }
+        if (!$this->canManageUser($actor, $user)) {
+            return response()->json(['message' => 'No autorizado'], 403);
         }
 
         if ($request->hasFile('avatar')) {
@@ -131,8 +149,14 @@ class UserController extends Controller
 
     public function index()
     {
-        return User::query()
-            ->where('id', '!=', 0)
+        $actor = request()->user();
+        $q = User::query()->where('id', '!=', 0);
+
+        if (!$this->isAdmin($actor)) {
+            $q->where('created_by', $actor->id);
+        }
+
+        return $q
             ->with('permissions:id,name')
             ->orderBy('id', 'desc')
             ->get()
@@ -155,7 +179,16 @@ class UserController extends Controller
 
     function updatePassword(Request $request, $id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
+        $actor = $request->user();
+        if (!$this->canManageUser($actor, $user)) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $request->validate([
+            'password' => 'required|string|min:4',
+        ]);
+
         $user->update([
             'password' => bcrypt($request->password),
         ]);
@@ -165,11 +198,12 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $actor = $request->user();
         $data = $request->validate([
             'nombres' => 'required|string|max:120',
             'apellido_paterno' => 'nullable|string|max:120',
             'apellido_materno' => 'required|string|max:120',
-            'ci' => 'required|string|max:30|unique:users,ci',
+            'ci' => 'required|string|max:30',
             'fecha_nacimiento' => 'required|date',
             'bloque' => 'required|string|max:180',
             'celular' => 'nullable|string|max:30',
@@ -180,10 +214,19 @@ class UserController extends Controller
             'email' => 'nullable|max:180',
         ]);
 
+        if (User::where('ci', $data['ci'])->exists()) {
+            return response()->json(['message' => 'Ya existe un usuario con ese CI'], 422);
+        }
+
+        if (!$this->isAdmin($actor) && ($data['role'] ?? null) === 'Administrador') {
+            return response()->json(['message' => 'Solo un administrador puede crear administradores'], 403);
+        }
+
         $usernameBase = $data['username'] ?? $data['ci'];
         $data['username'] = $this->makeUniqueUsername((string) $usernameBase);
         $data['password'] = bcrypt($data['password'] ?? str()->random(12));
         $data['name'] = trim($data['nombres'] . ' ' . $data['apellido_paterno'] . ' ' . $data['apellido_materno']);
+        $data['created_by'] = $actor?->id;
 
         $user = User::create($data);
         $user->load('permissions:id,name');
@@ -193,7 +236,11 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
+        $actor = $request->user();
         $user = User::findOrFail($id);
+        if (!$this->canManageUser($actor, $user)) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
 
         $data = $request->validate([
             'nombres' => 'required|string|max:120',
@@ -209,6 +256,10 @@ class UserController extends Controller
             'email' => 'nullable|max:180',
         ]);
 
+        if (!$this->isAdmin($actor) && ($data['role'] ?? null) === 'Administrador') {
+            return response()->json(['message' => 'Solo un administrador puede asignar rol Administrador'], 403);
+        }
+
         if (empty($data['username'])) {
             $data['username'] = $this->makeUniqueUsername((string) ($data['ci'] ?? 'user'), $user->id);
         }
@@ -223,7 +274,11 @@ class UserController extends Controller
 
     public function updateFiles(Request $request, $userId)
     {
+        $actor = $request->user();
         $user = User::findOrFail($userId);
+        if (!$this->canManageUser($actor, $user)) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
 
         $request->validate([
             'ci_anverso' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
@@ -255,24 +310,39 @@ class UserController extends Controller
 
     function destroy($id)
     {
+        $actor = request()->user();
+        $user = User::findOrFail($id);
+        if (!$this->canManageUser($actor, $user)) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
         return User::destroy($id);
     }
 
     public function getPermissions($userId)
     {
+        $actor = request()->user();
         $user = User::findOrFail($userId);
+        if (!$this->canManageUser($actor, $user)) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
 
         return $user->permissions()->pluck('id');
     }
 
     public function syncPermissions(Request $request, $userId)
     {
+        $actor = $request->user();
         $request->validate([
             'permissions' => 'array',
             'permissions.*' => 'integer|exists:permissions,id',
         ]);
 
         $user = User::findOrFail($userId);
+        if (!$this->canManageUser($actor, $user)) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
         $perms = Permission::whereIn('id', $request->permissions ?? [])->get();
         $user->syncPermissions($perms);
 

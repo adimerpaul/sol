@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('nombres', 120);                          // solo nombre(s)
             $table->string('apellido_paterno', 120)->nullable();     // puede ser vacío
             $table->string('apellido_materno', 120);                 // requerido
-            $table->string('ci', 30)->unique();                      // carnet
+            $table->string('ci', 30);                      // carnet
             $table->date('fecha_nacimiento');                        // fecha
 
             // bloque / agrupación / organización
