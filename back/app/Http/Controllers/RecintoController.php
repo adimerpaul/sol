@@ -74,4 +74,16 @@ class RecintoController extends Controller
         $recinto->delete();
         return response()->json(['ok' => true]);
     }
+
+    public function oruroCity(Request $request)
+    {
+        $search = trim((string)$request->get('search', ''));
+
+        // Municipio ID 191 is Oruro City
+        $q = Recinto::query()
+            ->where('municipio_id', 191)
+            ->when($search !== '', fn($qq) => $qq->where('nombre','like',"%{$search}%"));
+
+        return $q->orderBy('nombre')->paginate($request->get('per_page', 25));
+    }
 }

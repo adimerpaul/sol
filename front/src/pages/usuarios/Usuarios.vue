@@ -478,7 +478,7 @@ export default {
     async recintosGet (search = '') {
       this.loadingRecintos = true
       try {
-        const res = await this.$axios.get('recintos', {
+        const res = await this.$axios.get('admin/recintos-oruro-city', {
           params: {
             per_page: 30,
             search: search || undefined

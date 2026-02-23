@@ -56,6 +56,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 
     Route::get('admin/users-recintos', [AdminUserRecintoController::class, 'users']);
     Route::get('admin/recintos-oruro', [AdminUserRecintoController::class, 'recintosOruro']);
+    Route::get('admin/recintos-oruro-city', [RecintoController::class, 'oruroCity']);
     Route::get('admin/recintos-no-asignados', [AdminUserRecintoController::class, 'recintosNoAsignados']);
     Route::put('admin/users/{user}/recintos', [AdminUserRecintoController::class, 'sync']);
 
