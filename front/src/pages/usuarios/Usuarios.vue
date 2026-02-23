@@ -468,10 +468,10 @@ export default {
       const exists = this.recintoOptions.some(opt => opt.value === recintoId)
       if (exists) return
 
-      const labelName = this.user?.recinto_nombre || this.user?.recinto?.nombre || `ID ${recintoId}`
+      const labelName = this.user?.recinto_nombre || this.user?.recinto?.nombre || `Recinto ${recintoId}`
       this.recintoOptions = [
         ...this.recintoOptions,
-        { label: `${labelName} (ID: ${recintoId})`, value: recintoId }
+        { label: labelName, value: recintoId }
       ]
     },
 
@@ -487,7 +487,7 @@ export default {
 
         const rows = Array.isArray(res?.data?.data) ? res.data.data : []
         this.recintoOptions = rows.map(r => ({
-          label: `${r.nombre} (ID: ${r.id})`,
+          label: r.nombre,
           value: r.id
         }))
 
