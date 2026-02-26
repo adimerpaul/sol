@@ -13,6 +13,34 @@
       :filter="filter"
     >
       <template v-slot:top-right>
+        <q-btn-dropdown
+          color="indigo"
+          label="Imprimir"
+          no-caps
+          icon="print"
+          class="q-mr-sm"
+          :disable="loading"
+        >
+          <q-list dense>
+            <q-item clickable v-close-popup @click="printUsers('todos')">
+              <q-item-section avatar><q-icon name="groups" /></q-item-section>
+              <q-item-section><q-item-label>Todos</q-item-label></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="printUsers('jefes')">
+              <q-item-section avatar><q-icon name="badge" /></q-item-section>
+              <q-item-section><q-item-label>Jefes de Recinto</q-item-label></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="printUsers('supervisores')">
+              <q-item-section avatar><q-icon name="supervisor_account" /></q-item-section>
+              <q-item-section><q-item-label>Supervisores</q-item-label></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="printUsers('administradores')">
+              <q-item-section avatar><q-icon name="admin_panel_settings" /></q-item-section>
+              <q-item-section><q-item-label>Administradores</q-item-label></q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+
         <q-btn
           color="positive"
           label="Nuevo"
@@ -696,6 +724,23 @@ export default {
         this.usersGet()
       } catch (e) {
         this.$alert.error(e.response?.data?.message || 'No se pudo actualizar username')
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async printUsers(type) {
+      this.loading = true
+      try {
+        const res = await this.$axios.get(`users/print/${type}`, {
+          responseType: 'blob'
+        })
+        const blob = new Blob([res.data], { type: 'application/pdf' })
+        const url = URL.createObjectURL(blob)
+        window.open(url, '_blank')
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo generar el PDF')
       } finally {
         this.loading = false
       }

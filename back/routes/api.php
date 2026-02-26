@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 
 
     Route::get('/users', [App\Http\Controllers\UserController::class, 'index']);
+    Route::get('/users/print/{type}', [App\Http\Controllers\UserController::class, 'printByType']);
     Route::post('/users', [App\Http\Controllers\UserController::class, 'store']);
     Route::put('/users/{user}', [App\Http\Controllers\UserController::class, 'update']);
     Route::patch('/users/{user}/username', [App\Http\Controllers\UserController::class, 'updateUsername']);

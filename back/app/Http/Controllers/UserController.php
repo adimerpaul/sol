@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 //use App\Mail\UserCreatedMail;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Intervention\Image\ImageManager;
@@ -74,6 +75,81 @@ class UserController extends Controller
     function permissions()
     {
         return Permission::all();
+    }
+
+    public function printByType(Request $request, string $type)
+    {
+        $actor = $request->user();
+
+        $rolesMap = [
+            'administradores' => ['Administrador'],
+            'supervisores' => ['Supervisor'],
+            'jefes' => ['Jefe de Recinto'],
+        ];
+
+        $normalized = strtolower(trim($type));
+        $selectedRoles = $rolesMap[$normalized] ?? null;
+
+        $q = User::query()
+            ->with(['recinto:id,nombre'])
+            ->orderBy('role')
+            ->orderBy('apellido_paterno')
+            ->orderBy('apellido_materno')
+            ->orderBy('nombres');
+
+        if (!$this->isAdmin($actor)) {
+            $q->where('created_by', $actor->id);
+        }
+
+        if (is_array($selectedRoles)) {
+            $q->whereIn('role', $selectedRoles);
+        }
+
+        $users = $q->get()->map(function ($u) {
+            $avatarBase64 = null;
+            if (!empty($u->avatar)) {
+                $avatarPath = public_path('images/' . $u->avatar);
+                if (is_file($avatarPath)) {
+                    $bin = @file_get_contents($avatarPath);
+                    if ($bin !== false && $bin !== '') {
+                        $avatarBase64 = 'data:image/jpeg;base64,' . base64_encode($bin);
+                    }
+                }
+            }
+
+            return [
+                'id' => $u->id,
+                'username' => $u->username,
+                'nombres' => $u->nombres,
+                'apellido_paterno' => $u->apellido_paterno,
+                'apellido_materno' => $u->apellido_materno,
+                'name' => $u->name,
+                'ci' => $u->ci,
+                'fecha_nacimiento' => $u->fecha_nacimiento,
+                'celular' => $u->celular,
+                'bloque' => $u->bloque,
+                'email' => $u->email,
+                'role' => $u->role,
+                'recinto_nombre' => $u->recinto?->nombre,
+                'avatar_base64' => $avatarBase64,
+            ];
+        })->values();
+
+        $title = match ($normalized) {
+            'administradores' => 'Administradores',
+            'supervisores' => 'Supervisores',
+            'jefes' => 'Jefes de Recinto',
+            default => 'Todos los Usuarios',
+        };
+
+        $pdf = Pdf::loadView('pdf.users_list', [
+            'title' => $title,
+            'users' => $users,
+            'generatedAt' => now()->format('d/m/Y H:i'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('usuarios_' . $normalized . '.pdf');
     }
 
     public function updateAvatar(Request $request, $userId)
