@@ -10,6 +10,7 @@ use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -110,18 +111,18 @@ class UserController extends Controller
     function login(Request $request)
     {
         $data = $request->validate([
-            'ci' => 'required|string|max:30',
+            'username' => 'required|string|max:120',
             'fecha_nacimiento' => 'required|date',
         ]);
 
         $user = User::query()
-            ->where('ci', $data['ci'])
+            ->where('username', $data['username'])
             ->whereDate('fecha_nacimiento', $data['fecha_nacimiento'])
             ->first();
 
         if (!$user) {
             return response()->json([
-                'message' => 'CI o fecha de nacimiento incorrectos',
+                'message' => 'Username o fecha de nacimiento incorrectos',
             ], 401);
         }
 
@@ -147,6 +148,39 @@ class UserController extends Controller
         $user = $request->user();
 
         return response()->json($this->userPayload($user));
+    }
+
+    public function updateMyProfile(Request $request)
+    {
+        $user = $request->user();
+        $role = (string) ($user->role ?? '');
+
+        if (!in_array($role, ['Administrador', 'Supervisor'], true)) {
+            return response()->json(['message' => 'Solo Administrador y Supervisor pueden editar este perfil'], 403);
+        }
+
+        $data = $request->validate([
+            'username' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::unique('users', 'username')->ignore($user->id),
+            ],
+            'nombres' => 'required|string|max:120',
+            'apellido_paterno' => 'nullable|string|max:120',
+            'apellido_materno' => 'required|string|max:120',
+            'celular' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:180',
+        ]);
+
+        $data['name'] = trim(($data['nombres'] ?? '') . ' ' . ($data['apellido_paterno'] ?? '') . ' ' . ($data['apellido_materno'] ?? ''));
+
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'Perfil actualizado',
+            'user' => $this->userPayload($user->fresh()),
+        ]);
     }
 
     public function index()
@@ -197,6 +231,37 @@ class UserController extends Controller
         ]);
 
         return $user;
+    }
+
+    public function updateUsername(Request $request, $id)
+    {
+        $actor = $request->user();
+        $user = User::findOrFail($id);
+
+        if (!in_array((string) ($actor->role ?? ''), ['Administrador', 'Supervisor'], true)) {
+            return response()->json(['message' => 'Solo Administrador y Supervisor pueden cambiar username'], 403);
+        }
+
+        if (!$this->canManageUser($actor, $user)) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'username' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::unique('users', 'username')->ignore($user->id),
+            ],
+        ]);
+
+        $user->username = trim((string) $data['username']);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Username actualizado',
+            'user' => $this->userPayload($user->fresh()),
+        ]);
     }
 
     public function store(Request $request)

@@ -19,16 +19,16 @@
             <q-card-section class="q-pt-none">
               <div class="text-h6 text-bold q-mb-xs">Iniciar sesion</div>
               <div class="text-body2 text-grey-7 q-mb-md">
-                Accede con tu carnet de identidad y fecha de nacimiento.
+                Accede con tu username y fecha de nacimiento.
               </div>
 
-              <div class="q-mb-sm text-caption text-grey-7">Carnet de identidad</div>
+              <div class="q-mb-sm text-caption text-grey-7">Username</div>
               <q-input
-                v-model="ci"
+                v-model="username"
                 outlined
                 dense
-                placeholder="Ej: 1234567"
-                :rules="[v => !!v || 'Ingrese su CI']"
+                placeholder="Ej: 1234567 o usuario_1"
+                :rules="[v => !!v || 'Ingrese su username']"
                 class="q-mb-md"
               >
                 <template #prepend><q-icon name="badge" size="18px" /></template>
@@ -104,7 +104,7 @@ import { useCounterStore } from 'stores/example-store.js'
 
 const { proxy } = getCurrentInstance()
 
-const ci = ref('')
+const username = ref('')
 const loading = ref(false)
 
 const now = new Date()
@@ -166,15 +166,15 @@ function buildBirthDate () {
 }
 
 function login () {
-  if (!ci.value || !birthYear.value || !birthMonth.value || !birthDay.value) {
-    proxy.$alert.error('Complete CI y fecha de nacimiento')
+  if (!username.value || !birthYear.value || !birthMonth.value || !birthDay.value) {
+    proxy.$alert.error('Complete username y fecha de nacimiento')
     return
   }
 
   loading.value = true
 
   proxy.$axios.post('/login', {
-    ci: ci.value,
+    username: username.value,
     fecha_nacimiento: buildBirthDate()
   })
     .then(res => {

@@ -26,6 +26,7 @@ Route::post('/login', [App\Http\Controllers\UserController::class, 'login']);
 Route::middleware('auth:sanctum')->group(callback: function () {
     Route::post('/logout', [App\Http\Controllers\UserController::class, 'logout']);
     Route::get('/me', [App\Http\Controllers\UserController::class, 'me']);
+    Route::put('/me/profile', [App\Http\Controllers\UserController::class, 'updateMyProfile']);
 
     Route::post('/users/{user}/files', [App\Http\Controllers\UserController::class, 'updateFiles']);
 
@@ -33,6 +34,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('/users', [App\Http\Controllers\UserController::class, 'index']);
     Route::post('/users', [App\Http\Controllers\UserController::class, 'store']);
     Route::put('/users/{user}', [App\Http\Controllers\UserController::class, 'update']);
+    Route::patch('/users/{user}/username', [App\Http\Controllers\UserController::class, 'updateUsername']);
     Route::delete('/users/{user}', [App\Http\Controllers\UserController::class, 'destroy']);
     Route::put('/updatePassword/{user}', [App\Http\Controllers\UserController::class, 'updatePassword']);
     Route::post('/{user}/avatar', [App\Http\Controllers\UserController::class, 'updateAvatar']);

@@ -13,6 +13,7 @@ const routes = [
       { path: 'admin-jerarquia-usuarios', component: () => import('pages/usuarios/AdminJerarquiaUsuarios.vue'), meta: { requiresAuth: true } },
       { path: 'admin-recinto-jefe-mapa', component: () => import('pages/usuarios/AdminRecintoJefeMapa.vue'), meta: { requiresAuth: true } },
       { path: 'admin-resultados-mesas', component: () => import('pages/resultados/AdminResultadosMesas.vue'), meta: { requiresAuth: true } },
+      { path: 'mi-perfil', component: () => import('pages/usuarios/MiPerfil.vue'), meta: { requiresAuth: true } },
 
     ]
   },

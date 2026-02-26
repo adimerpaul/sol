@@ -2,7 +2,7 @@
   <q-page class="q-pa-md">
     <q-table
       :rows="users"
-      :columns="columns"
+      :columns="visibleColumns"
       row-key="id"
       dense
       wrap-cells
@@ -40,6 +40,11 @@
         <q-td :props="props">
           <q-btn-dropdown label="Opciones" no-caps size="10px" dense color="primary">
             <q-list>
+              <q-item clickable @click="openUsernameDialog(props.row)" v-close-popup v-if="isAdminOrSupervisor">
+                <q-item-section avatar><q-icon name="person"/></q-item-section>
+                <q-item-section><q-item-label>Cambiar username</q-item-label></q-item-section>
+              </q-item>
+
               <q-item clickable @click="userEdit(props.row)" v-close-popup>
                 <q-item-section avatar><q-icon name="edit"/></q-item-section>
                 <q-item-section><q-item-label>Editar</q-item-label></q-item-section>
@@ -344,6 +349,34 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="dialogUsername" persistent>
+      <q-card style="min-width: 420px">
+        <q-card-section class="q-pb-none row items-center text-bold">
+          Cambiar username
+          <q-space />
+          <q-btn icon="close" flat round dense @click="dialogUsername = false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <div class="text-caption text-grey-7 q-mb-sm">
+            Usuario: {{ user.nombres || user.name || user.ci }}
+          </div>
+          <q-input
+            v-model="usernameForm.username"
+            dense outlined
+            label="Username"
+            hint="Este username se usa para el login."
+            persistent-hint
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn color="negative" label="Cancelar" @click="dialogUsername = false" no-caps :loading="loading" />
+          <q-btn color="primary" label="Guardar" @click="saveUsername" no-caps :loading="loading" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -371,6 +404,7 @@ export default {
 
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
+        { name: 'username', label: 'Username', align: 'left', field: 'username' },
         { name: 'celular', label: 'Celular', align: 'left', field: 'celular' },
         { name: 'nombres', label: 'Nombre(s)', align: 'left', field: 'nombres' },
         { name: 'apellido_paterno', label: 'Ap. paterno', align: 'left', field: 'apellido_paterno' },
@@ -394,6 +428,10 @@ export default {
       permissions: [],
       dialogPermisos: false,
       permFilter: '',
+      dialogUsername: false,
+      usernameForm: {
+        username: ''
+      },
 
       // avatar dialog
       cambioAvatarDialogo: false
@@ -405,6 +443,14 @@ export default {
   },
 
   computed: {
+    isAdminOrSupervisor() {
+      const role = this.$store?.user?.role
+      return role === 'Administrador' || role === 'Supervisor'
+    },
+    visibleColumns() {
+      if (this.isAdminOrSupervisor) return this.columns
+      return this.columns.filter(c => c.name !== 'username')
+    },
     availableRoles() {
       const role = this.$store?.user?.role
       if (role === 'Administrador') {
@@ -620,6 +666,36 @@ export default {
         this.usersGet()
       } catch (e) {
         this.$alert.error(e.response?.data?.message || 'No se pudo guardar')
+      } finally {
+        this.loading = false
+      }
+    },
+
+    openUsernameDialog(row) {
+      if (!this.isAdminOrSupervisor) return
+      this.user = { ...row }
+      this.usernameForm = {
+        username: row?.username || ''
+      }
+      this.dialogUsername = true
+    },
+
+    async saveUsername() {
+      if (!this.usernameForm.username) {
+        this.$alert.error('Ingrese username')
+        return
+      }
+
+      this.loading = true
+      try {
+        await this.$axios.patch(`users/${this.user.id}/username`, {
+          username: this.usernameForm.username
+        })
+        this.dialogUsername = false
+        this.$alert.success('Username actualizado')
+        this.usersGet()
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo actualizar username')
       } finally {
         this.loading = false
       }

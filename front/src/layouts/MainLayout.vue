@@ -258,6 +258,24 @@
           </q-item-section>
         </q-item>
 
+        <q-item
+          dense
+          to="/mi-perfil"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canProfileRole()"
+        >
+          <q-item-section avatar>
+            <q-icon name="manage_accounts" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Mi perfil</q-item-label>
+          </q-item-section>
+        </q-item>
+
         <div class="q-pa-md">
           <div class="text-white-7 text-caption">
             Resultados v{{ $version }}
@@ -311,6 +329,11 @@ function toggleLeftDrawer () {
 
 function canPermission (permission) {
   return (proxy.$store.permissions || []).includes(permission)
+}
+
+function canProfileRole () {
+  const role = proxy.$store?.user?.role || ''
+  return role === 'Administrador' || role === 'Supervisor'
 }
 
 function logout () {
