@@ -11,13 +11,14 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   final _ciController = TextEditingController();
-  final _fechaController = TextEditingController();
   final _vm = LoginViewModel();
+  int? _selectedDay;
+  int? _selectedMonth;
+  int? _selectedYear;
 
   @override
   void dispose() {
     _ciController.dispose();
-    _fechaController.dispose();
     _vm.dispose();
     super.dispose();
   }
@@ -25,25 +26,20 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
-    // ci = '12345678';
-    // fechaNacimiento = '2000-01-01';
-    _ciController.text = '40000009';
-    _fechaController.text = '2000-11-03';
+    _ciController.text = '7351660';
+    _selectedDay = 13;
+    _selectedMonth = 3;
+    _selectedYear = 1996;
   }
 
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: DateTime(now.year - 18, 1, 1),
-      firstDate: DateTime(1900, 1, 1),
-      lastDate: now,
-    );
-    if (selected == null) return;
-    final yyyy = selected.year.toString().padLeft(4, '0');
-    final mm = selected.month.toString().padLeft(2, '0');
-    final dd = selected.day.toString().padLeft(2, '0');
-    _fechaController.text = '$yyyy-$mm-$dd';
+  String? get _fechaNacimiento {
+    if (_selectedDay == null || _selectedMonth == null || _selectedYear == null) {
+      return null;
+    }
+    final yyyy = _selectedYear.toString().padLeft(4, '0');
+    final mm = _selectedMonth.toString().padLeft(2, '0');
+    final dd = _selectedDay.toString().padLeft(2, '0');
+    return '$yyyy-$mm-$dd';
   }
 
   @override
@@ -129,15 +125,7 @@ class _LoginViewState extends State<LoginView> {
                               keyboardType: TextInputType.text,
                             ),
                             const SizedBox(height: 12),
-                            TextField(
-                              controller: _fechaController,
-                              readOnly: true,
-                              onTap: _pickDate,
-                              decoration: _inputDecoration(
-                                label: 'Fecha de nacimiento',
-                                icon: Icons.calendar_month_outlined,
-                              ).copyWith(hintText: 'YYYY-MM-DD'),
-                            ),
+                            _buildFechaNacimientoSelectors(),
                             const SizedBox(height: 16),
                             FilledButton(
                               style: FilledButton.styleFrom(
@@ -153,8 +141,8 @@ class _LoginViewState extends State<LoginView> {
                                   ? null
                                   : () async {
                                       final ci = _ciController.text.trim();
-                                      final fecha = _fechaController.text.trim();
-                                      if (ci.isEmpty || fecha.isEmpty) {
+                                      final fecha = _fechaNacimiento;
+                                      if (ci.isEmpty || fecha == null) {
                                         ScaffoldMessenger.of(
                                           this.context,
                                         ).showSnackBar(
@@ -252,11 +240,14 @@ class _LoginViewState extends State<LoginView> {
 
   InputDecoration _inputDecoration({
     required String label,
-    required IconData icon,
+    IconData? icon,
   }) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: const Color(0xFF1C4CA3)),
+      isDense: true,
+      prefixIcon: icon != null
+          ? Icon(icon, color: const Color(0xFF1C4CA3), size: 18)
+          : null,
       filled: true,
       fillColor: const Color(0xFFF7F9FD),
       border: OutlineInputBorder(
@@ -271,6 +262,94 @@ class _LoginViewState extends State<LoginView> {
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Color(0xFF0B5ED7), width: 1.6),
       ),
+    );
+  }
+
+  Widget _buildFechaNacimientoSelectors() {
+    final dayItems = List.generate(31, (i) => i + 1)
+        .map(
+          (d) => DropdownMenuItem<int>(
+            value: d,
+            child: Text(d.toString().padLeft(2, '0')),
+          ),
+        )
+        .toList();
+
+    final monthItems = List.generate(12, (i) => i + 1)
+        .map(
+          (m) => DropdownMenuItem<int>(
+            value: m,
+            child: Text(m.toString().padLeft(2, '0')),
+          ),
+        )
+        .toList();
+
+    final yearItems = List.generate(
+      DateTime.now().year - 1900 + 1,
+      (i) => DateTime.now().year - i,
+    )
+        .map(
+          (y) => DropdownMenuItem<int>(
+            value: y,
+            child: Text(y.toString()),
+          ),
+        )
+        .toList();
+
+    final dayField = DropdownButtonFormField<int>(
+      value: _selectedDay,
+      isExpanded: true,
+      decoration: _inputDecoration(label: 'Dia'),
+      items: dayItems,
+      onChanged: _vm.isLoading ? null : (v) => setState(() => _selectedDay = v),
+    );
+
+    final monthField = DropdownButtonFormField<int>(
+      value: _selectedMonth,
+      isExpanded: true,
+      decoration: _inputDecoration(label: 'Mes'),
+      items: monthItems,
+      onChanged: _vm.isLoading
+          ? null
+          : (v) => setState(() => _selectedMonth = v),
+    );
+
+    final yearField = DropdownButtonFormField<int>(
+      value: _selectedYear,
+      isExpanded: true,
+      decoration: _inputDecoration(label: 'Ano'),
+      items: yearItems,
+      onChanged: _vm.isLoading ? null : (v) => setState(() => _selectedYear = v),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 370) {
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: dayField),
+                  const SizedBox(width: 8),
+                  Expanded(child: monthField),
+                ],
+              ),
+              const SizedBox(height: 8),
+              yearField,
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: dayField),
+            const SizedBox(width: 8),
+            Expanded(child: monthField),
+            const SizedBox(width: 8),
+            Expanded(child: yearField),
+          ],
+        );
+      },
     );
   }
 }

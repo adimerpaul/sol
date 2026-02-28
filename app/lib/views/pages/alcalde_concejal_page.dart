@@ -668,19 +668,19 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Subir votacion y asistencia',
-                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text('Mesas asignadas'),
-            const SizedBox(height: 6),
+            // Row(
+            //   children: [
+            //     const Expanded(
+            //       child: Text(
+            //         'Subir votacion y asistencia',
+            //         style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+            //       ),
+            //     ),
+            //   ],
+            // ),
+            // const SizedBox(height: 8),
+            // const Text('Mesas asignadas'),
+            // const SizedBox(height: 6),
             SizedBox(
               height: 76,
               child: ListView.builder(
