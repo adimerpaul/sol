@@ -414,8 +414,9 @@ class MobileResultadosController extends Controller
         ];
 
         $finalizar = (bool) $request->boolean('finalizar');
+        $hayVotosOCifras = (array_sum($sum) + array_sum($blancos) + array_sum($nulos) + array_sum($pnu)) > 0;
 
-        DB::transaction(function () use ($mesa, $user, $data, $votos, $sum, $blancos, $nulos, $pnu, $finalizar, $request) {
+        $finalizadaReal = DB::transaction(function () use ($mesa, $user, $data, $votos, $sum, $blancos, $nulos, $pnu, $finalizar, $hayVotosOCifras, $request) {
             $rm = ResultadoMesa::updateOrCreate(
                 ['mesa_id' => $mesa->id],
                 [
@@ -423,7 +424,7 @@ class MobileResultadosController extends Controller
                     'observacion' => $data['observacion'] ?? null,
 
                     'etapa_1' => true,
-                    'etapa_2' => $finalizar,
+                    'etapa_2' => false,
 
                     'blancos_gobernador' => 0,
                     'nulos_gobernador' => 0,
@@ -454,6 +455,8 @@ class MobileResultadosController extends Controller
                     $rm->{$f} = $request->file($f)->store($dir, 'public');
                 }
             }
+            $puedeFinalizar = $finalizar && $hayVotosOCifras && $this->tieneFotosMinimasFinalizacion($rm);
+            $rm->etapa_2 = $puedeFinalizar;
             $rm->save();
 
             foreach ($votos as $row) {
@@ -472,8 +475,9 @@ class MobileResultadosController extends Controller
                 );
             }
 
-            $mesa->estado = $finalizar ? 'FINALIZADA' : 'EN_PROCESO';
+            $mesa->estado = $puedeFinalizar ? 'FINALIZADA' : 'EN_PROCESO';
             $mesa->save();
+            return $puedeFinalizar;
         });
 
         SocketEmitter::votacion([
@@ -482,13 +486,13 @@ class MobileResultadosController extends Controller
                 '%s registró votación en Mesa %s%s',
                 $user->name ?? 'Usuario',
                 $mesa->numero_mesa,
-                $finalizar ? ' · Finalizada' : ''
+                $finalizadaReal ? ' · Finalizada' : ''
             )),
             'kind' => 'resultado_mobile',
             'mesa_id' => $mesa->id,
             'mesa_numero' => $mesa->numero_mesa,
-            'estado' => $finalizar ? 'FINALIZADA' : 'EN_PROCESO',
-            'finalizada' => $finalizar,
+            'estado' => $finalizadaReal ? 'FINALIZADA' : 'EN_PROCESO',
+            'finalizada' => $finalizadaReal,
             'user_id' => $user->id ?? null,
             'user_name' => $user->name ?? null,
             'username' => $user->username ?? null,
@@ -500,8 +504,18 @@ class MobileResultadosController extends Controller
         return response()->json([
             'ok' => true,
             'mesa_id' => $mesa->id,
-            'finalizada' => $finalizar,
+            'finalizada' => $finalizadaReal,
         ]);
+    }
+
+    private function tieneFotosMinimasFinalizacion(ResultadoMesa $resultado): bool
+    {
+        foreach (['foto1', 'foto2', 'foto3', 'foto4'] as $slot) {
+            if (empty($resultado->{$slot})) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public function sync(Request $request)

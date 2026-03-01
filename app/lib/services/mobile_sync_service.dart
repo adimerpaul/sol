@@ -35,7 +35,10 @@ class MobileSyncService {
     for (final d in pendings) {
       try {
         await _votacionService.sendVotacion(d);
-        await _localStore.markVotacionSynced(d.mesaId);
+        await _localStore.markVotacionSynced(
+          d.mesaId,
+          finalizada: d.finalizar,
+        );
         votacionOk++;
       } catch (e) {
         await _localStore.markVotacionError(d.mesaId, e.toString());

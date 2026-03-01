@@ -1076,7 +1076,7 @@ class MobileAuthLocalStore {
     return out;
   }
 
-  Future<void> markVotacionSynced(int mesaId) async {
+  Future<void> markVotacionSynced(int mesaId, {required bool finalizada}) async {
     final db = await database;
     await db.update(
       'votacion_draft',
@@ -1088,7 +1088,15 @@ class MobileAuthLocalStore {
       where: 'mesa_id = ?',
       whereArgs: [mesaId],
     );
-    await updateMesaEstadoLocal(mesaId, mesaEstadoRealizado);
+    await db.update(
+      'auth_mesas',
+      {
+        'estado_api': finalizada ? 'FINALIZADA' : 'EN_PROCESO',
+        'estado_local': finalizada ? mesaEstadoRealizado : mesaEstadoPendiente,
+      },
+      where: 'id = ?',
+      whereArgs: [mesaId],
+    );
   }
 
   Future<void> markVotacionError(int mesaId, String error) async {
@@ -1107,7 +1115,8 @@ class MobileAuthLocalStore {
   }
 
   String _estadoLocalInicial(String? estadoApi, {bool finalizada = false}) {
-    if (finalizada || estadoApi?.toUpperCase() == mesaEstadoRealizado) {
+    final estado = (estadoApi ?? '').toUpperCase();
+    if (finalizada || estado == mesaEstadoRealizado || estado == 'FINALIZADA') {
       return mesaEstadoRealizado;
     }
     return mesaEstadoPendiente;

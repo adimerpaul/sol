@@ -246,6 +246,42 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool get _allRequiredFotosReady => _fotosAlcaldeReady && _fotosConcejalReady;
 
   bool get _readyFinalizar => _mesaId != null;
+  bool get _hasVotosCargados {
+    final total =
+        _sumCon +
+        _sumAlc +
+        _ival(_bconCtrl) +
+        _ival(_nconCtrl) +
+        _ival(_pnuConCtrl) +
+        _ival(_balcCtrl) +
+        _ival(_nalcCtrl) +
+        _ival(_pnuAlcCtrl);
+    return total > 0;
+  }
+
+  MobileMesa? get _mesaActual {
+    final id = _mesaId;
+    if (id == null) return null;
+    for (final m in _mesas) {
+      if (m.id == id) return m;
+    }
+    return null;
+  }
+
+  String _estadoMesaLabel(MobileMesa? mesa) {
+    final estadoApi = (mesa?.estado ?? '').toUpperCase().trim();
+    if (estadoApi.isNotEmpty) return estadoApi;
+    final local = (mesa?.estadoLocal ?? 'PENDIENTE').toUpperCase().trim();
+    if (local == 'REALIZADO') return 'FINALIZADA';
+    if (local == 'LOCAL') return 'EN_PROCESO';
+    return 'PENDIENTE';
+  }
+
+  bool get _mesaEsFinalizada => _estadoMesaLabel(_mesaActual) == 'FINALIZADA';
+  bool get _mesaEditablePorEstado {
+    final estado = _estadoMesaLabel(_mesaActual);
+    return estado == 'ASIGNADA' || estado == 'EN_PROCESO';
+  }
 
   bool _hasFoto(String slot) {
     final localPath = _localFotos[slot];
@@ -301,13 +337,15 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   Future<void> _loadMesa(int mesaId) async {
     _resetForm();
-    _datosBloqueados = false;
+    _datosBloqueados = _mesaEsFinalizada;
     final local = await _localStore.readVotacionDraft(mesaId);
     if (!mounted) return;
     if (local != null) {
       _applyDraft(local);
       _datosBloqueados =
-          local.syncStatus == MobileAuthLocalStore.votacionSyncSynced;
+          _mesaEsFinalizada ||
+          (local.syncStatus == MobileAuthLocalStore.votacionSyncSynced &&
+              local.finalizar);
       setState(() {});
       return;
     }
@@ -383,6 +421,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       showError(context, 'Datos ya enviados. No se puede modificar.');
       return;
     }
+    if (!_mesaEditablePorEstado) {
+      showError(context, 'Solo puedes editar mesas ASIGNADA o EN_PROCESO');
+      return;
+    }
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (context) => SafeArea(
@@ -405,7 +447,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     );
     if (source == null) return;
 
-    final picked = await _picker.pickImage(source: source, imageQuality: 85);
+    final picked = await _picker.pickImage(source: source, imageQuality: 75);
     if (picked == null) return;
 
     final dir = await _getVotacionCacheDir();
@@ -473,6 +515,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     }
     if (_datosBloqueados) {
       showError(context, 'Estos datos ya fueron enviados y bloqueados');
+      return;
+    }
+    if (!_mesaEditablePorEstado) {
+      showError(context, 'Solo puedes editar mesas ASIGNADA o EN_PROCESO');
       return;
     }
 
@@ -550,18 +596,49 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
     setState(() => _saving = true);
     try {
+      final finalizaAhora = _allRequiredFotosReady && _hasVotosCargados;
       final d = _buildDraft(
-        finalizar: false,
+        finalizar: finalizaAhora,
         syncStatus: MobileAuthLocalStore.votacionSyncLocal,
       );
       await _localStore.saveVotacionDraft(d);
 
       try {
         await _service.sendVotacion(d);
-        await _localStore.markVotacionSynced(d.mesaId);
+        await _localStore.markVotacionSynced(
+          d.mesaId,
+          finalizada: d.finalizar,
+        );
         if (mounted) {
-          setState(() => _datosBloqueados = true);
-          showSuccess(context, 'Votacion guardada y sincronizada');
+          final mesas = _mesas.map((m) {
+            if (m.id != d.mesaId) return m;
+            return MobileMesa(
+              id: m.id,
+              idOriginal: m.idOriginal,
+              recintoId: m.recintoId,
+              numeroMesa: m.numeroMesa,
+              estado: d.finalizar ? 'FINALIZADA' : 'EN_PROCESO',
+              estadoLocal: d.finalizar ? 'REALIZADO' : 'PENDIENTE',
+              recintoNombre: m.recintoNombre,
+              localidadNombre: m.localidadNombre,
+              municipioNombre: m.municipioNombre,
+              provinciaNombre: m.provinciaNombre,
+              departamentoNombre: m.departamentoNombre,
+              recintoLatitud: m.recintoLatitud,
+              recintoLongitud: m.recintoLongitud,
+              resultado: m.resultado,
+            );
+          }).toList();
+          setState(() {
+            _mesas = mesas;
+            _datosBloqueados = d.finalizar;
+          });
+          showSuccess(
+            context,
+            d.finalizar
+                ? 'Votacion finalizada y sincronizada'
+                : 'Votacion sincronizada (EN PROCESO)',
+          );
         }
       } catch (e) {
         await _localStore.markVotacionError(d.mesaId, e.toString());
@@ -585,7 +662,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       for (final d in pendings) {
         try {
           await _service.sendVotacion(d);
-          await _localStore.markVotacionSynced(d.mesaId);
+          await _localStore.markVotacionSynced(
+            d.mesaId,
+            finalizada: d.finalizar,
+          );
           ok++;
         } catch (e) {
           await _localStore.markVotacionError(d.mesaId, e.toString());
@@ -644,12 +724,12 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
             sum: _sumAlc,
             ok: _okAlc,
-            editable: !_datosBloqueados,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
           ),
           _buildFotosCard(
             title: 'Fotos - Alcalde',
             config: _fotoAlcaldeConfig,
-            editable: !_datosBloqueados,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
           ),
         ] else ...[
           _buildCategoryCard(
@@ -660,12 +740,12 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             papeletasNoUtilizadasCtrl: _pnuConCtrl,
             sum: _sumCon,
             ok: _okCon,
-            editable: !_datosBloqueados,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
           ),
           _buildFotosCard(
             title: 'Fotos - Concejal',
             config: _fotoConcejalConfig,
-            editable: !_datosBloqueados,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
           ),
         ],
         _buildGuardarMandarActions(),
@@ -706,7 +786,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             padding: const EdgeInsets.all(10),
             child: TextField(
               controller: _obsCtrl,
-              enabled: !_datosBloqueados,
+              enabled: !_datosBloqueados && _mesaEditablePorEstado,
               maxLines: 3,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
@@ -728,7 +808,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           FilledButton.icon(
-            onPressed: _saving || !_readyFinalizar || _datosBloqueados
+            onPressed:
+                _saving ||
+                    !_readyFinalizar ||
+                    _datosBloqueados ||
+                    !_mesaEditablePorEstado
                 ? null
                 : _finalizarYEnviar,
             icon: const Icon(Icons.send_outlined),
@@ -833,10 +917,14 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                 itemBuilder: (context, i) {
                   final m = _mesas[i];
                   final selected = m.id == _mesaId;
-                  final local = (m.estadoLocal ?? 'PENDIENTE').toUpperCase();
-                  final color = local == 'REALIZADO'
+                  final estado = _estadoMesaLabel(m);
+                  final color = estado == 'FINALIZADA'
                       ? Colors.green
-                      : (local == 'LOCAL' ? Colors.orange : Colors.grey);
+                      : (estado == 'EN_PROCESO'
+                            ? Colors.orange
+                            : (estado == 'ASIGNADA'
+                                  ? Colors.blue
+                                  : Colors.grey));
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: OutlinedButton(
@@ -863,7 +951,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                             style: const TextStyle(fontSize: 10),
                           ),
                           Text(
-                            local,
+                            estado,
                             style: TextStyle(fontSize: 11, color: color),
                           ),
                         ],

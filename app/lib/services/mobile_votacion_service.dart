@@ -157,10 +157,10 @@ class MobileVotacionService {
       await File(sourcePath).copy(targetPath);
       return targetPath;
     }
-    final resized = decoded.width > 1600
-        ? img.copyResize(decoded, width: 1600)
+    final resized = decoded.width > 1400
+        ? img.copyResize(decoded, width: 1400)
         : decoded;
-    final jpg = img.encodeJpg(resized, quality: 78);
+    final jpg = img.encodeJpg(resized, quality: 70);
     await File(targetPath).writeAsBytes(jpg, flush: true);
     return targetPath;
   }
@@ -181,10 +181,10 @@ class MobileVotacionService {
     if (decoded == null) {
       return null;
     }
-    final resized = decoded.width > 1600
-        ? img.copyResize(decoded, width: 1600)
+    final resized = decoded.width > 1400
+        ? img.copyResize(decoded, width: 1400)
         : decoded;
-    final jpg = img.encodeJpg(resized, quality: 75);
+    final jpg = img.encodeJpg(resized, quality: 70);
     await File(targetPath).writeAsBytes(jpg, flush: true);
     return targetPath;
   }
