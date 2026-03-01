@@ -219,6 +219,17 @@ class MobileMesaResultado {
     required this.etapa1,
     required this.etapa2,
     required this.observacion,
+    required this.observacionGobernador,
+    required this.observacionAsd,
+    required this.observacionAsp,
+    required this.observacionConcejal,
+    required this.observacionAlcalde,
+    required this.blancosGobernador,
+    required this.nulosGobernador,
+    required this.blancosAsd,
+    required this.nulosAsd,
+    required this.blancosAsp,
+    required this.nulosAsp,
     required this.blancosConcejal,
     required this.nulosConcejal,
     required this.pnuConcejal,
@@ -232,6 +243,17 @@ class MobileMesaResultado {
   final bool etapa1;
   final bool etapa2;
   final String? observacion;
+  final String? observacionGobernador;
+  final String? observacionAsd;
+  final String? observacionAsp;
+  final String? observacionConcejal;
+  final String? observacionAlcalde;
+  final int blancosGobernador;
+  final int nulosGobernador;
+  final int blancosAsd;
+  final int nulosAsd;
+  final int blancosAsp;
+  final int nulosAsp;
   final int blancosConcejal;
   final int nulosConcejal;
   final int pnuConcejal;
@@ -254,6 +276,17 @@ class MobileMesaResultado {
       etapa1: json['etapa_1'] == true,
       etapa2: json['etapa_2'] == true,
       observacion: json['observacion']?.toString(),
+      observacionGobernador: json['observacion_gobernador']?.toString(),
+      observacionAsd: json['observacion_asambleista_distrito']?.toString(),
+      observacionAsp: json['observacion_asambleista_poblacion']?.toString(),
+      observacionConcejal: json['observacion_concejal']?.toString(),
+      observacionAlcalde: json['observacion_alcalde']?.toString(),
+      blancosGobernador: _asInt(json['blancos_gobernador']) ?? 0,
+      nulosGobernador: _asInt(json['nulos_gobernador']) ?? 0,
+      blancosAsd: _asInt(json['blancos_asambleista_distrito']) ?? 0,
+      nulosAsd: _asInt(json['nulos_asambleista_distrito']) ?? 0,
+      blancosAsp: _asInt(json['blancos_asambleista_poblacion']) ?? 0,
+      nulosAsp: _asInt(json['nulos_asambleista_poblacion']) ?? 0,
       blancosConcejal: _asInt(json['blancos_concejal']) ?? 0,
       nulosConcejal: _asInt(json['nulos_concejal']) ?? 0,
       pnuConcejal: _asInt(json['papeletas_no_utilizadas_concejal']) ?? 0,
@@ -272,17 +305,26 @@ class MobileMesaResultado {
 class MobileMesaDetalle {
   MobileMesaDetalle({
     required this.partidoId,
+    required this.votosGobernador,
+    required this.votosAsd,
+    required this.votosAsp,
     required this.votosConcejal,
     required this.votosAlcalde,
   });
 
   final int partidoId;
+  final int votosGobernador;
+  final int votosAsd;
+  final int votosAsp;
   final int votosConcejal;
   final int votosAlcalde;
 
   factory MobileMesaDetalle.fromJson(Map<String, dynamic> json) {
     return MobileMesaDetalle(
       partidoId: _asInt(json['partido_id']) ?? 0,
+      votosGobernador: _asInt(json['votos_gobernador']) ?? 0,
+      votosAsd: _asInt(json['votos_asambleista_distrito']) ?? 0,
+      votosAsp: _asInt(json['votos_asambleista_poblacion']) ?? 0,
       votosConcejal: _asInt(json['votos_concejal']) ?? 0,
       votosAlcalde: _asInt(json['votos_alcalde']) ?? 0,
     );

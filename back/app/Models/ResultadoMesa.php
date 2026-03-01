@@ -28,7 +28,12 @@ class ResultadoMesa extends Model implements Auditable
         'papeletas_no_utilizadas_concejal',
         'blancos_alcalde','nulos_alcalde',
         'papeletas_no_utilizadas_alcalde',
-        'observacion'
+        'observacion',
+        'observacion_gobernador',
+        'observacion_asambleista_distrito',
+        'observacion_asambleista_poblacion',
+        'observacion_concejal',
+        'observacion_alcalde'
     ];
 
     protected $casts = [

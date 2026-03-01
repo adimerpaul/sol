@@ -20,7 +20,13 @@ class AlcaldeConcejalPage extends StatefulWidget {
   State<AlcaldeConcejalPage> createState() => _AlcaldeConcejalPageState();
 }
 
-enum _VotacionTab { alcalde, concejal }
+enum _VotacionTab {
+  alcalde,
+  concejal,
+  gobernador,
+  asambleistaDistrito,
+  asambleistaPoblacion,
+}
 
 class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final MobileAuthLocalStore _localStore = MobileAuthLocalStore.instance;
@@ -56,7 +62,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final TextEditingController _balcCtrl = TextEditingController();
   final TextEditingController _nalcCtrl = TextEditingController();
   final TextEditingController _pnuAlcCtrl = TextEditingController();
-  final TextEditingController _obsCtrl = TextEditingController();
+  final TextEditingController _obsAlcCtrl = TextEditingController();
+  final TextEditingController _obsConCtrl = TextEditingController();
+  final TextEditingController _obsGobCtrl = TextEditingController();
+  final TextEditingController _obsAsdCtrl = TextEditingController();
+  final TextEditingController _obsAspCtrl = TextEditingController();
 
   final Map<String, String?> _localFotos = {
     for (final slot in votacionFotoSlots) slot: null,
@@ -70,11 +80,15 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     {'slot': 'foto3', 'label': 'Hoja trabajo - Concejal'},
     {'slot': 'foto4', 'label': 'Acta electoral - Concejal'},
   ];
-  static const List<Map<String, String>> _fotoComplementariasConfig = [
+  static const List<Map<String, String>> _fotoGobernadorConfig = [
     {'slot': 'foto5', 'label': 'Hoja trabajo - Gobernador'},
     {'slot': 'foto6', 'label': 'Acta electoral - Gobernador'},
+  ];
+  static const List<Map<String, String>> _fotoAsdConfig = [
     {'slot': 'foto7', 'label': 'Hoja trabajo - Asam. Distrito'},
     {'slot': 'foto8', 'label': 'Acta electoral - Asam. Distrito'},
+  ];
+  static const List<Map<String, String>> _fotoAspConfig = [
     {'slot': 'foto9', 'label': 'Hoja trabajo - Asam. Poblacion'},
     {'slot': 'foto10', 'label': 'Acta electoral - Asam. Poblacion'},
   ];
@@ -99,7 +113,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     _balcCtrl.dispose();
     _nalcCtrl.dispose();
     _pnuAlcCtrl.dispose();
-    _obsCtrl.dispose();
+    _obsAlcCtrl.dispose();
+    _obsConCtrl.dispose();
+    _obsGobCtrl.dispose();
+    _obsAsdCtrl.dispose();
+    _obsAspCtrl.dispose();
     for (final m in [_gobCtrl, _asdCtrl, _aspCtrl, _conCtrl, _alcCtrl]) {
       for (final c in m.values) {
         c.dispose();
@@ -248,8 +266,17 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool get _readyFinalizar => _mesaId != null;
   bool get _hasVotosCargados {
     final total =
+        _sumGob +
+        _sumAsd +
+        _sumAsp +
         _sumCon +
         _sumAlc +
+        _ival(_bgCtrl) +
+        _ival(_ngCtrl) +
+        _ival(_basdCtrl) +
+        _ival(_nasdCtrl) +
+        _ival(_baspCtrl) +
+        _ival(_naspCtrl) +
         _ival(_bconCtrl) +
         _ival(_nconCtrl) +
         _ival(_pnuConCtrl) +
@@ -361,7 +388,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   }
 
   void _applyDraft(VotacionDraft d) {
-    _obsCtrl.text = d.observacion ?? '';
+    _obsAlcCtrl.text = d.observacionAlcalde ?? '';
+    _obsConCtrl.text = d.observacionConcejal ?? '';
+    _obsGobCtrl.text = d.observacionGobernador ?? '';
+    _obsAsdCtrl.text = d.observacionAsd ?? '';
+    _obsAspCtrl.text = d.observacionAsp ?? '';
     _setCtrlInt(_bgCtrl, d.blancosGobernador);
     _setCtrlInt(_ngCtrl, d.nulosGobernador);
     _setCtrlInt(_basdCtrl, d.blancosAsd);
@@ -409,7 +440,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     ]) {
       c.text = '';
     }
-    _obsCtrl.text = '';
+    _obsAlcCtrl.text = '';
+    _obsConCtrl.text = '';
+    _obsGobCtrl.text = '';
+    _obsAsdCtrl.text = '';
+    _obsAspCtrl.text = '';
     for (final slot in votacionFotoSlots) {
       _localFotos[slot] = null;
     }
@@ -482,9 +517,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         sigla: (p['sigla'] ?? '').toString(),
         nombre: (p['nombre'] ?? '').toString(),
         iconoUrl: p['icono_url']?.toString(),
-        votosGobernador: 0,
-        votosAsd: 0,
-        votosAsp: 0,
+        votosGobernador: _ivalOrZero(_gobCtrl[id]),
+        votosAsd: _ivalOrZero(_asdCtrl[id]),
+        votosAsp: _ivalOrZero(_aspCtrl[id]),
         votosConcejal: _ivalOrZero(_conCtrl[id]),
         votosAlcalde: _ivalOrZero(_alcCtrl[id]),
       );
@@ -493,13 +528,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return VotacionDraft(
       mesaId: _mesaId ?? 0,
       finalizar: finalizar,
-      observacion: _obsCtrl.text.trim().isEmpty ? null : _obsCtrl.text.trim(),
-      blancosGobernador: 0,
-      nulosGobernador: 0,
-      blancosAsd: 0,
-      nulosAsd: 0,
-      blancosAsp: 0,
-      nulosAsp: 0,
+      observacion: null,
+      observacionGobernador: _obsGobCtrl.text.trim().isEmpty ? null : _obsGobCtrl.text.trim(),
+      observacionAsd: _obsAsdCtrl.text.trim().isEmpty ? null : _obsAsdCtrl.text.trim(),
+      observacionAsp: _obsAspCtrl.text.trim().isEmpty ? null : _obsAspCtrl.text.trim(),
+      observacionConcejal: _obsConCtrl.text.trim().isEmpty ? null : _obsConCtrl.text.trim(),
+      observacionAlcalde: _obsAlcCtrl.text.trim().isEmpty ? null : _obsAlcCtrl.text.trim(),
+      blancosGobernador: _ival(_bgCtrl),
+      nulosGobernador: _ival(_ngCtrl),
+      blancosAsd: _ival(_basdCtrl),
+      nulosAsd: _ival(_nasdCtrl),
+      blancosAsp: _ival(_baspCtrl),
+      nulosAsp: _ival(_naspCtrl),
       blancosConcejal: _ival(_bconCtrl),
       nulosConcejal: _ival(_nconCtrl),
       papeletasNoUtilizadasConcejal: _ival(_pnuConCtrl),
@@ -551,13 +591,16 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       if (continuarSinActa != true) return;
     }
 
-    if (!_okAlc || !_okCon) {
+    if (!_okGob || !_okAsd || !_okAsp || !_okAlc || !_okCon) {
       final continuar = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Advertencia de totales'),
           content: Text(
             'Los totales no suman 250.\n'
+            'Gobernador: ${_sumGob + _ival(_bgCtrl) + _ival(_ngCtrl)}\n'
+            'Asam. Distrito: ${_sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl)}\n'
+            'Asam. Poblacion: ${_sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl)}\n'
             'Alcalde: ${_sumAlc + _ival(_balcCtrl) + _ival(_nalcCtrl) + _ival(_pnuAlcCtrl)}\n'
             'Concejal: ${_sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl)}\n\n'
             'Deseas enviar de todas formas?',
@@ -736,7 +779,8 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             config: _fotoAlcaldeConfig,
             editable: !_datosBloqueados && _mesaEditablePorEstado,
           ),
-        ] else ...[
+          _buildObsCard(_obsAlcCtrl),
+        ] else if (_activeTab == _VotacionTab.concejal) ...[
           _buildCategoryCard(
             title: '2) Concejal',
             voteMap: _conCtrl,
@@ -752,57 +796,83 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             config: _fotoConcejalConfig,
             editable: !_datosBloqueados && _mesaEditablePorEstado,
           ),
+          _buildObsCard(_obsConCtrl),
+        ] else if (_activeTab == _VotacionTab.gobernador) ...[
+          _buildCategoryCard(
+            title: '3) Gobernador',
+            voteMap: _gobCtrl,
+            blancosCtrl: _bgCtrl,
+            nulosCtrl: _ngCtrl,
+            papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+            sum: _sumGob,
+            ok: _okGob,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            showPnu: false,
+          ),
+          _buildFotosCard(
+            title: 'Fotos - Gobernador',
+            config: _fotoGobernadorConfig,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
+          ),
+          _buildObsCard(_obsGobCtrl),
+        ] else if (_activeTab == _VotacionTab.asambleistaDistrito) ...[
+          _buildCategoryCard(
+            title: '4) Asambleista por Distrito',
+            voteMap: _asdCtrl,
+            blancosCtrl: _basdCtrl,
+            nulosCtrl: _nasdCtrl,
+            papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+            sum: _sumAsd,
+            ok: _okAsd,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            showPnu: false,
+          ),
+          _buildFotosCard(
+            title: 'Fotos - Asambleista por Distrito',
+            config: _fotoAsdConfig,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
+          ),
+          _buildObsCard(_obsAsdCtrl),
+        ] else ...[
+          _buildCategoryCard(
+            title: '5) Asambleista por Poblacion',
+            voteMap: _aspCtrl,
+            blancosCtrl: _baspCtrl,
+            nulosCtrl: _naspCtrl,
+            papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+            sum: _sumAsp,
+            ok: _okAsp,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            showPnu: false,
+          ),
+          _buildFotosCard(
+            title: 'Fotos - Asambleista por Poblacion',
+            config: _fotoAspConfig,
+            editable: !_datosBloqueados && _mesaEditablePorEstado,
+          ),
+          _buildObsCard(_obsAspCtrl),
         ],
         _buildGuardarMandarActions(),
-        // _buildCategoryCard(
-        //   title: '3) Gobernador',
-        //   voteMap: _gobCtrl,
-        //   blancosCtrl: _bgCtrl,
-        //   nulosCtrl: _ngCtrl,
-        //   papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
-        //   sum: _sumGob,
-        //   ok: _okGob,
-        // ),
-        // _buildCategoryCard(
-        //   title: '4) Asambleista por Distrito',
-        //   voteMap: _asdCtrl,
-        //   blancosCtrl: _basdCtrl,
-        //   nulosCtrl: _nasdCtrl,
-        //   papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
-        //   sum: _sumAsd,
-        //   ok: _okAsd,
-        // ),
-        // _buildCategoryCard(
-        //   title: '5) Asambleista por Poblacion',
-        //   voteMap: _aspCtrl,
-        //   blancosCtrl: _baspCtrl,
-        //   nulosCtrl: _naspCtrl,
-        //   papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
-        //   sum: _sumAsp,
-        //   ok: _okAsp,
-        // ),
-        // _buildFotosCard(
-        //   title: 'Fotos complementarias',
-        //   config: _fotoComplementariasConfig,
-        // ),
-        // _buildGuardarMandarActions(),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: TextField(
-              controller: _obsCtrl,
-              enabled: !_datosBloqueados && _mesaEditablePorEstado,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Observacion',
-              ),
-              onChanged: (_) => _onDataChanged(),
-            ),
-          ),
-        ),
         const SizedBox(height: 12),
       ],
+    );
+  }
+
+  Widget _buildObsCard(TextEditingController controller) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: TextField(
+          controller: controller,
+          enabled: !_datosBloqueados && _mesaEditablePorEstado,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            labelText: 'Observacion',
+          ),
+          onChanged: (_) => _onDataChanged(),
+        ),
+      ),
     );
   }
 
@@ -839,24 +909,21 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   }
 
   Widget _buildTabs() {
-    return Row(
-      children: [
-        Expanded(
-          child: _tabButton(
-            tab: _VotacionTab.alcalde,
-            label: 'Alcalde',
-            done: _datosBloqueados,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _tabButton(
-            tab: _VotacionTab.concejal,
-            label: 'Concejal',
-            done: _datosBloqueados,
-          ),
-        ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _tabButton(tab: _VotacionTab.alcalde, label: 'Alcalde', done: _datosBloqueados),
+          const SizedBox(width: 8),
+          _tabButton(tab: _VotacionTab.concejal, label: 'Concejal', done: _datosBloqueados),
+          const SizedBox(width: 8),
+          _tabButton(tab: _VotacionTab.gobernador, label: 'Gobernador', done: _datosBloqueados),
+          const SizedBox(width: 8),
+          _tabButton(tab: _VotacionTab.asambleistaDistrito, label: 'Asam. Distrito', done: _datosBloqueados),
+          const SizedBox(width: 8),
+          _tabButton(tab: _VotacionTab.asambleistaPoblacion, label: 'Asam. Poblacion', done: _datosBloqueados),
+        ],
+      ),
     );
   }
 
@@ -876,7 +943,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       onTap: () => setState(() => _activeTab = tab),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(12),
@@ -986,6 +1053,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     required int sum,
     required bool ok,
     required bool editable,
+    bool showPnu = true,
   }) {
     return Card(
       child: Padding(
@@ -1076,20 +1144,21 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
               ],
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: papeletasNoUtilizadasCtrl,
-              enabled: editable,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Papeletas no utilizadas',
-                isDense: true,
+            if (showPnu)
+              TextField(
+                controller: papeletasNoUtilizadasCtrl,
+                enabled: editable,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Papeletas no utilizadas',
+                  isDense: true,
+                ),
+                onChanged: (_) => _onDataChanged(),
               ),
-              onChanged: (_) => _onDataChanged(),
-            ),
             const SizedBox(height: 6),
             Text(
-              'Total ${sum + _ival(blancosCtrl) + _ival(nulosCtrl) + _ival(papeletasNoUtilizadasCtrl)}/250',
+              'Total ${sum + _ival(blancosCtrl) + _ival(nulosCtrl) + (showPnu ? _ival(papeletasNoUtilizadasCtrl) : 0)}/250',
               style: TextStyle(
                 color: ok ? Colors.green : Colors.red,
                 fontWeight: FontWeight.w700,

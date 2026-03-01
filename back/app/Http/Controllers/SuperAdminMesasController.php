@@ -292,6 +292,11 @@ class SuperAdminMesasController extends Controller
             'total_blancos' => 'nullable|integer|min:0',
             'total_nulos' => 'nullable|integer|min:0',
             'observacion' => 'nullable|string',
+            'observacion_gobernador' => 'nullable|string',
+            'observacion_asambleista_distrito' => 'nullable|string',
+            'observacion_asambleista_poblacion' => 'nullable|string',
+            'observacion_concejal' => 'nullable|string',
+            'observacion_alcalde' => 'nullable|string',
             'latitud' => 'nullable|numeric',
             'longitud' => 'nullable|numeric',
             'blancos_gobernador' => 'nullable|integer|min:0',
@@ -346,6 +351,9 @@ class SuperAdminMesasController extends Controller
         }
 
         $votosFields = [
+            'votos_gobernador',
+            'votos_asambleista_distrito',
+            'votos_asambleista_poblacion',
             'votos_concejal',
             'votos_alcalde',
         ];
@@ -392,6 +400,11 @@ class SuperAdminMesasController extends Controller
             $res->etapa_2 = null;
 
             if ($request->has('observacion')) $res->observacion = $data['observacion'] ?? null;
+            if ($request->has('observacion_gobernador')) $res->observacion_gobernador = $data['observacion_gobernador'] ?? null;
+            if ($request->has('observacion_asambleista_distrito')) $res->observacion_asambleista_distrito = $data['observacion_asambleista_distrito'] ?? null;
+            if ($request->has('observacion_asambleista_poblacion')) $res->observacion_asambleista_poblacion = $data['observacion_asambleista_poblacion'] ?? null;
+            if ($request->has('observacion_concejal')) $res->observacion_concejal = $data['observacion_concejal'] ?? null;
+            if ($request->has('observacion_alcalde')) $res->observacion_alcalde = $data['observacion_alcalde'] ?? null;
             if ($request->has('total_blancos')) $res->total_blancos = (int) ($data['total_blancos'] ?? 0);
             if ($request->has('total_nulos')) $res->total_nulos = (int) ($data['total_nulos'] ?? 0);
             if ($request->has('latitud')) $res->latitud = $data['latitud'] ?? null;
@@ -430,10 +443,13 @@ class SuperAdminMesasController extends Controller
 
             $totalVotos = 0;
             foreach ($votos as $row) {
+                $vvGob = (int) $row['votos_gobernador'];
+                $vvAsd = (int) $row['votos_asambleista_distrito'];
+                $vvAsp = (int) $row['votos_asambleista_poblacion'];
                 $vvCon = (int) $row['votos_concejal'];
                 $vvAlc = (int) $row['votos_alcalde'];
 
-                $totalVotos += ($vvCon + $vvAlc);
+                $totalVotos += ($vvGob + $vvAsd + $vvAsp + $vvCon + $vvAlc);
 
                 ResultadoMesaDetalle::updateOrCreate(
                     [
@@ -441,9 +457,9 @@ class SuperAdminMesasController extends Controller
                         'partido_id' => $row['partido_id'],
                     ],
                     [
-                        'votos_gobernador' => 0,
-                        'votos_asambleista_distrito' => 0,
-                        'votos_asambleista_poblacion' => 0,
+                        'votos_gobernador' => $vvGob,
+                        'votos_asambleista_distrito' => $vvAsd,
+                        'votos_asambleista_poblacion' => $vvAsp,
                         'votos_concejal' => $vvCon,
                         'votos_alcalde' => $vvAlc,
                     ]

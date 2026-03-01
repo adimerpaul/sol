@@ -88,6 +88,11 @@ class MobileVotacionService {
           ..headers['Accept'] = 'application/json'
           ..fields['finalizar'] = draft.finalizar ? '1' : '0'
           ..fields['observacion'] = draft.observacion ?? ''
+          ..fields['observacion_gobernador'] = draft.observacionGobernador ?? ''
+          ..fields['observacion_asambleista_distrito'] = draft.observacionAsd ?? ''
+          ..fields['observacion_asambleista_poblacion'] = draft.observacionAsp ?? ''
+          ..fields['observacion_concejal'] = draft.observacionConcejal ?? ''
+          ..fields['observacion_alcalde'] = draft.observacionAlcalde ?? ''
           ..fields['blancos_gobernador'] = '${draft.blancosGobernador}'
           ..fields['nulos_gobernador'] = '${draft.nulosGobernador}'
           ..fields['blancos_asambleista_distrito'] = '${draft.blancosAsd}'
@@ -161,7 +166,7 @@ class MobileVotacionService {
     final compressed = await FlutterImageCompress.compressAndGetFile(
       sourcePath,
       targetPath,
-      quality: 85,
+      quality: 90,
       format: CompressFormat.webp,
       keepExif: true,
     );

@@ -339,6 +339,11 @@ class MobileResultadosController extends Controller
         $data = $request->validate([
             'finalizar' => 'nullable|boolean',
             'observacion' => 'nullable|string',
+            'observacion_gobernador' => 'nullable|string',
+            'observacion_asambleista_distrito' => 'nullable|string',
+            'observacion_asambleista_poblacion' => 'nullable|string',
+            'observacion_concejal' => 'nullable|string',
+            'observacion_alcalde' => 'nullable|string',
             'votos' => 'required',
 
             'blancos_gobernador' => 'nullable|integer|min:0',
@@ -378,6 +383,9 @@ class MobileResultadosController extends Controller
         $partidoSet = array_fill_keys($partidoIds, true);
 
         $sum = [
+            'gobernador' => 0,
+            'asambleista_distrito' => 0,
+            'asambleista_poblacion' => 0,
             'concejal' => 0,
             'alcalde' => 0,
         ];
@@ -388,6 +396,9 @@ class MobileResultadosController extends Controller
                 return response()->json(['message' => "Partido invalido: {$pid}"], 422);
             }
             foreach ([
+                'votos_gobernador',
+                'votos_asambleista_distrito',
+                'votos_asambleista_poblacion',
                 'votos_concejal',
                 'votos_alcalde'
             ] as $k) {
@@ -396,15 +407,24 @@ class MobileResultadosController extends Controller
                 }
             }
 
+            $sum['gobernador'] += (int) $row['votos_gobernador'];
+            $sum['asambleista_distrito'] += (int) $row['votos_asambleista_distrito'];
+            $sum['asambleista_poblacion'] += (int) $row['votos_asambleista_poblacion'];
             $sum['concejal'] += (int) $row['votos_concejal'];
             $sum['alcalde'] += (int) $row['votos_alcalde'];
         }
 
         $blancos = [
+            'gobernador' => (int) ($data['blancos_gobernador'] ?? 0),
+            'asambleista_distrito' => (int) ($data['blancos_asambleista_distrito'] ?? 0),
+            'asambleista_poblacion' => (int) ($data['blancos_asambleista_poblacion'] ?? 0),
             'concejal' => (int) ($data['blancos_concejal'] ?? 0),
             'alcalde' => (int) ($data['blancos_alcalde'] ?? 0),
         ];
         $nulos = [
+            'gobernador' => (int) ($data['nulos_gobernador'] ?? 0),
+            'asambleista_distrito' => (int) ($data['nulos_asambleista_distrito'] ?? 0),
+            'asambleista_poblacion' => (int) ($data['nulos_asambleista_poblacion'] ?? 0),
             'concejal' => (int) ($data['nulos_concejal'] ?? 0),
             'alcalde' => (int) ($data['nulos_alcalde'] ?? 0),
         ];
@@ -422,16 +442,21 @@ class MobileResultadosController extends Controller
                 [
                     'registrado_por' => $user->id,
                     'observacion' => $data['observacion'] ?? null,
+                    'observacion_gobernador' => $data['observacion_gobernador'] ?? null,
+                    'observacion_asambleista_distrito' => $data['observacion_asambleista_distrito'] ?? null,
+                    'observacion_asambleista_poblacion' => $data['observacion_asambleista_poblacion'] ?? null,
+                    'observacion_concejal' => $data['observacion_concejal'] ?? null,
+                    'observacion_alcalde' => $data['observacion_alcalde'] ?? null,
 
                     'etapa_1' => true,
                     'etapa_2' => false,
 
-                    'blancos_gobernador' => 0,
-                    'nulos_gobernador' => 0,
-                    'blancos_asambleista_distrito' => 0,
-                    'nulos_asambleista_distrito' => 0,
-                    'blancos_asambleista_poblacion' => 0,
-                    'nulos_asambleista_poblacion' => 0,
+                    'blancos_gobernador' => $blancos['gobernador'],
+                    'nulos_gobernador' => $nulos['gobernador'],
+                    'blancos_asambleista_distrito' => $blancos['asambleista_distrito'],
+                    'nulos_asambleista_distrito' => $nulos['asambleista_distrito'],
+                    'blancos_asambleista_poblacion' => $blancos['asambleista_poblacion'],
+                    'nulos_asambleista_poblacion' => $nulos['asambleista_poblacion'],
                     'blancos_concejal' => $blancos['concejal'],
                     'nulos_concejal' => $nulos['concejal'],
                     'papeletas_no_utilizadas_concejal' => $pnu['concejal'],
@@ -466,9 +491,9 @@ class MobileResultadosController extends Controller
                         'partido_id' => (int) $row['partido_id'],
                     ],
                     [
-                        'votos_gobernador' => 0,
-                        'votos_asambleista_distrito' => 0,
-                        'votos_asambleista_poblacion' => 0,
+                        'votos_gobernador' => (int) $row['votos_gobernador'],
+                        'votos_asambleista_distrito' => (int) $row['votos_asambleista_distrito'],
+                        'votos_asambleista_poblacion' => (int) $row['votos_asambleista_poblacion'],
                         'votos_concejal' => (int) $row['votos_concejal'],
                         'votos_alcalde' => (int) $row['votos_alcalde'],
                     ]
@@ -528,6 +553,11 @@ class MobileResultadosController extends Controller
             'payload.total_blancos' => 'required|integer|min:0',
             'payload.total_nulos' => 'required|integer|min:0',
             'payload.observacion' => 'nullable|string',
+            'payload.observacion_gobernador' => 'nullable|string',
+            'payload.observacion_asambleista_distrito' => 'nullable|string',
+            'payload.observacion_asambleista_poblacion' => 'nullable|string',
+            'payload.observacion_concejal' => 'nullable|string',
+            'payload.observacion_alcalde' => 'nullable|string',
             'payload.latitud' => 'nullable|numeric',
             'payload.longitud' => 'nullable|numeric',
             'payload.detalles' => 'required|array',
@@ -551,6 +581,11 @@ class MobileResultadosController extends Controller
                     'total_blancos' => $data['payload']['total_blancos'],
                     'total_nulos' => $data['payload']['total_nulos'],
                     'observacion' => $data['payload']['observacion'] ?? null,
+                    'observacion_gobernador' => $data['payload']['observacion_gobernador'] ?? null,
+                    'observacion_asambleista_distrito' => $data['payload']['observacion_asambleista_distrito'] ?? null,
+                    'observacion_asambleista_poblacion' => $data['payload']['observacion_asambleista_poblacion'] ?? null,
+                    'observacion_concejal' => $data['payload']['observacion_concejal'] ?? null,
+                    'observacion_alcalde' => $data['payload']['observacion_alcalde'] ?? null,
                     'latitud' => $data['payload']['latitud'] ?? null,
                     'longitud' => $data['payload']['longitud'] ?? null,
                 ]

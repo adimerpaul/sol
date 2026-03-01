@@ -3,6 +3,11 @@ class VotacionDraft {
     required this.mesaId,
     required this.finalizar,
     required this.observacion,
+    required this.observacionGobernador,
+    required this.observacionAsd,
+    required this.observacionAsp,
+    required this.observacionConcejal,
+    required this.observacionAlcalde,
     required this.blancosGobernador,
     required this.nulosGobernador,
     required this.blancosAsd,
@@ -24,6 +29,11 @@ class VotacionDraft {
   final int mesaId;
   final bool finalizar;
   final String? observacion;
+  final String? observacionGobernador;
+  final String? observacionAsd;
+  final String? observacionAsp;
+  final String? observacionConcejal;
+  final String? observacionAlcalde;
 
   final int blancosGobernador;
   final int nulosGobernador;
