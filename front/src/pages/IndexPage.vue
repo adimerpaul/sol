@@ -31,7 +31,7 @@
           </div>
 
           <div class="row q-col-gutter-md">
-            <div class="col-12 col-lg-5">
+            <div class="col-12 col-md-6">
               <q-card flat bordered class="q-pa-sm full-height chart-modern">
                 <apexchart
                   type="pie"
@@ -41,7 +41,7 @@
                 />
               </q-card>
             </div>
-            <div class="col-12 col-lg-7">
+            <div class="col-12 col-md-6">
               <q-card flat bordered class="q-pa-sm full-height chart-modern">
                 <apexchart
                   type="bar"
@@ -188,7 +188,14 @@ export default {
           fontSize: '11px',
           width: 130
         },
-        dataLabels: { enabled: true },
+        dataLabels: {
+          enabled: true,
+          formatter: function (val, opts) {
+            const label = opts?.w?.globals?.labels?.[opts.seriesIndex] || ''
+            return `${label} ${Number(val || 0).toFixed(1)}%`
+          },
+          style: { fontSize: '10px', fontWeight: 700 }
+        },
         title: { text: '', align: 'center' }
       }
     },
@@ -199,7 +206,7 @@ export default {
           toolbar: { show: true, tools: { download: true, selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false } },
           animations: { enabled: true, dynamicAnimation: { speed: 600 } }
         },
-        colors: ['#1e88e5'],
+        colors: card.colors,
         plotOptions: {
           bar: {
             horizontal: true,

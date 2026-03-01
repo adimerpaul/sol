@@ -9,7 +9,7 @@ import 'pages/gobernador_asambleista_page.dart';
 import 'pages/mapa_page.dart';
 import 'pages/perfil_page.dart';
 
-enum _MenuSection { perfil, alcaldeConcejal, gobernadorAsambleista, mapa }
+enum _MenuSection { perfil, asistencia, mapa, votacion }
 
 class MenuView extends StatefulWidget {
   const MenuView({super.key});
@@ -19,7 +19,7 @@ class MenuView extends StatefulWidget {
 }
 
 class _MenuViewState extends State<MenuView> {
-  _MenuSection _section = _MenuSection.mapa;
+  _MenuSection _section = _MenuSection.perfil;
   final MobileSyncService _syncService = MobileSyncService();
   bool _syncing = false;
   int _pendingSyncCount = 0;
@@ -108,12 +108,12 @@ class _MenuViewState extends State<MenuView> {
     switch (_section) {
       case _MenuSection.perfil:
         return const PerfilPage();
-      case _MenuSection.alcaldeConcejal:
-        return const AlcaldeConcejalPage();
-      case _MenuSection.gobernadorAsambleista:
+      case _MenuSection.asistencia:
         return const GobernadorAsambleistaPage();
       case _MenuSection.mapa:
         return const MapaPage();
+      case _MenuSection.votacion:
+        return const AlcaldeConcejalPage();
     }
   }
 
@@ -121,12 +121,12 @@ class _MenuViewState extends State<MenuView> {
     switch (_section) {
       case _MenuSection.perfil:
         return 'Perfil';
-      case _MenuSection.alcaldeConcejal:
-        return 'Subir votacion';
-      case _MenuSection.gobernadorAsambleista:
+      case _MenuSection.asistencia:
         return 'Asistencia';
       case _MenuSection.mapa:
         return 'Mapa';
+      case _MenuSection.votacion:
+        return 'Subir votacion';
     }
   }
 
@@ -155,18 +155,21 @@ class _MenuViewState extends State<MenuView> {
             onSelected: (value) async {
               if (value == 'perfil') {
                 await _onMenuAction(_MenuSection.perfil);
-              } else if (value == 'alcalde') {
-                await _onMenuAction(_MenuSection.alcaldeConcejal);
-              } else if (value == 'gobernador') {
-                await _onMenuAction(_MenuSection.gobernadorAsambleista);
+              } else if (value == 'asistencia') {
+                await _onMenuAction(_MenuSection.asistencia);
+              } else if (value == 'mapa') {
+                await _onMenuAction(_MenuSection.mapa);
+              } else if (value == 'votacion') {
+                await _onMenuAction(_MenuSection.votacion);
               } else if (value == 'salir') {
                 await _goToLogin();
               }
             },
             itemBuilder: (context) => const [
               PopupMenuItem(value: 'perfil', child: Text('Perfil')),
-              PopupMenuItem(value: 'alcalde', child: Text('Subir votacion')),
-              PopupMenuItem(value: 'gobernador', child: Text('Asistencia')),
+              PopupMenuItem(value: 'asistencia', child: Text('Asistencia')),
+              PopupMenuItem(value: 'mapa', child: Text('Mapa')),
+              PopupMenuItem(value: 'votacion', child: Text('Subir votacion')),
               PopupMenuItem(value: 'salir', child: Text('Salir')),
             ],
           ),
@@ -175,11 +178,7 @@ class _MenuViewState extends State<MenuView> {
       body: _currentPage(),
       floatingActionButton: FloatingActionButton(
         heroTag: 'go_map_fab',
-        onPressed: () {
-          setState(() {
-            _section = _MenuSection.mapa;
-          });
-        },
+        onPressed: () => _onMenuAction(_MenuSection.mapa),
         child: const Icon(Icons.map_outlined),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -198,17 +197,17 @@ class _MenuViewState extends State<MenuView> {
                 onTap: () => _onMenuAction(_MenuSection.perfil),
               ),
               _NavButton(
-                icon: Icons.how_to_vote_outlined,
-                label: 'Votacion',
-                selected: _section == _MenuSection.alcaldeConcejal,
-                onTap: () => _onMenuAction(_MenuSection.alcaldeConcejal),
+                icon: Icons.account_balance_outlined,
+                label: 'Asistencia',
+                selected: _section == _MenuSection.asistencia,
+                onTap: () => _onMenuAction(_MenuSection.asistencia),
               ),
               const SizedBox(width: 36),
               _NavButton(
-                icon: Icons.account_balance_outlined,
-                label: 'Asistencia',
-                selected: _section == _MenuSection.gobernadorAsambleista,
-                onTap: () => _onMenuAction(_MenuSection.gobernadorAsambleista),
+                icon: Icons.how_to_vote_outlined,
+                label: 'Votacion',
+                selected: _section == _MenuSection.votacion,
+                onTap: () => _onMenuAction(_MenuSection.votacion),
               ),
               _NavButton(
                 icon: Icons.logout,

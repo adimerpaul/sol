@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/mobile_auth_local_store.dart';
 
@@ -70,7 +71,10 @@ class _MapaPageState extends State<MapaPage> {
                           point: LatLng(recinto.latitud, recinto.longitud),
                           width: 140,
                           height: 52,
-                          child: _RecintoMarker(recinto: recinto),
+                          child: _RecintoMarker(
+                            recinto: recinto,
+                            onTap: () => _showRecintoDialog(recinto),
+                          ),
                         ),
                       )
                       .toList(),
@@ -109,44 +113,102 @@ class _MapaPageState extends State<MapaPage> {
       },
     );
   }
+
+  Future<void> _showRecintoDialog(RecintoMesaPoint recinto) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(recinto.recintoNombre),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Total mesas: ${recinto.totalMesas}'),
+              Text('Pendientes: ${recinto.pendientes}'),
+              Text('Locales: ${recinto.locales}'),
+              Text('Realizados: ${recinto.realizados}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cerrar'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                await _openGoogleMaps(recinto);
+              },
+              icon: const Icon(Icons.directions),
+              label: const Text('Ir con Google Maps'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openGoogleMaps(RecintoMesaPoint recinto) async {
+    final lat = recinto.latitud;
+    final lng = recinto.longitud;
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+    );
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir Google Maps')),
+      );
+    }
+  }
 }
 
 class _RecintoMarker extends StatelessWidget {
-  const _RecintoMarker({required this.recinto});
+  const _RecintoMarker({required this.recinto, required this.onTap});
 
   final RecintoMesaPoint recinto;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Row(
-          children: [
-            const Icon(Icons.place, color: Colors.red, size: 20),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    recinto.recintoNombre,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Card(
+          elevation: 3,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.place, color: Colors.red, size: 20),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        recinto.recintoNombre,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'Mesas: ${recinto.totalMesas}',
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                    ],
                   ),
-                  Text(
-                    'Mesas: ${recinto.totalMesas}',
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
