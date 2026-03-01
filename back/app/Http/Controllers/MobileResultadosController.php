@@ -354,16 +354,16 @@ class MobileResultadosController extends Controller
             'nulos_alcalde' => 'nullable|integer|min:0',
             'papeletas_no_utilizadas_alcalde' => 'nullable|integer|min:0',
 
-            'foto1' => 'nullable|image|max:4096',
-            'foto2' => 'nullable|image|max:4096',
-            'foto3' => 'nullable|image|max:4096',
-            'foto4' => 'nullable|image|max:4096',
-            'foto5' => 'nullable|image|max:4096',
-            'foto6' => 'nullable|image|max:4096',
-            'foto7' => 'nullable|image|max:4096',
-            'foto8' => 'nullable|image|max:4096',
-            'foto9' => 'nullable|image|max:4096',
-            'foto10' => 'nullable|image|max:4096',
+            'foto1' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto2' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto3' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto4' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto5' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto6' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto7' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto8' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto9' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'foto10' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
         ]);
 
         $votos = $request->input('votos');
