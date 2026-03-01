@@ -5,81 +5,52 @@
         <div class="col">
           <div class="text-h6 text-weight-bold">Dashboard Graficos</div>
           <div class="text-caption text-grey-7">
-            Votos validos por partido y mesas faltantes en tiempo real
+            Votos por categoria y mesas faltantes en tiempo real (Municipio Oruro)
           </div>
         </div>
         <div class="col-auto row items-center q-gutter-sm">
           <q-chip outline color="primary">Validos: {{ votosValidosTotal }}</q-chip>
+          <q-chip outline color="secondary">Mesas Oruro: {{ mesas.total }}</q-chip>
+          <q-chip outline color="positive">Con resultado: {{ mesas.con_resultado }}</q-chip>
           <q-chip outline color="orange">Mesas faltantes: {{ mesas.faltantes }}</q-chip>
-          <q-btn
-            color="primary"
-            icon="refresh"
-            label="Actualizar"
-            no-caps
-            :loading="loading"
-            @click="loadGraficos"
-          />
+          <q-btn color="primary" icon="add" round dense :loading="loading" @click="loadGraficos" />
         </div>
       </q-card-section>
 
       <q-separator />
 
       <q-card-section class="q-pa-md">
-        <div class="row q-col-gutter-md">
-          <div class="col-12 col-lg-6">
-            <q-card flat bordered class="q-pa-sm">
-              <div class="text-subtitle2 text-weight-bold q-pa-sm">
-                Votos validos por partido (Torta)
-              </div>
-              <apexchart
-                type="pie"
-                height="320"
-                :options="pieValidosOptions"
-                :series="pieValidosSeries"
-              />
-            </q-card>
+        <div
+          v-for="card in chartCards"
+          :key="`row-${card.key}`"
+          class="category-block q-mb-md"
+        >
+          <div class="row items-center justify-between q-mb-sm">
+            <div class="text-subtitle1 text-weight-bold">{{ card.label }}</div>
+            <q-chip dense outline color="primary">Total: {{ card.total }}</q-chip>
           </div>
 
-          <div class="col-12 col-lg-6">
-            <q-card flat bordered class="q-pa-sm">
-              <div class="text-subtitle2 text-weight-bold q-pa-sm">
-                Votos validos por partido (Histograma)
-              </div>
-              <apexchart
-                type="bar"
-                height="320"
-                :options="barValidosOptions"
-                :series="barValidosSeries"
-              />
-            </q-card>
-          </div>
-
-          <div class="col-12 col-lg-6">
-            <q-card flat bordered class="q-pa-sm">
-              <div class="text-subtitle2 text-weight-bold q-pa-sm">
-                Mesas: con resultado vs faltantes (Torta)
-              </div>
-              <apexchart
-                type="pie"
-                height="320"
-                :options="pieMesasOptions"
-                :series="pieMesasSeries"
-              />
-            </q-card>
-          </div>
-
-          <div class="col-12 col-lg-6">
-            <q-card flat bordered class="q-pa-sm">
-              <div class="text-subtitle2 text-weight-bold q-pa-sm">
-                Mesas: con resultado vs faltantes (Histograma)
-              </div>
-              <apexchart
-                type="bar"
-                height="320"
-                :options="barMesasOptions"
-                :series="barMesasSeries"
-              />
-            </q-card>
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-lg-5">
+              <q-card flat bordered class="q-pa-sm full-height chart-modern">
+                <apexchart
+                  type="pie"
+                  height="280"
+                  :options="pieOptions(card)"
+                  :series="card.series"
+                />
+              </q-card>
+            </div>
+            <div class="col-12 col-lg-7">
+              <q-card flat bordered class="q-pa-sm full-height chart-modern">
+                <apexchart
+                  type="bar"
+                  height="280"
+                  :options="barOptions(card)"
+                  :series="[{ name: card.label, data: card.series }]"
+                />
+              </q-card>
+            </div>
           </div>
         </div>
       </q-card-section>
@@ -98,6 +69,13 @@ const FALLBACK_COLORS = [
   '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#e53935',
   '#00897b', '#6d4c41', '#3949ab', '#546e7a', '#7cb342'
 ]
+const CATEGORY_DEFS = [
+  { key: 'alcalde', label: 'Alcalde', valueField: 'votos_alcalde' },
+  { key: 'concejal', label: 'Concejal', valueField: 'votos_concejal' },
+  { key: 'gobernador', label: 'Gobernador', valueField: 'votos_gobernador' },
+  { key: 'asambleista_distrito', label: 'Asambleista por Distrito', valueField: 'votos_asambleista_distrito' },
+  { key: 'asambleista_poblacion', label: 'Asambleista por Poblacion', valueField: 'votos_asambleista_poblacion' }
+]
 
 export default {
   name: 'IndexPage',
@@ -107,6 +85,14 @@ export default {
       loading: false,
       ranking: [],
       votosValidosTotal: 0,
+      categorias: {},
+      categoryRankings: {
+        alcalde: [],
+        concejal: [],
+        gobernador: [],
+        asambleista_distrito: [],
+        asambleista_poblacion: []
+      },
       mesas: {
         total: 0,
         con_resultado: 0,
@@ -118,79 +104,17 @@ export default {
   },
 
   computed: {
-    rankingColors () {
-      return this.ranking.map((r, i) => r.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length])
-    },
-
-    pieValidosSeries () {
-      return this.ranking.map(r => Number(r.votos_validos || 0))
-    },
-    pieValidosOptions () {
-      return {
-        labels: this.ranking.map(r => r.sigla || '-'),
-        colors: this.rankingColors,
-        legend: { position: 'bottom' },
-        dataLabels: { enabled: true }
-      }
-    },
-
-    barValidosSeries () {
-      return [{ name: 'Votos validos', data: this.ranking.map(r => Number(r.votos_validos || 0)) }]
-    },
-    barValidosOptions () {
-      return {
-        chart: { toolbar: { show: false } },
-        colors: ['#1e88e5'],
-        plotOptions: {
-          bar: {
-            horizontal: false,
-            borderRadius: 5,
-            columnWidth: '55%'
-          }
-        },
-        xaxis: { categories: this.ranking.map(r => r.sigla || '-') },
-        dataLabels: { enabled: true }
-      }
-    },
-
-    pieMesasSeries () {
-      return [
-        Number(this.mesas.con_resultado || 0),
-        Number(this.mesas.faltantes || 0)
-      ]
-    },
-    pieMesasOptions () {
-      return {
-        labels: ['Con resultado', 'Faltantes'],
-        colors: ['#43a047', '#fb8c00'],
-        legend: { position: 'bottom' },
-        dataLabels: { enabled: true }
-      }
-    },
-
-    barMesasSeries () {
-      return [{
-        name: 'Mesas',
-        data: [
-          Number(this.mesas.con_resultado || 0),
-          Number(this.mesas.faltantes || 0)
-        ]
-      }]
-    },
-    barMesasOptions () {
-      return {
-        chart: { toolbar: { show: false } },
-        colors: ['#546e7a'],
-        plotOptions: {
-          bar: {
-            horizontal: false,
-            borderRadius: 5,
-            columnWidth: '45%'
-          }
-        },
-        xaxis: { categories: ['Con resultado', 'Faltantes'] },
-        dataLabels: { enabled: true }
-      }
+    chartCards () {
+      return CATEGORY_DEFS.map(def => {
+        const ranking = Array.isArray(this.categoryRankings[def.key]) ? this.categoryRankings[def.key] : []
+        return {
+          ...def,
+          labels: ranking.map(r => this.toNameCase(r.sigla || '-')),
+          series: ranking.map(r => Number(r[def.valueField] || 0)),
+          colors: ranking.map((r, i) => r.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length]),
+          total: Number(this?.categorias?.[def.key]?.total || 0)
+        }
+      })
     }
   },
 
@@ -244,7 +168,60 @@ export default {
         this.loadGraficos()
       }, 400)
     },
-
+    toNameCase (text) {
+      const value = String(text || '').trim().toLowerCase()
+      if (!value) return '-'
+      return value.charAt(0).toUpperCase() + value.slice(1)
+    },
+    pieOptions (card) {
+      return {
+        chart: {
+          id: `pie-${card.key}`,
+          toolbar: { show: true, tools: { download: true, selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false } },
+          animations: { enabled: true, dynamicAnimation: { speed: 600 } }
+        },
+        labels: card.labels,
+        colors: card.colors,
+        legend: {
+          position: 'right',
+          horizontalAlign: 'left',
+          fontSize: '11px',
+          width: 130
+        },
+        dataLabels: { enabled: true },
+        title: { text: '', align: 'center' }
+      }
+    },
+    barOptions (card) {
+      return {
+        chart: {
+          id: `bar-${card.key}`,
+          toolbar: { show: true, tools: { download: true, selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false } },
+          animations: { enabled: true, dynamicAnimation: { speed: 600 } }
+        },
+        colors: ['#1e88e5'],
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            borderRadius: 5,
+            barHeight: '58%',
+            distributed: true
+          }
+        },
+        xaxis: {
+          categories: card.labels,
+          labels: {
+            style: { fontSize: '11px', fontWeight: 600 }
+          }
+        },
+        dataLabels: {
+          enabled: true,
+          style: { fontSize: '12px', fontWeight: 700 },
+          offsetX: 8
+        },
+        legend: { show: false }
+      }
+    },
     async loadGraficos () {
       this.loading = true
       try {
@@ -253,6 +230,14 @@ export default {
 
         this.votosValidosTotal = Number(data.votos_validos_total || 0)
         this.ranking = Array.isArray(data.ranking_validos) ? data.ranking_validos : []
+        this.categorias = data.categorias || {}
+        this.categoryRankings = {
+          alcalde: Array.isArray(data?.categorias?.alcalde?.ranking) ? data.categorias.alcalde.ranking : [],
+          concejal: Array.isArray(data?.categorias?.concejal?.ranking) ? data.categorias.concejal.ranking : [],
+          gobernador: Array.isArray(data?.categorias?.gobernador?.ranking) ? data.categorias.gobernador.ranking : [],
+          asambleista_distrito: Array.isArray(data?.categorias?.asambleista_distrito?.ranking) ? data.categorias.asambleista_distrito.ranking : [],
+          asambleista_poblacion: Array.isArray(data?.categorias?.asambleista_poblacion?.ranking) ? data.categorias.asambleista_poblacion.ranking : []
+        }
         this.mesas = {
           total: Number(data?.mesas?.total || 0),
           con_resultado: Number(data?.mesas?.con_resultado || 0),
@@ -270,3 +255,21 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.full-height {
+  height: 100%;
+}
+
+.category-block {
+  background: #f8fafc;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.chart-modern {
+  border-radius: 10px;
+  background: #fff;
+}
+</style>
