@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:image/image.dart' as img;
 
 import '../models/votacion_model.dart';
 import 'mobile_auth_local_store.dart';
@@ -124,7 +124,7 @@ class MobileVotacionService {
           await http.MultipartFile.fromPath(
             slot,
             path,
-            contentType: MediaType('image', 'jpeg'),
+            contentType: _contentTypeForPath(path),
           ),
         );
       }
@@ -147,25 +147,32 @@ class MobileVotacionService {
     }
   }
 
-  Future<String> compressImageToJpeg({
+  MediaType _contentTypeForPath(String path) {
+    final p = path.toLowerCase();
+    if (p.endsWith('.webp')) return MediaType('image', 'webp');
+    if (p.endsWith('.png')) return MediaType('image', 'png');
+    return MediaType('image', 'jpeg');
+  }
+
+  Future<String> compressImageToWebp({
     required String sourcePath,
     required String targetPath,
   }) async {
-    final bytes = await File(sourcePath).readAsBytes();
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) {
+    final compressed = await FlutterImageCompress.compressAndGetFile(
+      sourcePath,
+      targetPath,
+      quality: 85,
+      format: CompressFormat.webp,
+      keepExif: true,
+    );
+    if (compressed == null) {
       await File(sourcePath).copy(targetPath);
       return targetPath;
     }
-    final resized = decoded.width > 1400
-        ? img.copyResize(decoded, width: 1400)
-        : decoded;
-    final jpg = img.encodeJpg(resized, quality: 70);
-    await File(targetPath).writeAsBytes(jpg, flush: true);
-    return targetPath;
+    return compressed.path;
   }
 
-  Future<String?> downloadAndCompressImageToJpeg({
+  Future<String?> downloadAndCompressImageToWebp({
     required String imageUrl,
     required String targetPath,
   }) async {
@@ -177,15 +184,28 @@ class MobileVotacionService {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       return null;
     }
-    final decoded = img.decodeImage(res.bodyBytes);
-    if (decoded == null) {
-      return null;
+    final tmpSource = '$targetPath.src';
+    await File(tmpSource).writeAsBytes(res.bodyBytes, flush: true);
+    try {
+      return await compressImageToWebp(
+        sourcePath: tmpSource,
+        targetPath: targetPath,
+      );
+    } finally {
+      final tmp = File(tmpSource);
+      if (await tmp.exists()) {
+        await tmp.delete();
+      }
     }
-    final resized = decoded.width > 1400
-        ? img.copyResize(decoded, width: 1400)
-        : decoded;
-    final jpg = img.encodeJpg(resized, quality: 70);
-    await File(targetPath).writeAsBytes(jpg, flush: true);
-    return targetPath;
   }
+
+  Future<String> compressImageToJpeg({
+    required String sourcePath,
+    required String targetPath,
+  }) => compressImageToWebp(sourcePath: sourcePath, targetPath: targetPath);
+
+  Future<String?> downloadAndCompressImageToJpeg({
+    required String imageUrl,
+    required String targetPath,
+  }) => downloadAndCompressImageToWebp(imageUrl: imageUrl, targetPath: targetPath);
 }

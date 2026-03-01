@@ -322,15 +322,20 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     required int mesaId,
     required String slot,
   }) {
-    return '${dir.path}/mesa${mesaId}_$slot.jpg';
+    return '${dir.path}/mesa${mesaId}_$slot.webp';
   }
 
   Future<void> _loadCachedFotosFromDisk(int mesaId) async {
     final dir = await _getVotacionCacheDir();
     for (final slot in votacionFotoSlots) {
-      final path = _cachedFotoPath(dir: dir, mesaId: mesaId, slot: slot);
-      if (await File(path).exists()) {
-        _localFotos[slot] = path;
+      final webpPath = _cachedFotoPath(dir: dir, mesaId: mesaId, slot: slot);
+      if (await File(webpPath).exists()) {
+        _localFotos[slot] = webpPath;
+        continue;
+      }
+      final legacyJpgPath = '${dir.path}/mesa${mesaId}_$slot.jpg';
+      if (await File(legacyJpgPath).exists()) {
+        _localFotos[slot] = legacyJpgPath;
       }
     }
   }
@@ -447,13 +452,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     );
     if (source == null) return;
 
-    final picked = await _picker.pickImage(source: source, imageQuality: 75);
+    final picked = await _picker.pickImage(source: source, imageQuality: 100);
     if (picked == null) return;
 
     final dir = await _getVotacionCacheDir();
     final mesa = _mesaId ?? 0;
     final target = _cachedFotoPath(dir: dir, mesaId: mesa, slot: slot);
-    await _service.compressImageToJpeg(
+    await _service.compressImageToWebp(
       sourcePath: picked.path,
       targetPath: target,
     );
