@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/mobile_login_response.dart';
@@ -277,10 +279,12 @@ class MobileAuthLocalStore {
   }
 
   Future<void> saveLogin(MobileLoginResponse data) async {
+    final now = DateTime.now().toIso8601String();
+    final preloadedDrafts = await _buildPreloadedDrafts(data);
+
     final db = await database;
     await db.transaction((txn) async {
       final batch = txn.batch();
-      final now = DateTime.now().toIso8601String();
 
       batch.delete('auth_session');
       batch.delete('auth_jefes');
@@ -348,7 +352,11 @@ class MobileAuthLocalStore {
           'recinto_id': mesa.recintoId,
           'numero_mesa': mesa.numeroMesa,
           'estado_api': mesa.estado,
-          'estado_local': mesa.estadoLocal ?? _estadoLocalInicial(mesa.estado),
+          'estado_local': mesa.estadoLocal ??
+              _estadoLocalInicial(
+                mesa.estado,
+                finalizada: mesa.resultado?.etapa2 == true,
+              ),
           'recinto_nombre': mesa.recintoNombre,
           'recinto_latitud': mesa.recintoLatitud,
           'recinto_longitud': mesa.recintoLongitud,
@@ -372,8 +380,107 @@ class MobileAuthLocalStore {
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
 
+      for (final draft in preloadedDrafts) {
+        batch.insert('votacion_draft', {
+          'mesa_id': draft.mesaId,
+          'payload_json': jsonEncode(draft.payload),
+          'fotos_json': jsonEncode(draft.fotos),
+          'sync_status': draft.syncStatus,
+          'last_error': null,
+          'updated_at': now,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
+
       await batch.commit(noResult: true);
     });
+  }
+
+  Future<List<_PreloadedDraft>> _buildPreloadedDrafts(
+    MobileLoginResponse data,
+  ) async {
+    final dir = await _getVotacionCacheDir();
+    final out = <_PreloadedDraft>[];
+
+    for (final mesa in data.mesas) {
+      final mesaId = mesa.id;
+      final res = mesa.resultado;
+      if (mesaId == null || res == null) continue;
+
+      final fotos = <String, String?>{for (final s in votacionFotoSlots) s: null};
+      for (final slot in votacionFotoSlots) {
+        final raw = res.fotosBase64[slot];
+        if (raw == null || raw.isEmpty) continue;
+        final path = '${dir.path}/mesa${mesaId}_$slot.jpg';
+        final saved = await _saveBase64Image(raw, path);
+        if (saved != null) {
+          fotos[slot] = saved;
+        }
+      }
+
+      final votos = res.detalles
+          .map(
+            (d) => {
+              'partido_id': d.partidoId,
+              'sigla': '',
+              'nombre': '',
+              'icono_url': null,
+              'votos_gobernador': 0,
+              'votos_asambleista_distrito': 0,
+              'votos_asambleista_poblacion': 0,
+              'votos_concejal': d.votosConcejal,
+              'votos_alcalde': d.votosAlcalde,
+            },
+          )
+          .toList();
+
+      final payload = {
+        'finalizar': res.etapa2,
+        'observacion': res.observacion,
+        'blancos_gobernador': 0,
+        'nulos_gobernador': 0,
+        'blancos_asambleista_distrito': 0,
+        'nulos_asambleista_distrito': 0,
+        'blancos_asambleista_poblacion': 0,
+        'nulos_asambleista_poblacion': 0,
+        'blancos_concejal': res.blancosConcejal,
+        'nulos_concejal': res.nulosConcejal,
+        'papeletas_no_utilizadas_concejal': res.pnuConcejal,
+        'blancos_alcalde': res.blancosAlcalde,
+        'nulos_alcalde': res.nulosAlcalde,
+        'papeletas_no_utilizadas_alcalde': res.pnuAlcalde,
+        'votos': votos,
+      };
+
+      out.add(
+        _PreloadedDraft(
+          mesaId: mesaId,
+          payload: payload,
+          fotos: fotos,
+          syncStatus: votacionSyncSynced,
+        ),
+      );
+    }
+
+    return out;
+  }
+
+  Future<Directory> _getVotacionCacheDir() async {
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory('${docs.path}/votacion/cache');
+    await dir.create(recursive: true);
+    return dir;
+  }
+
+  Future<String?> _saveBase64Image(String raw, String targetPath) async {
+    final comma = raw.indexOf(',');
+    final payload = comma >= 0 ? raw.substring(comma + 1) : raw;
+    try {
+      final bytes = base64Decode(payload);
+      await File(targetPath).writeAsBytes(bytes, flush: true);
+      return targetPath;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<MobileLoginResponse?> readLoginForUser({
@@ -457,6 +564,7 @@ class MobileAuthLocalStore {
             departamentoNombre: row['departamento_nombre'] as String?,
             recintoLatitud: row['recinto_latitud'] as String?,
             recintoLongitud: row['recinto_longitud'] as String?,
+            resultado: null,
           ),
         )
         .toList();
@@ -797,6 +905,7 @@ class MobileAuthLocalStore {
             departamentoNombre: row['departamento_nombre'] as String?,
             recintoLatitud: row['recinto_latitud'] as String?,
             recintoLongitud: row['recinto_longitud'] as String?,
+            resultado: null,
           ),
         )
         .toList();
@@ -997,8 +1106,8 @@ class MobileAuthLocalStore {
     await updateMesaEstadoLocal(mesaId, mesaEstadoLocal);
   }
 
-  String _estadoLocalInicial(String? estadoApi) {
-    if (estadoApi?.toUpperCase() == mesaEstadoRealizado) {
+  String _estadoLocalInicial(String? estadoApi, {bool finalizada = false}) {
+    if (finalizada || estadoApi?.toUpperCase() == mesaEstadoRealizado) {
       return mesaEstadoRealizado;
     }
     return mesaEstadoPendiente;
@@ -1010,6 +1119,20 @@ class MobileAuthLocalStore {
         normalized == mesaEstadoLocal ||
         normalized == mesaEstadoRealizado;
   }
+}
+
+class _PreloadedDraft {
+  _PreloadedDraft({
+    required this.mesaId,
+    required this.payload,
+    required this.fotos,
+    required this.syncStatus,
+  });
+
+  final int mesaId;
+  final Map<String, dynamic> payload;
+  final Map<String, String?> fotos;
+  final String syncStatus;
 }
 
 class MobileProfileData {

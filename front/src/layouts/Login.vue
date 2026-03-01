@@ -22,12 +22,12 @@
                 Accede con tu username y fecha de nacimiento.
               </div>
 
-              <div class="q-mb-sm text-caption text-grey-7">Username</div>
+              <div class="q-mb-sm text-caption text-grey-7">Carnet de identidad</div>
               <q-input
                 v-model="username"
                 outlined
                 dense
-                placeholder="Ej: 1234567 o usuario_1"
+                placeholder="Ej: 1234567 "
                 :rules="[v => !!v || 'Ingrese su username']"
                 class="q-mb-md"
               >

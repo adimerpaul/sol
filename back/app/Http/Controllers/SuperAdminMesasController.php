@@ -319,6 +319,16 @@ class SuperAdminMesasController extends Controller
             'foto8' => 'nullable|image|max:2048',
             'foto9' => 'nullable|image|max:2048',
             'foto10' => 'nullable|image|max:2048',
+            'clear_foto1' => 'nullable|boolean',
+            'clear_foto2' => 'nullable|boolean',
+            'clear_foto3' => 'nullable|boolean',
+            'clear_foto4' => 'nullable|boolean',
+            'clear_foto5' => 'nullable|boolean',
+            'clear_foto6' => 'nullable|boolean',
+            'clear_foto7' => 'nullable|boolean',
+            'clear_foto8' => 'nullable|boolean',
+            'clear_foto9' => 'nullable|boolean',
+            'clear_foto10' => 'nullable|boolean',
         ]);
 
         $votos = $request->input('votos');
@@ -401,6 +411,14 @@ class SuperAdminMesasController extends Controller
 
             $dir = "resultados_mesa/mesa_{$mesa->id}";
             foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto5', 'foto6', 'foto7', 'foto8', 'foto9', 'foto10'] as $f) {
+                $clearField = 'clear_' . $f;
+                if ($request->boolean($clearField)) {
+                    if (!empty($res->{$f})) {
+                        Storage::disk('public')->delete($res->{$f});
+                    }
+                    $res->{$f} = null;
+                }
+
                 if ($request->hasFile($f)) {
                     if (!empty($res->{$f})) {
                         Storage::disk('public')->delete($res->{$f});

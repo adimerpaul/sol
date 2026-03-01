@@ -20,6 +20,8 @@ class AlcaldeConcejalPage extends StatefulWidget {
   State<AlcaldeConcejalPage> createState() => _AlcaldeConcejalPageState();
 }
 
+enum _VotacionTab { alcalde, concejal }
+
 class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final MobileAuthLocalStore _localStore = MobileAuthLocalStore.instance;
   final MobileVotacionService _service = MobileVotacionService();
@@ -28,6 +30,8 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool _loading = true;
   bool _saving = false;
   bool _syncing = false;
+  bool _datosBloqueados = false;
+  _VotacionTab _activeTab = _VotacionTab.alcalde;
 
   List<MobileMesa> _mesas = const [];
   List<Map<String, dynamic>> _partidos = const [];
@@ -237,6 +241,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return true;
   }
 
+  bool get _fotosAlcaldeReady => _hasFoto('foto1') && _hasFoto('foto2');
+  bool get _fotosConcejalReady => _hasFoto('foto3') && _hasFoto('foto4');
+  bool get _allRequiredFotosReady => _fotosAlcaldeReady && _fotosConcejalReady;
+
   bool get _readyFinalizar => _mesaId != null;
 
   bool _hasFoto(String slot) {
@@ -293,10 +301,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   Future<void> _loadMesa(int mesaId) async {
     _resetForm();
+    _datosBloqueados = false;
     final local = await _localStore.readVotacionDraft(mesaId);
     if (!mounted) return;
     if (local != null) {
       _applyDraft(local);
+      _datosBloqueados =
+          local.syncStatus == MobileAuthLocalStore.votacionSyncSynced;
       setState(() {});
       return;
     }
@@ -368,6 +379,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   }
 
   Future<void> _pickImage(String slot, String label) async {
+    if (_datosBloqueados) {
+      showError(context, 'Datos ya enviados. No se puede modificar.');
+      return;
+    }
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (context) => SafeArea(
@@ -456,6 +471,61 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       showError(context, 'Selecciona una mesa');
       return;
     }
+    if (_datosBloqueados) {
+      showError(context, 'Estos datos ya fueron enviados y bloqueados');
+      return;
+    }
+
+    final hasActaElectoral = _hasFoto('foto2') || _hasFoto('foto4');
+    if (!hasActaElectoral) {
+      final continuarSinActa = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Sin acta electoral'),
+          content: const Text(
+            'No cargaste foto del acta electoral. Las fotos son opcionales.\n\nDeseas enviar de todas formas?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Enviar igual'),
+            ),
+          ],
+        ),
+      );
+      if (continuarSinActa != true) return;
+    }
+
+    if (!_okAlc || !_okCon) {
+      final continuar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Advertencia de totales'),
+          content: Text(
+            'Los totales no suman 250.\n'
+            'Alcalde: ${_sumAlc + _ival(_balcCtrl) + _ival(_nalcCtrl) + _ival(_pnuAlcCtrl)}\n'
+            'Concejal: ${_sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl)}\n\n'
+            'Deseas enviar de todas formas?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Enviar igual'),
+            ),
+          ],
+        ),
+      );
+      if (continuar != true) return;
+    }
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -489,7 +559,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       try {
         await _service.sendVotacion(d);
         await _localStore.markVotacionSynced(d.mesaId);
-        if (mounted) showSuccess(context, 'Votacion guardada y sincronizada');
+        if (mounted) {
+          setState(() => _datosBloqueados = true);
+          showSuccess(context, 'Votacion guardada y sincronizada');
+        }
       } catch (e) {
         await _localStore.markVotacionError(d.mesaId, e.toString());
         if (mounted) {
@@ -560,33 +633,41 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       children: [
         _headerCard(),
         const SizedBox(height: 8),
-        _buildCategoryCard(
-          title: '1) Alcalde',
-          voteMap: _alcCtrl,
-          blancosCtrl: _balcCtrl,
-          nulosCtrl: _nalcCtrl,
-          papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
-          sum: _sumAlc,
-          ok: _okAlc,
-        ),
-        _buildFotosCard(
-          title: 'Fotos - Alcalde',
-          config: _fotoAlcaldeConfig,
-        ),
-        _buildGuardarMandarActions(),
-        _buildCategoryCard(
-          title: '2) Concejal',
-          voteMap: _conCtrl,
-          blancosCtrl: _bconCtrl,
-          nulosCtrl: _nconCtrl,
-          papeletasNoUtilizadasCtrl: _pnuConCtrl,
-          sum: _sumCon,
-          ok: _okCon,
-        ),
-        _buildFotosCard(
-          title: 'Fotos - Concejal',
-          config: _fotoConcejalConfig,
-        ),
+        _buildTabs(),
+        const SizedBox(height: 8),
+        if (_activeTab == _VotacionTab.alcalde) ...[
+          _buildCategoryCard(
+            title: '1) Alcalde',
+            voteMap: _alcCtrl,
+            blancosCtrl: _balcCtrl,
+            nulosCtrl: _nalcCtrl,
+            papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+            sum: _sumAlc,
+            ok: _okAlc,
+            editable: !_datosBloqueados,
+          ),
+          _buildFotosCard(
+            title: 'Fotos - Alcalde',
+            config: _fotoAlcaldeConfig,
+            editable: !_datosBloqueados,
+          ),
+        ] else ...[
+          _buildCategoryCard(
+            title: '2) Concejal',
+            voteMap: _conCtrl,
+            blancosCtrl: _bconCtrl,
+            nulosCtrl: _nconCtrl,
+            papeletasNoUtilizadasCtrl: _pnuConCtrl,
+            sum: _sumCon,
+            ok: _okCon,
+            editable: !_datosBloqueados,
+          ),
+          _buildFotosCard(
+            title: 'Fotos - Concejal',
+            config: _fotoConcejalConfig,
+            editable: !_datosBloqueados,
+          ),
+        ],
         _buildGuardarMandarActions(),
         // _buildCategoryCard(
         //   title: '3) Gobernador',
@@ -625,6 +706,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             padding: const EdgeInsets.all(10),
             child: TextField(
               controller: _obsCtrl,
+              enabled: !_datosBloqueados,
               maxLines: 3,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
@@ -646,9 +728,15 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           FilledButton.icon(
-            onPressed: _saving || !_readyFinalizar ? null : _finalizarYEnviar,
+            onPressed: _saving || !_readyFinalizar || _datosBloqueados
+                ? null
+                : _finalizarYEnviar,
             icon: const Icon(Icons.send_outlined),
-            label: Text(_saving ? 'Procesando...' : 'Guardar y mandar'),
+            label: Text(
+              _datosBloqueados
+                  ? 'Ya enviado (bloqueado)'
+                  : (_saving ? 'Procesando...' : 'Guardar y mandar'),
+            ),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -657,6 +745,62 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             label: Text(_syncing ? 'Sincronizando...' : 'Sincronizar pendientes'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTabs() {
+    return Row(
+      children: [
+        Expanded(
+          child: _tabButton(
+            tab: _VotacionTab.alcalde,
+            label: 'Alcalde',
+            done: _datosBloqueados,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _tabButton(
+            tab: _VotacionTab.concejal,
+            label: 'Concejal',
+            done: _datosBloqueados,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _tabButton({
+    required _VotacionTab tab,
+    required String label,
+    required bool done,
+  }) {
+    final selected = _activeTab == tab;
+    final bgColor = done
+        ? const Color(0xFF2E7D32)
+        : (selected ? const Color(0xFF1565C0) : const Color(0xFFE6EEF8));
+    final fgColor = done || selected ? Colors.white : const Color(0xFF1B3A57);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => setState(() => _activeTab = tab),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Text(
+            done ? '$label (Hecho)' : label,
+            style: TextStyle(
+              color: fgColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -748,6 +892,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     required TextEditingController papeletasNoUtilizadasCtrl,
     required int sum,
     required bool ok,
+    required bool editable,
   }) {
     return Card(
       child: Padding(
@@ -791,6 +936,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                       width: 95,
                       child: TextField(
                         controller: voteMap[id],
+                        enabled: editable,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
@@ -810,6 +956,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                 Expanded(
                   child: TextField(
                     controller: blancosCtrl,
+                    enabled: editable,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
@@ -823,6 +970,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                 Expanded(
                   child: TextField(
                     controller: nulosCtrl,
+                    enabled: editable,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
@@ -837,6 +985,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             const SizedBox(height: 8),
             TextField(
               controller: papeletasNoUtilizadasCtrl,
+              enabled: editable,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
@@ -862,6 +1011,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   Widget _buildFotosCard({
     required String title,
     required List<Map<String, String>> config,
+    required bool editable,
   }) {
     return Card(
       child: Padding(
@@ -883,7 +1033,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: () => _pickImage(slot, label),
+                      onPressed: editable ? () => _pickImage(slot, label) : null,
                       icon: const Icon(Icons.add_a_photo_outlined),
                       label: Text(label),
                     ),

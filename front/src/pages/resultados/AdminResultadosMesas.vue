@@ -416,6 +416,16 @@
                           @click="openPhotoPreview(n)"
                           style="z-index: 1000"
                         />
+                        <q-btn
+                          v-if="fotoPreview(n)"
+                          icon="delete"
+                          dense
+                          round
+                          color="negative"
+                          class="absolute-top-right q-ma-xs"
+                          @click="clearFoto(n)"
+                          style="z-index: 1000; right: 40px;"
+                        />
 <!--                        <pre>{{fotoPreview(n)}}</pre>-->
                         <q-img
                           v-if="fotoPreview(n)"
@@ -735,6 +745,10 @@ export default {
       fotosServer: {
         foto1_url: null, foto2_url: null, foto3_url: null, foto4_url: null, foto5_url: null,
         foto6_url: null, foto7_url: null, foto8_url: null, foto9_url: null, foto10_url: null
+      },
+      fotosToClear: {
+        foto1: false, foto2: false, foto3: false, foto4: false, foto5: false,
+        foto6: false, foto7: false, foto8: false, foto9: false, foto10: false
       },
       dlgFotoPreview: false,
       fotoPreviewSrc: null,
@@ -1065,6 +1079,7 @@ export default {
       const f =  this.fotos[key]
       // console.log('fotoPreview file', f)
       if (f) return URL.createObjectURL(f)
+      if (this.fotosToClear[key]) return null
       // console.log('fotoPreview server', this.fotosServer[`${key}_url`])
       const serverUrl = this.fotosServer[`${key}_url`]
       return serverUrl ? (this.$url + '/..' + serverUrl) : null
@@ -1075,6 +1090,18 @@ export default {
       if (!src) return
       this.fotoPreviewSrc = src
       this.dlgFotoPreview = true
+    },
+
+    clearFoto (n) {
+      const key = `foto${n}`
+      const serverKey = `${key}_url`
+      const hadServerPhoto = !!this.fotosServer[serverKey]
+
+      this.fotos[key] = null
+      if (hadServerPhoto) {
+        this.fotosToClear[key] = true
+        this.fotosServer[serverKey] = null
+      }
     },
 
     async openResultado (row) {
@@ -1117,6 +1144,10 @@ export default {
         this.fotosServer = {
           foto1_url: null, foto2_url: null, foto3_url: null, foto4_url: null, foto5_url: null,
           foto6_url: null, foto7_url: null, foto8_url: null, foto9_url: null, foto10_url: null
+        }
+        this.fotosToClear = {
+          foto1: false, foto2: false, foto3: false, foto4: false, foto5: false,
+          foto6: false, foto7: false, foto8: false, foto9: false, foto10: false
         }
 
         if (data.resultado) {
@@ -1255,6 +1286,16 @@ export default {
         if (this.fotos.foto8) fd.append('foto8', this.fotos.foto8)
         if (this.fotos.foto9) fd.append('foto9', this.fotos.foto9)
         if (this.fotos.foto10) fd.append('foto10', this.fotos.foto10)
+        if (this.fotosToClear.foto1) fd.append('clear_foto1', '1')
+        if (this.fotosToClear.foto2) fd.append('clear_foto2', '1')
+        if (this.fotosToClear.foto3) fd.append('clear_foto3', '1')
+        if (this.fotosToClear.foto4) fd.append('clear_foto4', '1')
+        if (this.fotosToClear.foto5) fd.append('clear_foto5', '1')
+        if (this.fotosToClear.foto6) fd.append('clear_foto6', '1')
+        if (this.fotosToClear.foto7) fd.append('clear_foto7', '1')
+        if (this.fotosToClear.foto8) fd.append('clear_foto8', '1')
+        if (this.fotosToClear.foto9) fd.append('clear_foto9', '1')
+        if (this.fotosToClear.foto10) fd.append('clear_foto10', '1')
 
         await this.$axios.post(
           `admin/mesas/${this.resMesa.id}/resultado?_method=PUT`,

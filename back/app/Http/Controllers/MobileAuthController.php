@@ -9,6 +9,63 @@ use Illuminate\Http\Request;
 
 class MobileAuthController extends Controller
 {
+    private function imagePathToBase64(?string $relativePath): ?string
+    {
+        if (empty($relativePath)) {
+            return null;
+        }
+
+        $path = storage_path('app/public/' . ltrim($relativePath, '/'));
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $binary = @file_get_contents($path);
+        if ($binary === false || $binary === '') {
+            return null;
+        }
+
+        if (!function_exists('imagecreatefromstring')) {
+            return 'data:image/jpeg;base64,' . base64_encode($binary);
+        }
+
+        $source = @imagecreatefromstring($binary);
+        if ($source === false) {
+            return 'data:image/jpeg;base64,' . base64_encode($binary);
+        }
+
+        $maxWidth = 1280;
+        $srcW = imagesx($source);
+        $srcH = imagesy($source);
+        if ($srcW <= 0 || $srcH <= 0) {
+            imagedestroy($source);
+            return null;
+        }
+
+        $targetW = $srcW > $maxWidth ? $maxWidth : $srcW;
+        $targetH = (int) round(($srcH * $targetW) / $srcW);
+        $target = imagecreatetruecolor($targetW, $targetH);
+        if ($target === false) {
+            imagedestroy($source);
+            return null;
+        }
+
+        imagecopyresampled($target, $source, 0, 0, 0, 0, $targetW, $targetH, $srcW, $srcH);
+
+        ob_start();
+        imagejpeg($target, null, 65);
+        $jpg = ob_get_clean();
+
+        imagedestroy($target);
+        imagedestroy($source);
+
+        if ($jpg === false || $jpg === '') {
+            return null;
+        }
+
+        return 'data:image/jpeg;base64,' . base64_encode($jpg);
+    }
+
     private function partidoIconoBase64(?string $icono): ?string
     {
         if (empty($icono)) {
@@ -95,10 +152,48 @@ class MobileAuthController extends Controller
                 'municipio:id,nombre',
                 'provincia:id,nombre',
                 'departamento:id,nombre',
+                'resultado:id,mesa_id,etapa_1,etapa_2,observacion,blancos_concejal,nulos_concejal,papeletas_no_utilizadas_concejal,blancos_alcalde,nulos_alcalde,papeletas_no_utilizadas_alcalde,foto1,foto2,foto3,foto4,foto5,foto6,foto7,foto8,foto9,foto10',
+                'resultado.detalles:id,resultado_mesa_id,partido_id,votos_concejal,votos_alcalde',
             ])
             ->orderBy('numero_mesa')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->map(function (Mesa $mesa) {
+                $arr = $mesa->toArray();
+                $r = $mesa->resultado;
+
+                if ($r) {
+                    $resultado = [
+                        'etapa_1' => (bool) ($r->etapa_1 ?? false),
+                        'etapa_2' => (bool) ($r->etapa_2 ?? false),
+                        'observacion' => $r->observacion,
+                        'blancos_concejal' => (int) ($r->blancos_concejal ?? 0),
+                        'nulos_concejal' => (int) ($r->nulos_concejal ?? 0),
+                        'papeletas_no_utilizadas_concejal' => (int) ($r->papeletas_no_utilizadas_concejal ?? 0),
+                        'blancos_alcalde' => (int) ($r->blancos_alcalde ?? 0),
+                        'nulos_alcalde' => (int) ($r->nulos_alcalde ?? 0),
+                        'papeletas_no_utilizadas_alcalde' => (int) ($r->papeletas_no_utilizadas_alcalde ?? 0),
+                        'detalles' => $r->detalles
+                            ->map(fn ($d) => [
+                                'partido_id' => (int) $d->partido_id,
+                                'votos_concejal' => (int) ($d->votos_concejal ?? 0),
+                                'votos_alcalde' => (int) ($d->votos_alcalde ?? 0),
+                            ])
+                            ->values(),
+                    ];
+
+                    foreach (['foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8','foto9','foto10'] as $slot) {
+                        $resultado[$slot . '_base64'] = $this->imagePathToBase64($r->{$slot});
+                    }
+
+                    $arr['resultado'] = $resultado;
+                } else {
+                    $arr['resultado'] = null;
+                }
+
+                return $arr;
+            })
+            ->values();
 
         $partidos = Partido::query()
             ->select('id', 'sigla', 'nombre', 'icono', 'orden_municipal', 'orden_departamental')

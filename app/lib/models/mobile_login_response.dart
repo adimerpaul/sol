@@ -168,6 +168,7 @@ class MobileMesa {
     required this.departamentoNombre,
     required this.recintoLatitud,
     required this.recintoLongitud,
+    required this.resultado,
   });
 
   final int? id;
@@ -183,6 +184,7 @@ class MobileMesa {
   final String? departamentoNombre;
   final String? recintoLatitud;
   final String? recintoLongitud;
+  final MobileMesaResultado? resultado;
 
   factory MobileMesa.fromJson(Map<String, dynamic> json) {
     final recinto = (json['recinto'] as Map<String, dynamic>?) ?? {};
@@ -205,6 +207,84 @@ class MobileMesa {
       departamentoNombre: departamento['nombre']?.toString(),
       recintoLatitud: recinto['latitud']?.toString(),
       recintoLongitud: recinto['longitud']?.toString(),
+      resultado: MobileMesaResultado.fromNullableJson(
+        json['resultado'] as Map<String, dynamic>?,
+      ),
+    );
+  }
+}
+
+class MobileMesaResultado {
+  MobileMesaResultado({
+    required this.etapa1,
+    required this.etapa2,
+    required this.observacion,
+    required this.blancosConcejal,
+    required this.nulosConcejal,
+    required this.pnuConcejal,
+    required this.blancosAlcalde,
+    required this.nulosAlcalde,
+    required this.pnuAlcalde,
+    required this.detalles,
+    required this.fotosBase64,
+  });
+
+  final bool etapa1;
+  final bool etapa2;
+  final String? observacion;
+  final int blancosConcejal;
+  final int nulosConcejal;
+  final int pnuConcejal;
+  final int blancosAlcalde;
+  final int nulosAlcalde;
+  final int pnuAlcalde;
+  final List<MobileMesaDetalle> detalles;
+  final Map<String, String?> fotosBase64;
+
+  static MobileMesaResultado? fromNullableJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    final detallesJson = (json['detalles'] as List?) ?? const [];
+    final fotos = <String, String?>{};
+    for (var i = 1; i <= 10; i++) {
+      final key = 'foto${i}_base64';
+      fotos['foto$i'] = json[key]?.toString();
+    }
+
+    return MobileMesaResultado(
+      etapa1: json['etapa_1'] == true,
+      etapa2: json['etapa_2'] == true,
+      observacion: json['observacion']?.toString(),
+      blancosConcejal: _asInt(json['blancos_concejal']) ?? 0,
+      nulosConcejal: _asInt(json['nulos_concejal']) ?? 0,
+      pnuConcejal: _asInt(json['papeletas_no_utilizadas_concejal']) ?? 0,
+      blancosAlcalde: _asInt(json['blancos_alcalde']) ?? 0,
+      nulosAlcalde: _asInt(json['nulos_alcalde']) ?? 0,
+      pnuAlcalde: _asInt(json['papeletas_no_utilizadas_alcalde']) ?? 0,
+      detalles: detallesJson
+          .whereType<Map<String, dynamic>>()
+          .map(MobileMesaDetalle.fromJson)
+          .toList(),
+      fotosBase64: fotos,
+    );
+  }
+}
+
+class MobileMesaDetalle {
+  MobileMesaDetalle({
+    required this.partidoId,
+    required this.votosConcejal,
+    required this.votosAlcalde,
+  });
+
+  final int partidoId;
+  final int votosConcejal;
+  final int votosAlcalde;
+
+  factory MobileMesaDetalle.fromJson(Map<String, dynamic> json) {
+    return MobileMesaDetalle(
+      partidoId: _asInt(json['partido_id']) ?? 0,
+      votosConcejal: _asInt(json['votos_concejal']) ?? 0,
+      votosAlcalde: _asInt(json['votos_alcalde']) ?? 0,
     );
   }
 }

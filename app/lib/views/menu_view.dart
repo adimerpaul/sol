@@ -137,10 +137,19 @@ class _MenuViewState extends State<MenuView> {
         title: Text(_title()),
         actions: [
           if (_pendingSyncCount > 0)
-            TextButton.icon(
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              ),
               onPressed: _syncing ? null : _syncNow,
-              icon: const Icon(Icons.sync),
-              label: Text(_syncing ? 'Asink...' : 'Asink ($_pendingSyncCount)'),
+              icon: const Icon(Icons.sync_problem),
+              label: Text(
+                _syncing
+                    ? 'Sincronizando...'
+                    : 'Sincronizar ($_pendingSyncCount)',
+              ),
             ),
           PopupMenuButton<String>(
             onSelected: (value) async {
