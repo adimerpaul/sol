@@ -355,6 +355,9 @@
                  <div class="col-6">
                    <q-input v-model.number="resForm.nulos_gobernador" type="number" dense outlined label="Nulos" min="0" />
                  </div>
+                 <div class="col-12">
+                   <q-input v-model.number="resForm.papeletas_no_utilizadas_gobernador" type="number" dense outlined label="Papeletas no utilizadas" min="0" />
+                 </div>
 
                  <div class="col-12 text-caption text-grey-7">Asambleísta Distrito  </div>
                  <div class="col-6">
@@ -363,6 +366,9 @@
                  <div class="col-6">
                    <q-input v-model.number="resForm.nulos_asambleista_distrito" type="number" dense outlined label="Nulos" min="0" />
                  </div>
+                 <div class="col-12">
+                   <q-input v-model.number="resForm.papeletas_no_utilizadas_asambleista_distrito" type="number" dense outlined label="Papeletas no utilizadas" min="0" />
+                 </div>
 
                  <div class="col-12 text-caption text-grey-7">Asambleísta Población</div>
                  <div class="col-6">
@@ -370,6 +376,9 @@
                  </div>
                  <div class="col-6">
                    <q-input v-model.number="resForm.nulos_asambleista_poblacion" type="number" dense outlined label="Nulos" min="0" />
+                 </div>
+                 <div class="col-12">
+                   <q-input v-model.number="resForm.papeletas_no_utilizadas_asambleista_poblacion" type="number" dense outlined label="Papeletas no utilizadas" min="0" />
                  </div>
 
 
@@ -509,8 +518,8 @@
                          </div>
                        </div>
                        <q-separator />
-                       <div class="text-caption text-grey-7 q-mt-xs">
-                         Total: {{ sumGobernador }} · Blancos: {{ resForm.blancos_gobernador }} · Nulos: {{ resForm.nulos_gobernador }}
+                        <div class="text-caption text-grey-7 q-mt-xs">
+                         Total: {{ sumGobernador }} · Blancos: {{ resForm.blancos_gobernador }} · Nulos: {{ resForm.nulos_gobernador }} · PNU: {{ resForm.papeletas_no_utilizadas_gobernador }}
                        </div>
                      </q-card>
                    </div>
@@ -533,8 +542,8 @@
                          </div>
                        </div>
                        <q-separator />
-                       <div class="text-caption text-grey-7 q-mt-xs">
-                         Total: {{ sumAsd }} · Blancos: {{ resForm.blancos_asambleista_distrito }} · Nulos: {{ resForm.nulos_asambleista_distrito }}
+                        <div class="text-caption text-grey-7 q-mt-xs">
+                         Total: {{ sumAsd }} · Blancos: {{ resForm.blancos_asambleista_distrito }} · Nulos: {{ resForm.nulos_asambleista_distrito }} · PNU: {{ resForm.papeletas_no_utilizadas_asambleista_distrito }}
                        </div>
                      </q-card>
                    </div>
@@ -557,8 +566,8 @@
                          </div>
                        </div>
                        <q-separator />
-                       <div class="text-caption text-grey-7 q-mt-xs">
-                         Total: {{ sumAsp }} · Blancos: {{ resForm.blancos_asambleista_poblacion }} · Nulos: {{ resForm.nulos_asambleista_poblacion }}
+                        <div class="text-caption text-grey-7 q-mt-xs">
+                         Total: {{ sumAsp }} · Blancos: {{ resForm.blancos_asambleista_poblacion }} · Nulos: {{ resForm.nulos_asambleista_poblacion }} · PNU: {{ resForm.papeletas_no_utilizadas_asambleista_poblacion }}
                        </div>
                      </q-card>
                    </div>
@@ -753,10 +762,13 @@ export default {
         etapa_2: false,
         blancos_gobernador: 0,
         nulos_gobernador: 0,
+        papeletas_no_utilizadas_gobernador: 0,
         blancos_asambleista_distrito: 0,
         nulos_asambleista_distrito: 0,
+        papeletas_no_utilizadas_asambleista_distrito: 0,
         blancos_asambleista_poblacion: 0,
         nulos_asambleista_poblacion: 0,
+        papeletas_no_utilizadas_asambleista_poblacion: 0,
         blancos_concejal: 0,
         nulos_concejal: 0,
         papeletas_no_utilizadas_concejal: 0,
@@ -891,6 +903,9 @@ export default {
         Number(this.resForm.nulos_concejal || 0) +
         Number(this.resForm.nulos_alcalde || 0)
       const p =
+        Number(this.resForm.papeletas_no_utilizadas_gobernador || 0) +
+        Number(this.resForm.papeletas_no_utilizadas_asambleista_distrito || 0) +
+        Number(this.resForm.papeletas_no_utilizadas_asambleista_poblacion || 0) +
         Number(this.resForm.papeletas_no_utilizadas_concejal || 0) +
         Number(this.resForm.papeletas_no_utilizadas_alcalde || 0)
       return this.sumVotos + b + n + p
@@ -1199,10 +1214,13 @@ export default {
           etapa_2: false,
           blancos_gobernador: 0,
           nulos_gobernador: 0,
+          papeletas_no_utilizadas_gobernador: 0,
           blancos_asambleista_distrito: 0,
           nulos_asambleista_distrito: 0,
+          papeletas_no_utilizadas_asambleista_distrito: 0,
           blancos_asambleista_poblacion: 0,
           nulos_asambleista_poblacion: 0,
+          papeletas_no_utilizadas_asambleista_poblacion: 0,
           blancos_concejal: 0,
           nulos_concejal: 0,
           papeletas_no_utilizadas_concejal: 0,
@@ -1243,10 +1261,13 @@ export default {
 
           this.resForm.blancos_gobernador = Number(r.blancos_gobernador || 0)
           this.resForm.nulos_gobernador = Number(r.nulos_gobernador || 0)
+          this.resForm.papeletas_no_utilizadas_gobernador = Number(r.papeletas_no_utilizadas_gobernador || 0)
           this.resForm.blancos_asambleista_distrito = Number(r.blancos_asambleista_distrito || 0)
           this.resForm.nulos_asambleista_distrito = Number(r.nulos_asambleista_distrito || 0)
+          this.resForm.papeletas_no_utilizadas_asambleista_distrito = Number(r.papeletas_no_utilizadas_asambleista_distrito || 0)
           this.resForm.blancos_asambleista_poblacion = Number(r.blancos_asambleista_poblacion || 0)
           this.resForm.nulos_asambleista_poblacion = Number(r.nulos_asambleista_poblacion || 0)
+          this.resForm.papeletas_no_utilizadas_asambleista_poblacion = Number(r.papeletas_no_utilizadas_asambleista_poblacion || 0)
           this.resForm.blancos_concejal = Number(r.blancos_concejal || 0)
           this.resForm.nulos_concejal = Number(r.nulos_concejal || 0)
           this.resForm.papeletas_no_utilizadas_concejal = Number(r.papeletas_no_utilizadas_concejal || 0)
@@ -1347,6 +1368,9 @@ export default {
           Number(this.resForm.nulos_gobernador || 0) +
           Number(this.resForm.nulos_asambleista_distrito || 0) +
           Number(this.resForm.nulos_asambleista_poblacion || 0) +
+          Number(this.resForm.papeletas_no_utilizadas_gobernador || 0) +
+          Number(this.resForm.papeletas_no_utilizadas_asambleista_distrito || 0) +
+          Number(this.resForm.papeletas_no_utilizadas_asambleista_poblacion || 0) +
           Number(this.resForm.nulos_concejal || 0) +
           Number(this.resForm.nulos_alcalde || 0) +
           Number(this.resForm.papeletas_no_utilizadas_concejal || 0) +
@@ -1364,10 +1388,13 @@ export default {
 
         fd.append('blancos_gobernador', String(this.resForm.blancos_gobernador || 0))
         fd.append('nulos_gobernador', String(this.resForm.nulos_gobernador || 0))
+        fd.append('papeletas_no_utilizadas_gobernador', String(this.resForm.papeletas_no_utilizadas_gobernador || 0))
         fd.append('blancos_asambleista_distrito', String(this.resForm.blancos_asambleista_distrito || 0))
         fd.append('nulos_asambleista_distrito', String(this.resForm.nulos_asambleista_distrito || 0))
+        fd.append('papeletas_no_utilizadas_asambleista_distrito', String(this.resForm.papeletas_no_utilizadas_asambleista_distrito || 0))
         fd.append('blancos_asambleista_poblacion', String(this.resForm.blancos_asambleista_poblacion || 0))
         fd.append('nulos_asambleista_poblacion', String(this.resForm.nulos_asambleista_poblacion || 0))
+        fd.append('papeletas_no_utilizadas_asambleista_poblacion', String(this.resForm.papeletas_no_utilizadas_asambleista_poblacion || 0))
         fd.append('blancos_concejal', String(this.resForm.blancos_concejal || 0))
         fd.append('nulos_concejal', String(this.resForm.nulos_concejal || 0))
         fd.append('papeletas_no_utilizadas_concejal', String(this.resForm.papeletas_no_utilizadas_concejal || 0))

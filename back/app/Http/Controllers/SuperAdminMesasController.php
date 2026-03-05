@@ -303,10 +303,13 @@ class SuperAdminMesasController extends Controller
             'longitud' => 'nullable|numeric',
             'blancos_gobernador' => 'nullable|integer|min:0',
             'nulos_gobernador' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_gobernador' => 'nullable|integer|min:0',
             'blancos_asambleista_distrito' => 'nullable|integer|min:0',
             'nulos_asambleista_distrito' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_asambleista_distrito' => 'nullable|integer|min:0',
             'blancos_asambleista_poblacion' => 'nullable|integer|min:0',
             'nulos_asambleista_poblacion' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_asambleista_poblacion' => 'nullable|integer|min:0',
             'blancos_concejal' => 'nullable|integer|min:0',
             'nulos_concejal' => 'nullable|integer|min:0',
             'papeletas_no_utilizadas_concejal' => 'nullable|integer|min:0',
@@ -413,10 +416,13 @@ class SuperAdminMesasController extends Controller
             if ($request->has('longitud')) $res->longitud = $data['longitud'] ?? null;
             if ($request->has('blancos_gobernador')) $res->blancos_gobernador = (int) ($data['blancos_gobernador'] ?? 0);
             if ($request->has('nulos_gobernador')) $res->nulos_gobernador = (int) ($data['nulos_gobernador'] ?? 0);
+            if ($request->has('papeletas_no_utilizadas_gobernador')) $res->papeletas_no_utilizadas_gobernador = (int) ($data['papeletas_no_utilizadas_gobernador'] ?? 0);
             if ($request->has('blancos_asambleista_distrito')) $res->blancos_asambleista_distrito = (int) ($data['blancos_asambleista_distrito'] ?? 0);
             if ($request->has('nulos_asambleista_distrito')) $res->nulos_asambleista_distrito = (int) ($data['nulos_asambleista_distrito'] ?? 0);
+            if ($request->has('papeletas_no_utilizadas_asambleista_distrito')) $res->papeletas_no_utilizadas_asambleista_distrito = (int) ($data['papeletas_no_utilizadas_asambleista_distrito'] ?? 0);
             if ($request->has('blancos_asambleista_poblacion')) $res->blancos_asambleista_poblacion = (int) ($data['blancos_asambleista_poblacion'] ?? 0);
             if ($request->has('nulos_asambleista_poblacion')) $res->nulos_asambleista_poblacion = (int) ($data['nulos_asambleista_poblacion'] ?? 0);
+            if ($request->has('papeletas_no_utilizadas_asambleista_poblacion')) $res->papeletas_no_utilizadas_asambleista_poblacion = (int) ($data['papeletas_no_utilizadas_asambleista_poblacion'] ?? 0);
             if ($request->has('blancos_concejal')) $res->blancos_concejal = (int) ($data['blancos_concejal'] ?? 0);
             if ($request->has('nulos_concejal')) $res->nulos_concejal = (int) ($data['nulos_concejal'] ?? 0);
             if ($request->has('papeletas_no_utilizadas_concejal')) $res->papeletas_no_utilizadas_concejal = (int) ($data['papeletas_no_utilizadas_concejal'] ?? 0);

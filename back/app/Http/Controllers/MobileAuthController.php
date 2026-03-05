@@ -152,7 +152,7 @@ class MobileAuthController extends Controller
                 'municipio:id,nombre',
                 'provincia:id,nombre',
                 'departamento:id,nombre',
-                'resultado:id,mesa_id,etapa_1,etapa_2,observacion,observacion_gobernador,observacion_asambleista_distrito,observacion_asambleista_poblacion,observacion_concejal,observacion_alcalde,blancos_gobernador,nulos_gobernador,blancos_asambleista_distrito,nulos_asambleista_distrito,blancos_asambleista_poblacion,nulos_asambleista_poblacion,blancos_concejal,nulos_concejal,papeletas_no_utilizadas_concejal,blancos_alcalde,nulos_alcalde,papeletas_no_utilizadas_alcalde,foto1,foto2,foto3,foto4,foto5,foto6,foto7,foto8,foto9,foto10',
+                'resultado:id,mesa_id,etapa_1,etapa_2,observacion,observacion_gobernador,observacion_asambleista_distrito,observacion_asambleista_poblacion,observacion_concejal,observacion_alcalde,blancos_gobernador,nulos_gobernador,papeletas_no_utilizadas_gobernador,blancos_asambleista_distrito,nulos_asambleista_distrito,papeletas_no_utilizadas_asambleista_distrito,blancos_asambleista_poblacion,nulos_asambleista_poblacion,papeletas_no_utilizadas_asambleista_poblacion,blancos_concejal,nulos_concejal,papeletas_no_utilizadas_concejal,blancos_alcalde,nulos_alcalde,papeletas_no_utilizadas_alcalde,foto1,foto2,foto3,foto4,foto5,foto6,foto7,foto8,foto9,foto10',
                 'resultado.detalles:id,resultado_mesa_id,partido_id,votos_gobernador,votos_asambleista_distrito,votos_asambleista_poblacion,votos_concejal,votos_alcalde',
             ])
             ->orderBy('numero_mesa')
@@ -174,10 +174,13 @@ class MobileAuthController extends Controller
                         'observacion_alcalde' => $r->observacion_alcalde,
                         'blancos_gobernador' => (int) ($r->blancos_gobernador ?? 0),
                         'nulos_gobernador' => (int) ($r->nulos_gobernador ?? 0),
+                        'papeletas_no_utilizadas_gobernador' => (int) ($r->papeletas_no_utilizadas_gobernador ?? 0),
                         'blancos_asambleista_distrito' => (int) ($r->blancos_asambleista_distrito ?? 0),
                         'nulos_asambleista_distrito' => (int) ($r->nulos_asambleista_distrito ?? 0),
+                        'papeletas_no_utilizadas_asambleista_distrito' => (int) ($r->papeletas_no_utilizadas_asambleista_distrito ?? 0),
                         'blancos_asambleista_poblacion' => (int) ($r->blancos_asambleista_poblacion ?? 0),
                         'nulos_asambleista_poblacion' => (int) ($r->nulos_asambleista_poblacion ?? 0),
+                        'papeletas_no_utilizadas_asambleista_poblacion' => (int) ($r->papeletas_no_utilizadas_asambleista_poblacion ?? 0),
                         'blancos_concejal' => (int) ($r->blancos_concejal ?? 0),
                         'nulos_concejal' => (int) ($r->nulos_concejal ?? 0),
                         'papeletas_no_utilizadas_concejal' => (int) ($r->papeletas_no_utilizadas_concejal ?? 0),

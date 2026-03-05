@@ -41,6 +41,25 @@ class _MenuViewState extends State<MenuView> {
   }
 
   Future<void> _goToLogin() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Salir'),
+        content: const Text('¿Estás seguro que vas a salir?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
     final hasLocalPendings = await MobileAuthLocalStore.instance
         .hasMesasLocalPendientesSync();
 

@@ -348,10 +348,13 @@ class MobileResultadosController extends Controller
 
             'blancos_gobernador' => 'nullable|integer|min:0',
             'nulos_gobernador' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_gobernador' => 'nullable|integer|min:0',
             'blancos_asambleista_distrito' => 'nullable|integer|min:0',
             'nulos_asambleista_distrito' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_asambleista_distrito' => 'nullable|integer|min:0',
             'blancos_asambleista_poblacion' => 'nullable|integer|min:0',
             'nulos_asambleista_poblacion' => 'nullable|integer|min:0',
+            'papeletas_no_utilizadas_asambleista_poblacion' => 'nullable|integer|min:0',
             'blancos_concejal' => 'nullable|integer|min:0',
             'nulos_concejal' => 'nullable|integer|min:0',
             'papeletas_no_utilizadas_concejal' => 'nullable|integer|min:0',
@@ -429,6 +432,9 @@ class MobileResultadosController extends Controller
             'alcalde' => (int) ($data['nulos_alcalde'] ?? 0),
         ];
         $pnu = [
+            'gobernador' => (int) ($data['papeletas_no_utilizadas_gobernador'] ?? 0),
+            'asambleista_distrito' => (int) ($data['papeletas_no_utilizadas_asambleista_distrito'] ?? 0),
+            'asambleista_poblacion' => (int) ($data['papeletas_no_utilizadas_asambleista_poblacion'] ?? 0),
             'concejal' => (int) ($data['papeletas_no_utilizadas_concejal'] ?? 0),
             'alcalde' => (int) ($data['papeletas_no_utilizadas_alcalde'] ?? 0),
         ];
@@ -453,10 +459,13 @@ class MobileResultadosController extends Controller
 
                     'blancos_gobernador' => $blancos['gobernador'],
                     'nulos_gobernador' => $nulos['gobernador'],
+                    'papeletas_no_utilizadas_gobernador' => $pnu['gobernador'],
                     'blancos_asambleista_distrito' => $blancos['asambleista_distrito'],
                     'nulos_asambleista_distrito' => $nulos['asambleista_distrito'],
+                    'papeletas_no_utilizadas_asambleista_distrito' => $pnu['asambleista_distrito'],
                     'blancos_asambleista_poblacion' => $blancos['asambleista_poblacion'],
                     'nulos_asambleista_poblacion' => $nulos['asambleista_poblacion'],
+                    'papeletas_no_utilizadas_asambleista_poblacion' => $pnu['asambleista_poblacion'],
                     'blancos_concejal' => $blancos['concejal'],
                     'nulos_concejal' => $nulos['concejal'],
                     'papeletas_no_utilizadas_concejal' => $pnu['concejal'],
