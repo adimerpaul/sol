@@ -73,7 +73,7 @@ const CATEGORY_DEFS = [
   { key: 'alcalde', label: 'Alcalde', valueField: 'votos_alcalde' },
   { key: 'concejal', label: 'Concejal', valueField: 'votos_concejal' },
   { key: 'gobernador', label: 'Gobernador', valueField: 'votos_gobernador' },
-  { key: 'asambleista_distrito', label: 'Asambleista por Distrito', valueField: 'votos_asambleista_distrito' },
+  { key: 'asambleista_distrito', label: 'Asambleista por Territorio', valueField: 'votos_asambleista_distrito' },
   { key: 'asambleista_poblacion', label: 'Asambleista por Poblacion', valueField: 'votos_asambleista_poblacion' }
 ]
 
