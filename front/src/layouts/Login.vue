@@ -22,7 +22,7 @@
                 Accede con tu username y fecha de nacimiento.
               </div>
 
-              <div class="q-mb-sm text-caption text-grey-7">Carnet de identidad</div>
+              <div class="q-mb-sm text-caption text-grey-7">Codigo de ingreso</div>
               <q-input
                 v-model="username"
                 outlined

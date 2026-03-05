@@ -254,9 +254,9 @@ export default {
       loadingLocalidades: false,
 
       // filtros
-      provinciaId: 57,
-      municipioId: 191,
-      localidadId: 1988,
+      provinciaId: null,
+      municipioId: null,
+      localidadId: null,
       search: '',
       onlyMissing: false,
 

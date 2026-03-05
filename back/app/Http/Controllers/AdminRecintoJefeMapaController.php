@@ -27,9 +27,9 @@ class AdminRecintoJefeMapaController extends Controller
                 //        &pais_id=1&departamento_id=5&provincia_id=57&municipio_id=191&localidad_id=1988&page=1&per_page=10
                 ->where('pais_id', 1)
                 ->where('departamento_id', 5)
-                ->where('provincia_id', 57)
-                ->where('municipio_id', 191)
-                ->where('localidad_id', 1988)
+//                ->where('provincia_id', 57)
+//                ->where('municipio_id', 191)
+//                ->where('localidad_id', 1988)
                 ->get()
                 ->map(function ($r) {
                     $total = (int)($r->mesas_count ?? 0);

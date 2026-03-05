@@ -85,6 +85,7 @@ class UserController extends Controller
             'administradores' => ['Administrador'],
             'supervisores' => ['Supervisor'],
             'jefes' => ['Jefe de Recinto'],
+            'delegados' => ['Delegado de Mesa'],
         ];
 
         $normalized = strtolower(trim($type));
@@ -106,19 +107,7 @@ class UserController extends Controller
         }
 
         $users = $q->get()->map(function ($u) {
-            $avatarBase64 = null;
-            if (!empty($u->avatar)) {
-                $avatarPath = public_path('images/' . $u->avatar);
-                if (is_file($avatarPath)) {
-                    $bin = @file_get_contents($avatarPath);
-                    if ($bin !== false && $bin !== '') {
-                        $avatarBase64 = 'data:image/jpeg;base64,' . base64_encode($bin);
-                    }
-                }
-            }
-
             return [
-                'id' => $u->id,
                 'username' => $u->username,
                 'nombres' => $u->nombres,
                 'apellido_paterno' => $u->apellido_paterno,
@@ -128,10 +117,8 @@ class UserController extends Controller
                 'fecha_nacimiento' => $u->fecha_nacimiento,
                 'celular' => $u->celular,
                 'bloque' => $u->bloque,
-                'email' => $u->email,
                 'role' => $u->role,
                 'recinto_nombre' => $u->recinto?->nombre,
-                'avatar_base64' => $avatarBase64,
             ];
         })->values();
 
@@ -139,6 +126,7 @@ class UserController extends Controller
             'administradores' => 'Administradores',
             'supervisores' => 'Supervisores',
             'jefes' => 'Jefes de Recinto',
+            'delegados' => 'Delegados de Mesa',
             default => 'Todos los Usuarios',
         };
 

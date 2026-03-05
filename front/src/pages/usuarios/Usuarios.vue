@@ -38,6 +38,42 @@
               <q-item-section avatar><q-icon name="admin_panel_settings" /></q-item-section>
               <q-item-section><q-item-label>Administradores</q-item-label></q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="printUsers('delegados')">
+              <q-item-section avatar><q-icon name="how_to_reg" /></q-item-section>
+              <q-item-section><q-item-label>Delegados de Mesa</q-item-label></q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+
+        <q-btn-dropdown
+          color="teal"
+          label="Excel"
+          no-caps
+          icon="table_view"
+          class="q-mr-sm"
+          :disable="loading"
+        >
+          <q-list dense>
+            <q-item clickable v-close-popup @click="exportUsersExcel('todos')">
+              <q-item-section avatar><q-icon name="groups" /></q-item-section>
+              <q-item-section><q-item-label>Excel Todos</q-item-label></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="exportUsersExcel('jefes')">
+              <q-item-section avatar><q-icon name="badge" /></q-item-section>
+              <q-item-section><q-item-label>Excel Jefes de Recinto</q-item-label></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="exportUsersExcel('supervisores')">
+              <q-item-section avatar><q-icon name="supervisor_account" /></q-item-section>
+              <q-item-section><q-item-label>Excel Supervisores</q-item-label></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="exportUsersExcel('administradores')">
+              <q-item-section avatar><q-icon name="admin_panel_settings" /></q-item-section>
+              <q-item-section><q-item-label>Excel Administradores</q-item-label></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="exportUsersExcel('delegados')">
+              <q-item-section avatar><q-icon name="how_to_reg" /></q-item-section>
+              <q-item-section><q-item-label>Excel Delegados de Mesa</q-item-label></q-item-section>
+            </q-item>
           </q-list>
         </q-btn-dropdown>
 
@@ -70,7 +106,7 @@
             <q-list>
               <q-item clickable @click="openUsernameDialog(props.row)" v-close-popup v-if="isAdminOrSupervisor">
                 <q-item-section avatar><q-icon name="person"/></q-item-section>
-                <q-item-section><q-item-label>Cambiar username</q-item-label></q-item-section>
+                <q-item-section><q-item-label>Cambiar Codigo Ingreso</q-item-label></q-item-section>
               </q-item>
 
               <q-item clickable @click="userEdit(props.row)" v-close-popup>
@@ -381,7 +417,7 @@
     <q-dialog v-model="dialogUsername" persistent>
       <q-card style="min-width: 420px">
         <q-card-section class="q-pb-none row items-center text-bold">
-          Cambiar username
+          Cambiar Codigo Ingreso
           <q-space />
           <q-btn icon="close" flat round dense @click="dialogUsername = false" />
         </q-card-section>
@@ -393,7 +429,7 @@
           <q-input
             v-model="usernameForm.username"
             dense outlined
-            label="Username"
+            label="Codigo de ingreso"
             hint="Este username se usa para el login."
             persistent-hint
           />
@@ -432,7 +468,7 @@ export default {
 
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
-        { name: 'username', label: 'Username', align: 'left', field: 'username' },
+        { name: 'username', label: 'Codigo de ingresos', align: 'left', field: 'username' },
         { name: 'celular', label: 'Celular', align: 'left', field: 'celular' },
         { name: 'nombres', label: 'Nombre(s)', align: 'left', field: 'nombres' },
         { name: 'apellido_paterno', label: 'Ap. paterno', align: 'left', field: 'apellido_paterno' },
@@ -441,9 +477,9 @@ export default {
         { name: 'fecha_nacimiento', label: 'Nacimiento', align: 'left', field: 'fecha_nacimiento' },
         { name: 'bloque', label: 'Bloque', align: 'left', field: 'bloque' },
         { name: 'recinto_nombre', label: 'Recinto', align: 'left', field: row => row.recinto_nombre || row.recinto?.nombre || '-' },
-        { name: 'avatar', label: 'Avatar', align: 'left', field: row => row.avatar },
+        // { name: 'avatar', label: 'Avatar', align: 'left', field: row => row.avatar },
         { name: 'role', label: 'Rol', align: 'left', field: 'role' },
-        { name: 'ci_files', label: 'Docs', align: 'left', field: row => row.id },
+        // { name: 'ci_files', label: 'Docs', align: 'left', field: row => row.id },
         {
           name: 'permissions',
           label: 'Permisos',
@@ -741,6 +777,85 @@ export default {
         setTimeout(() => URL.revokeObjectURL(url), 60000)
       } catch (e) {
         this.$alert.error(e.response?.data?.message || 'No se pudo generar el PDF')
+      } finally {
+        this.loading = false
+      }
+    },
+
+    getUsersByType (type) {
+      const roleMap = {
+        administradores: 'Administrador',
+        supervisores: 'Supervisor',
+        jefes: 'Jefe de Recinto',
+        delegados: 'Delegado de Mesa'
+      }
+
+      if (!type || type === 'todos') return this.users || []
+
+      const role = roleMap[String(type).toLowerCase()]
+      if (!role) return this.users || []
+
+      return (this.users || []).filter(u => String(u.role || '').trim() === role)
+    },
+
+    excelTitleByType (type) {
+      const labels = {
+        todos: 'Todos',
+        jefes: 'Jefes de Recinto',
+        supervisores: 'Supervisores',
+        administradores: 'Administradores',
+        delegados: 'Delegados de Mesa'
+      }
+      return labels[String(type || '').toLowerCase()] || 'Todos'
+    },
+
+    async exportUsersExcel (type) {
+      const rows = this.getUsersByType(type)
+      if (!rows.length) {
+        this.$alert.error('No hay usuarios para exportar')
+        return
+      }
+
+      this.loading = true
+      try {
+        const { Excel } = await import('src/addons/Excel')
+        const title = this.excelTitleByType(type)
+        const content = rows.map(u => ({
+          ID: u.id ?? '',
+          Username: u.username ?? '',
+          Nombres: u.nombres ?? '',
+          'Apellido paterno': u.apellido_paterno ?? '',
+          'Apellido materno': u.apellido_materno ?? '',
+          CI: u.ci ?? '',
+          'Fecha nacimiento': u.fecha_nacimiento ?? '',
+          Celular: u.celular ?? '',
+          Bloque: u.bloque ?? '',
+          Rol: u.role ?? '',
+          Recinto: u.recinto_nombre || u.recinto?.nombre || ''
+        }))
+
+        const data = [{
+          sheet: 'Usuarios',
+          columns: [
+            { label: 'ID', value: 'ID' },
+            { label: 'Username', value: 'Username' },
+            { label: 'Nombres', value: 'Nombres' },
+            { label: 'Apellido paterno', value: 'Apellido paterno' },
+            { label: 'Apellido materno', value: 'Apellido materno' },
+            { label: 'CI', value: 'CI' },
+            { label: 'Fecha nacimiento', value: 'Fecha nacimiento' },
+            { label: 'Celular', value: 'Celular' },
+            { label: 'Bloque', value: 'Bloque' },
+            { label: 'Rol', value: 'Rol' },
+            { label: 'Recinto', value: 'Recinto' }
+          ],
+          content
+        }]
+
+        Excel.export(data, `usuarios_${String(type || 'todos').toLowerCase()}_${new Date().toISOString().slice(0, 10)}`)
+        this.$alert.success(`Excel generado: ${title}`)
+      } catch (e) {
+        this.$alert.error('No se pudo generar el Excel')
       } finally {
         this.loading = false
       }
