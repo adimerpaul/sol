@@ -226,10 +226,13 @@ class MobileMesaResultado {
     required this.observacionAlcalde,
     required this.blancosGobernador,
     required this.nulosGobernador,
+    required this.pnuGobernador,
     required this.blancosAsd,
     required this.nulosAsd,
+    required this.pnuAsd,
     required this.blancosAsp,
     required this.nulosAsp,
+    required this.pnuAsp,
     required this.blancosConcejal,
     required this.nulosConcejal,
     required this.pnuConcejal,
@@ -250,10 +253,13 @@ class MobileMesaResultado {
   final String? observacionAlcalde;
   final int blancosGobernador;
   final int nulosGobernador;
+  final int pnuGobernador;
   final int blancosAsd;
   final int nulosAsd;
+  final int pnuAsd;
   final int blancosAsp;
   final int nulosAsp;
+  final int pnuAsp;
   final int blancosConcejal;
   final int nulosConcejal;
   final int pnuConcejal;
@@ -283,10 +289,15 @@ class MobileMesaResultado {
       observacionAlcalde: json['observacion_alcalde']?.toString(),
       blancosGobernador: _asInt(json['blancos_gobernador']) ?? 0,
       nulosGobernador: _asInt(json['nulos_gobernador']) ?? 0,
+      pnuGobernador: _asInt(json['papeletas_no_utilizadas_gobernador']) ?? 0,
       blancosAsd: _asInt(json['blancos_asambleista_distrito']) ?? 0,
       nulosAsd: _asInt(json['nulos_asambleista_distrito']) ?? 0,
+      pnuAsd:
+          _asInt(json['papeletas_no_utilizadas_asambleista_distrito']) ?? 0,
       blancosAsp: _asInt(json['blancos_asambleista_poblacion']) ?? 0,
       nulosAsp: _asInt(json['nulos_asambleista_poblacion']) ?? 0,
+      pnuAsp:
+          _asInt(json['papeletas_no_utilizadas_asambleista_poblacion']) ?? 0,
       blancosConcejal: _asInt(json['blancos_concejal']) ?? 0,
       nulosConcejal: _asInt(json['nulos_concejal']) ?? 0,
       pnuConcejal: _asInt(json['papeletas_no_utilizadas_concejal']) ?? 0,

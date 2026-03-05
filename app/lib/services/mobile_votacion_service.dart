@@ -95,10 +95,16 @@ class MobileVotacionService {
           ..fields['observacion_alcalde'] = draft.observacionAlcalde ?? ''
           ..fields['blancos_gobernador'] = '${draft.blancosGobernador}'
           ..fields['nulos_gobernador'] = '${draft.nulosGobernador}'
+          ..fields['papeletas_no_utilizadas_gobernador'] =
+              '${draft.papeletasNoUtilizadasGobernador}'
           ..fields['blancos_asambleista_distrito'] = '${draft.blancosAsd}'
           ..fields['nulos_asambleista_distrito'] = '${draft.nulosAsd}'
+          ..fields['papeletas_no_utilizadas_asambleista_distrito'] =
+              '${draft.papeletasNoUtilizadasAsd}'
           ..fields['blancos_asambleista_poblacion'] = '${draft.blancosAsp}'
           ..fields['nulos_asambleista_poblacion'] = '${draft.nulosAsp}'
+          ..fields['papeletas_no_utilizadas_asambleista_poblacion'] =
+              '${draft.papeletasNoUtilizadasAsp}'
           ..fields['blancos_concejal'] = '${draft.blancosConcejal}'
           ..fields['nulos_concejal'] = '${draft.nulosConcejal}'
           ..fields['papeletas_no_utilizadas_concejal'] =

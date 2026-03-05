@@ -443,10 +443,13 @@ class MobileAuthLocalStore {
         'observacion_alcalde': res.observacionAlcalde,
         'blancos_gobernador': res.blancosGobernador,
         'nulos_gobernador': res.nulosGobernador,
+        'papeletas_no_utilizadas_gobernador': res.pnuGobernador,
         'blancos_asambleista_distrito': res.blancosAsd,
         'nulos_asambleista_distrito': res.nulosAsd,
+        'papeletas_no_utilizadas_asambleista_distrito': res.pnuAsd,
         'blancos_asambleista_poblacion': res.blancosAsp,
         'nulos_asambleista_poblacion': res.nulosAsp,
+        'papeletas_no_utilizadas_asambleista_poblacion': res.pnuAsp,
         'blancos_concejal': res.blancosConcejal,
         'nulos_concejal': res.nulosConcejal,
         'papeletas_no_utilizadas_concejal': res.pnuConcejal,
@@ -958,10 +961,16 @@ class MobileAuthLocalStore {
       'observacion_alcalde': draft.observacionAlcalde,
       'blancos_gobernador': draft.blancosGobernador,
       'nulos_gobernador': draft.nulosGobernador,
+      'papeletas_no_utilizadas_gobernador':
+          draft.papeletasNoUtilizadasGobernador,
       'blancos_asambleista_distrito': draft.blancosAsd,
       'nulos_asambleista_distrito': draft.nulosAsd,
+      'papeletas_no_utilizadas_asambleista_distrito':
+          draft.papeletasNoUtilizadasAsd,
       'blancos_asambleista_poblacion': draft.blancosAsp,
       'nulos_asambleista_poblacion': draft.nulosAsp,
+      'papeletas_no_utilizadas_asambleista_poblacion':
+          draft.papeletasNoUtilizadasAsp,
       'blancos_concejal': draft.blancosConcejal,
       'nulos_concejal': draft.nulosConcejal,
       'papeletas_no_utilizadas_concejal': draft.papeletasNoUtilizadasConcejal,
@@ -1064,10 +1073,16 @@ class MobileAuthLocalStore {
       observacionAlcalde: payload['observacion_alcalde']?.toString(),
       blancosGobernador: _asInt(payload['blancos_gobernador']) ?? 0,
       nulosGobernador: _asInt(payload['nulos_gobernador']) ?? 0,
+      papeletasNoUtilizadasGobernador:
+          _asInt(payload['papeletas_no_utilizadas_gobernador']) ?? 0,
       blancosAsd: _asInt(payload['blancos_asambleista_distrito']) ?? 0,
       nulosAsd: _asInt(payload['nulos_asambleista_distrito']) ?? 0,
+      papeletasNoUtilizadasAsd:
+          _asInt(payload['papeletas_no_utilizadas_asambleista_distrito']) ?? 0,
       blancosAsp: _asInt(payload['blancos_asambleista_poblacion']) ?? 0,
       nulosAsp: _asInt(payload['nulos_asambleista_poblacion']) ?? 0,
+      papeletasNoUtilizadasAsp:
+          _asInt(payload['papeletas_no_utilizadas_asambleista_poblacion']) ?? 0,
       blancosConcejal: _asInt(payload['blancos_concejal']) ?? 0,
       nulosConcejal: _asInt(payload['nulos_concejal']) ?? 0,
       papeletasNoUtilizadasConcejal:

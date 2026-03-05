@@ -59,10 +59,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   final TextEditingController _bgCtrl = TextEditingController();
   final TextEditingController _ngCtrl = TextEditingController();
+  final TextEditingController _pnuGobCtrl = TextEditingController();
   final TextEditingController _basdCtrl = TextEditingController();
   final TextEditingController _nasdCtrl = TextEditingController();
+  final TextEditingController _pnuAsdCtrl = TextEditingController();
   final TextEditingController _baspCtrl = TextEditingController();
   final TextEditingController _naspCtrl = TextEditingController();
+  final TextEditingController _pnuAspCtrl = TextEditingController();
   final TextEditingController _bconCtrl = TextEditingController();
   final TextEditingController _nconCtrl = TextEditingController();
   final TextEditingController _pnuConCtrl = TextEditingController();
@@ -110,10 +113,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   void dispose() {
     _bgCtrl.dispose();
     _ngCtrl.dispose();
+    _pnuGobCtrl.dispose();
     _basdCtrl.dispose();
     _nasdCtrl.dispose();
+    _pnuAsdCtrl.dispose();
     _baspCtrl.dispose();
     _naspCtrl.dispose();
+    _pnuAspCtrl.dispose();
     _bconCtrl.dispose();
     _nconCtrl.dispose();
     _pnuConCtrl.dispose();
@@ -249,9 +255,14 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   int get _sumCon => _sum(_conCtrl);
   int get _sumAlc => _sum(_alcCtrl);
 
-  bool get _okGob => _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl) == 250;
-  bool get _okAsd => _sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl) == 250;
-  bool get _okAsp => _sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl) == 250;
+  bool get _okGob =>
+      _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl) + _ival(_pnuGobCtrl) == 250;
+  bool get _okAsd =>
+      _sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl) + _ival(_pnuAsdCtrl) ==
+      250;
+  bool get _okAsp =>
+      _sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl) + _ival(_pnuAspCtrl) ==
+      250;
   bool get _okCon =>
       _sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl) ==
       250;
@@ -280,10 +291,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         _sumAlc +
         _ival(_bgCtrl) +
         _ival(_ngCtrl) +
+        _ival(_pnuGobCtrl) +
         _ival(_basdCtrl) +
         _ival(_nasdCtrl) +
+        _ival(_pnuAsdCtrl) +
         _ival(_baspCtrl) +
         _ival(_naspCtrl) +
+        _ival(_pnuAspCtrl) +
         _ival(_bconCtrl) +
         _ival(_nconCtrl) +
         _ival(_pnuConCtrl) +
@@ -348,11 +362,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       case _VotacionTab.concejal:
         return _sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl);
       case _VotacionTab.gobernador:
-        return _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl);
+        return _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl) + _ival(_pnuGobCtrl);
       case _VotacionTab.asambleistaDistrito:
-        return _sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl);
+        return _sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl) + _ival(_pnuAsdCtrl);
       case _VotacionTab.asambleistaPoblacion:
-        return _sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl);
+        return _sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl) + _ival(_pnuAspCtrl);
     }
   }
 
@@ -501,10 +515,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     _obsAspCtrl.text = d.observacionAsp ?? '';
     _setCtrlInt(_bgCtrl, d.blancosGobernador);
     _setCtrlInt(_ngCtrl, d.nulosGobernador);
+    _setCtrlInt(_pnuGobCtrl, d.papeletasNoUtilizadasGobernador);
     _setCtrlInt(_basdCtrl, d.blancosAsd);
     _setCtrlInt(_nasdCtrl, d.nulosAsd);
+    _setCtrlInt(_pnuAsdCtrl, d.papeletasNoUtilizadasAsd);
     _setCtrlInt(_baspCtrl, d.blancosAsp);
     _setCtrlInt(_naspCtrl, d.nulosAsp);
+    _setCtrlInt(_pnuAspCtrl, d.papeletasNoUtilizadasAsp);
     _setCtrlInt(_bconCtrl, d.blancosConcejal);
     _setCtrlInt(_nconCtrl, d.nulosConcejal);
     _setCtrlInt(_pnuConCtrl, d.papeletasNoUtilizadasConcejal);
@@ -533,10 +550,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     for (final c in [
       _bgCtrl,
       _ngCtrl,
+      _pnuGobCtrl,
       _basdCtrl,
       _nasdCtrl,
+      _pnuAsdCtrl,
       _baspCtrl,
       _naspCtrl,
+      _pnuAspCtrl,
       _bconCtrl,
       _nconCtrl,
       _pnuConCtrl,
@@ -646,10 +666,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       observacionAlcalde: _obsAlcCtrl.text.trim().isEmpty ? null : _obsAlcCtrl.text.trim(),
       blancosGobernador: _ival(_bgCtrl),
       nulosGobernador: _ival(_ngCtrl),
+      papeletasNoUtilizadasGobernador: _ival(_pnuGobCtrl),
       blancosAsd: _ival(_basdCtrl),
       nulosAsd: _ival(_nasdCtrl),
+      papeletasNoUtilizadasAsd: _ival(_pnuAsdCtrl),
       blancosAsp: _ival(_baspCtrl),
       nulosAsp: _ival(_naspCtrl),
+      papeletasNoUtilizadasAsp: _ival(_pnuAspCtrl),
       blancosConcejal: _ival(_bconCtrl),
       nulosConcejal: _ival(_nconCtrl),
       papeletasNoUtilizadasConcejal: _ival(_pnuConCtrl),
@@ -942,11 +965,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             voteMap: _gobCtrl,
             blancosCtrl: _bgCtrl,
             nulosCtrl: _ngCtrl,
-            papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+            papeletasNoUtilizadasCtrl: _pnuGobCtrl,
             sum: _sumGob,
             ok: _okGob,
             editable: _tabEditable(_VotacionTab.gobernador),
-            showPnu: false,
           ),
           _buildFotosCard(
             title: 'Fotos - Gobernador',
@@ -963,11 +985,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             voteMap: _asdCtrl,
             blancosCtrl: _basdCtrl,
             nulosCtrl: _nasdCtrl,
-            papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+            papeletasNoUtilizadasCtrl: _pnuAsdCtrl,
             sum: _sumAsd,
             ok: _okAsd,
             editable: _tabEditable(_VotacionTab.asambleistaDistrito),
-            showPnu: false,
           ),
           _buildFotosCard(
             title: 'Fotos - Asambleista por Distrito',
@@ -984,11 +1005,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             voteMap: _aspCtrl,
             blancosCtrl: _baspCtrl,
             nulosCtrl: _naspCtrl,
-            papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
+            papeletasNoUtilizadasCtrl: _pnuAspCtrl,
             sum: _sumAsp,
             ok: _okAsp,
             editable: _tabEditable(_VotacionTab.asambleistaPoblacion),
-            showPnu: false,
           ),
           _buildFotosCard(
             title: 'Fotos - Asambleista por Poblacion',

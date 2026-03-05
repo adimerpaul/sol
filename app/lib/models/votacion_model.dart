@@ -10,10 +10,13 @@ class VotacionDraft {
     required this.observacionAlcalde,
     required this.blancosGobernador,
     required this.nulosGobernador,
+    required this.papeletasNoUtilizadasGobernador,
     required this.blancosAsd,
     required this.nulosAsd,
+    required this.papeletasNoUtilizadasAsd,
     required this.blancosAsp,
     required this.nulosAsp,
+    required this.papeletasNoUtilizadasAsp,
     required this.blancosConcejal,
     required this.nulosConcejal,
     required this.papeletasNoUtilizadasConcejal,
@@ -42,10 +45,13 @@ class VotacionDraft {
 
   final int blancosGobernador;
   final int nulosGobernador;
+  final int papeletasNoUtilizadasGobernador;
   final int blancosAsd;
   final int nulosAsd;
+  final int papeletasNoUtilizadasAsd;
   final int blancosAsp;
   final int nulosAsp;
+  final int papeletasNoUtilizadasAsp;
   final int blancosConcejal;
   final int nulosConcejal;
   final int papeletasNoUtilizadasConcejal;
