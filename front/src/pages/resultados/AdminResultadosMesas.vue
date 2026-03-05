@@ -48,6 +48,26 @@
                 label="Delegado"
                 :options="asignadoOptions"
                 emit-value map-options
+                @update:model-value="onPickAsignado"
+              />
+            </div>
+
+            <div class="col-12 col-sm-4">
+              <q-select
+                v-model="filters.delegado_id"
+                :options="delegadosOptFiltered"
+                option-label="label"
+                option-value="id"
+                emit-value
+                map-options
+                use-input
+                input-debounce="200"
+                dense
+                outlined
+                clearable
+                label="Delegado de mesa"
+                @filter="filterDelegados"
+                @update:model-value="onPickDelegadoFiltro"
               />
             </div>
 
@@ -682,6 +702,7 @@ export default {
         recinto_id: null,
         mesa_id: null,
         asignado: 'ALL',
+        delegado_id: null,
         estado: null,
         con_resultado: 'ALL'
       },
@@ -701,6 +722,7 @@ export default {
       recintosOpt: [],
       recintosBase: [],
       mesasOpt: [],
+      delegadosOptFiltered: [],
 
       // asignar
       dlgAsignar: false,
@@ -960,6 +982,40 @@ export default {
       this.recintosBase = await this.$axios.get('admin/mesas/options/recintos').then(r => r.data)
       this.recintosOpt = this.recintosBase
       this.delegadosOpt = await this.$axios.get('admin/mesas/options/delegados').then(r => r.data)
+      this.delegadosOptFiltered = (this.delegadosOpt || []).map(d => ({
+        ...d,
+        label: `${d.name || '-'} (${d.username || '-'})`
+      }))
+    },
+
+    filterDelegados (val, update) {
+      update(() => {
+        const needle = (val || '').toLowerCase().trim()
+        const base = (this.delegadosOpt || []).map(d => ({
+          ...d,
+          label: `${d.name || '-'} (${d.username || '-'})`
+        }))
+        if (!needle) {
+          this.delegadosOptFiltered = base
+          return
+        }
+        this.delegadosOptFiltered = base.filter(d =>
+          String(d.name || '').toLowerCase().includes(needle) ||
+          String(d.username || '').toLowerCase().includes(needle)
+        )
+      })
+    },
+
+    onPickDelegadoFiltro (delegadoId) {
+      if (delegadoId) {
+        this.filters.asignado = 'YES'
+      }
+    },
+
+    onPickAsignado (val) {
+      if (val === 'NO') {
+        this.filters.delegado_id = null
+      }
     },
 
     filterRecintos (val, update) {
@@ -993,6 +1049,7 @@ export default {
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,
+          delegado_id: this.filters.delegado_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
           all: 1,              // 🔥 activa paginate del backend
@@ -1045,6 +1102,7 @@ export default {
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,
+          delegado_id: this.filters.delegado_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
           all: 1,

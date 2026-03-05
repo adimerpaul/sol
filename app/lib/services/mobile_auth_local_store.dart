@@ -453,6 +453,11 @@ class MobileAuthLocalStore {
         'blancos_alcalde': res.blancosAlcalde,
         'nulos_alcalde': res.nulosAlcalde,
         'papeletas_no_utilizadas_alcalde': res.pnuAlcalde,
+        'lock_alcalde': res.etapa2 == true,
+        'lock_concejal': res.etapa2 == true,
+        'lock_gobernador': res.etapa2 == true,
+        'lock_asambleista_distrito': res.etapa2 == true,
+        'lock_asambleista_poblacion': res.etapa2 == true,
         'votos': votos,
       };
 
@@ -963,6 +968,11 @@ class MobileAuthLocalStore {
       'blancos_alcalde': draft.blancosAlcalde,
       'nulos_alcalde': draft.nulosAlcalde,
       'papeletas_no_utilizadas_alcalde': draft.papeletasNoUtilizadasAlcalde,
+      'lock_alcalde': draft.lockAlcalde,
+      'lock_concejal': draft.lockConcejal,
+      'lock_gobernador': draft.lockGobernador,
+      'lock_asambleista_distrito': draft.lockAsd,
+      'lock_asambleista_poblacion': draft.lockAsp,
       'votos': draft.votos
           .map(
             (v) => {
@@ -1066,6 +1076,16 @@ class MobileAuthLocalStore {
       nulosAlcalde: _asInt(payload['nulos_alcalde']) ?? 0,
       papeletasNoUtilizadasAlcalde:
           _asInt(payload['papeletas_no_utilizadas_alcalde']) ?? 0,
+      lockAlcalde:
+          payload['finalizar'] == true || payload['lock_alcalde'] == true,
+      lockConcejal:
+          payload['finalizar'] == true || payload['lock_concejal'] == true,
+      lockGobernador:
+          payload['finalizar'] == true || payload['lock_gobernador'] == true,
+      lockAsd: payload['finalizar'] == true ||
+          payload['lock_asambleista_distrito'] == true,
+      lockAsp: payload['finalizar'] == true ||
+          payload['lock_asambleista_poblacion'] == true,
       votos: votos,
       fotos: fotos,
       syncStatus: (row['sync_status'] as String?) ?? votacionSyncLocal,

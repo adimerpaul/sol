@@ -18,7 +18,7 @@ class SuperAdminMesasController extends Controller
     private int $MAX_ROWS = 250;
 
     /**
-     * GET /api/admin/mesas?recinto_id=&mesa_id=&asignado=&estado=&con_resultado=
+     * GET /api/admin/mesas?recinto_id=&mesa_id=&asignado=&delegado_id=&estado=&con_resultado=
      * Devuelve máximo 250 registros (front hace paginación local con QPagination).
      */
     public function index(Request $request)
@@ -26,6 +26,7 @@ class SuperAdminMesasController extends Controller
         $recintoId    = $request->get('recinto_id');
         $mesaId       = $request->get('mesa_id');
         $asignado     = $request->get('asignado', 'ALL');
+        $delegadoId   = $request->get('delegado_id');
         $estado       = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
 
@@ -50,12 +51,13 @@ class SuperAdminMesasController extends Controller
             ])
             ->whereHas('recinto', function ($qq) {
                 $qq->whereNull('deleted_at')
-                    ->where('departamento_id', 5)
-                    ->where('provincia_id', 57)
-                    ->where('municipio_id', 191);
+                    ->where('departamento_id', 5);
+//                    ->where('provincia_id', 57)
+//                    ->where('municipio_id', 191);
             })
             ->when($recintoId, fn($qq) => $qq->where('mesas.recinto_id', $recintoId))
             ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
+            ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
             ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
             ->when($asignado !== 'ALL', function ($qq) use ($asignado) {
                 if ($asignado === 'YES') $qq->whereNotNull('mesas.delegado_id');

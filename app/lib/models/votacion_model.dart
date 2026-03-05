@@ -20,6 +20,11 @@ class VotacionDraft {
     required this.blancosAlcalde,
     required this.nulosAlcalde,
     required this.papeletasNoUtilizadasAlcalde,
+    required this.lockAlcalde,
+    required this.lockConcejal,
+    required this.lockGobernador,
+    required this.lockAsd,
+    required this.lockAsp,
     required this.votos,
     required this.fotos,
     required this.syncStatus,
@@ -47,6 +52,11 @@ class VotacionDraft {
   final int blancosAlcalde;
   final int nulosAlcalde;
   final int papeletasNoUtilizadasAlcalde;
+  final bool lockAlcalde;
+  final bool lockConcejal;
+  final bool lockGobernador;
+  final bool lockAsd;
+  final bool lockAsp;
 
   final List<VotoPartidoItem> votos;
   final Map<String, String?> fotos;

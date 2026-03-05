@@ -38,6 +38,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool _syncing = false;
   bool _datosBloqueados = false;
   _VotacionTab _activeTab = _VotacionTab.alcalde;
+  final Map<_VotacionTab, bool> _tabLocks = {
+    _VotacionTab.alcalde: false,
+    _VotacionTab.concejal: false,
+    _VotacionTab.gobernador: false,
+    _VotacionTab.asambleistaDistrito: false,
+    _VotacionTab.asambleistaPoblacion: false,
+  };
 
   List<MobileMesa> _mesas = const [];
   List<Map<String, dynamic>> _partidos = const [];
@@ -310,6 +317,92 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return estado == 'ASIGNADA' || estado == 'EN_PROCESO';
   }
 
+  bool _tabBloqueada(_VotacionTab tab) => _tabLocks[tab] == true;
+
+  bool _tabEditable(_VotacionTab tab) =>
+      !_datosBloqueados && !_tabBloqueada(tab) && _mesaEditablePorEstado;
+
+  bool get _activeTabBloqueada => _tabBloqueada(_activeTab);
+
+  bool get _allTabsBloqueadas => _tabLocks.values.every((v) => v);
+
+  String _tabLabel(_VotacionTab tab) {
+    switch (tab) {
+      case _VotacionTab.alcalde:
+        return 'Alcalde';
+      case _VotacionTab.concejal:
+        return 'Concejal';
+      case _VotacionTab.gobernador:
+        return 'Gobernador';
+      case _VotacionTab.asambleistaDistrito:
+        return 'Asambleista por Distrito';
+      case _VotacionTab.asambleistaPoblacion:
+        return 'Asambleista por Poblacion';
+    }
+  }
+
+  int _tabTotalActual(_VotacionTab tab) {
+    switch (tab) {
+      case _VotacionTab.alcalde:
+        return _sumAlc + _ival(_balcCtrl) + _ival(_nalcCtrl) + _ival(_pnuAlcCtrl);
+      case _VotacionTab.concejal:
+        return _sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl);
+      case _VotacionTab.gobernador:
+        return _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl);
+      case _VotacionTab.asambleistaDistrito:
+        return _sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl);
+      case _VotacionTab.asambleistaPoblacion:
+        return _sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl);
+    }
+  }
+
+  bool _tabTotalesOk(_VotacionTab tab) => _tabTotalActual(tab) == 250;
+
+  String? _tabActaSlot(_VotacionTab tab) {
+    switch (tab) {
+      case _VotacionTab.alcalde:
+        return 'foto2';
+      case _VotacionTab.concejal:
+        return 'foto4';
+      case _VotacionTab.gobernador:
+        return 'foto6';
+      case _VotacionTab.asambleistaDistrito:
+        return 'foto8';
+      case _VotacionTab.asambleistaPoblacion:
+        return 'foto10';
+    }
+  }
+
+  List<String> _tabFotoSlotsParaBloqueo(_VotacionTab tab) {
+    switch (tab) {
+      case _VotacionTab.alcalde:
+        return const ['foto1', 'foto2'];
+      case _VotacionTab.concejal:
+        return const ['foto3', 'foto4'];
+      case _VotacionTab.gobernador:
+        return const ['foto5', 'foto6'];
+      case _VotacionTab.asambleistaDistrito:
+        return const ['foto7', 'foto8'];
+      case _VotacionTab.asambleistaPoblacion:
+        return const ['foto9', 'foto10'];
+    }
+  }
+
+  bool _tabTieneFotosCompletas(_VotacionTab tab) {
+    final slots = _tabFotoSlotsParaBloqueo(tab);
+    return slots.every(_hasFoto);
+  }
+
+  void _lockTab(_VotacionTab tab) {
+    _tabLocks[tab] = true;
+  }
+
+  void _unlockAllTabs() {
+    for (final t in _tabLocks.keys) {
+      _tabLocks[t] = false;
+    }
+  }
+
   bool _hasFoto(String slot) {
     final localPath = _localFotos[slot];
     return localPath != null && localPath.isNotEmpty;
@@ -369,15 +462,28 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   Future<void> _loadMesa(int mesaId) async {
     _resetForm();
+    _unlockAllTabs();
     _datosBloqueados = _mesaEsFinalizada;
+    if (_mesaEsFinalizada) {
+      for (final t in _tabLocks.keys) {
+        _tabLocks[t] = true;
+      }
+    }
     final local = await _localStore.readVotacionDraft(mesaId);
     if (!mounted) return;
     if (local != null) {
       _applyDraft(local);
-      _datosBloqueados =
-          _mesaEsFinalizada ||
-          (local.syncStatus == MobileAuthLocalStore.votacionSyncSynced &&
-              local.finalizar);
+      _tabLocks[_VotacionTab.alcalde] = local.lockAlcalde;
+      _tabLocks[_VotacionTab.concejal] = local.lockConcejal;
+      _tabLocks[_VotacionTab.gobernador] = local.lockGobernador;
+      _tabLocks[_VotacionTab.asambleistaDistrito] = local.lockAsd;
+      _tabLocks[_VotacionTab.asambleistaPoblacion] = local.lockAsp;
+      _datosBloqueados = _mesaEsFinalizada || local.finalizar;
+      if (_datosBloqueados) {
+        for (final t in _tabLocks.keys) {
+          _tabLocks[t] = true;
+        }
+      }
       setState(() {});
       return;
     }
@@ -459,6 +565,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   Future<void> _pickImage(String slot, String label) async {
     if (_datosBloqueados) {
       showError(context, 'Datos ya enviados. No se puede modificar.');
+      return;
+    }
+    if (_activeTabBloqueada) {
+      showError(context, 'La pestaña ${_tabLabel(_activeTab)} ya esta bloqueada.');
       return;
     }
     if (!_mesaEditablePorEstado) {
@@ -546,6 +656,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       blancosAlcalde: _ival(_balcCtrl),
       nulosAlcalde: _ival(_nalcCtrl),
       papeletasNoUtilizadasAlcalde: _ival(_pnuAlcCtrl),
+      lockAlcalde: _tabLocks[_VotacionTab.alcalde] == true,
+      lockConcejal: _tabLocks[_VotacionTab.concejal] == true,
+      lockGobernador: _tabLocks[_VotacionTab.gobernador] == true,
+      lockAsd: _tabLocks[_VotacionTab.asambleistaDistrito] == true,
+      lockAsp: _tabLocks[_VotacionTab.asambleistaPoblacion] == true,
       votos: votos,
       fotos: Map<String, String?>.from(_localFotos),
       syncStatus: syncStatus,
@@ -562,12 +677,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       showError(context, 'Estos datos ya fueron enviados y bloqueados');
       return;
     }
+    if (_activeTabBloqueada) {
+      showError(context, 'La pestaña ${_tabLabel(_activeTab)} ya esta bloqueada.');
+      return;
+    }
     if (!_mesaEditablePorEstado) {
       showError(context, 'Solo puedes editar mesas ASIGNADA o EN_PROCESO');
       return;
     }
 
-    final hasActaElectoral = _hasFoto('foto2') || _hasFoto('foto4');
+    final actaSlot = _tabActaSlot(_activeTab);
+    final hasActaElectoral =
+        actaSlot == null ? true : _hasFoto(actaSlot);
     if (!hasActaElectoral) {
       final continuarSinActa = await showDialog<bool>(
         context: context,
@@ -591,18 +712,14 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       if (continuarSinActa != true) return;
     }
 
-    if (!_okGob || !_okAsd || !_okAsp || !_okAlc || !_okCon) {
+    if (!_tabTotalesOk(_activeTab)) {
       final continuar = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Advertencia de totales'),
           content: Text(
-            'Los totales no suman 250.\n'
-            'Gobernador: ${_sumGob + _ival(_bgCtrl) + _ival(_ngCtrl)}\n'
-            'Asam. Distrito: ${_sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl)}\n'
-            'Asam. Poblacion: ${_sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl)}\n'
-            'Alcalde: ${_sumAlc + _ival(_balcCtrl) + _ival(_nalcCtrl) + _ival(_pnuAlcCtrl)}\n'
-            'Concejal: ${_sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl)}\n\n'
+            '${_tabLabel(_activeTab)} no suma 250.\n'
+            'Total actual: ${_tabTotalActual(_activeTab)}\n\n'
             'Deseas enviar de todas formas?',
           ),
           actions: [
@@ -644,12 +761,21 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
     setState(() => _saving = true);
     try {
-      final finalizaAhora = _allRequiredFotosReady && _hasVotosCargados;
+      final bloqueaPestanaAhora = _tabTieneFotosCompletas(_activeTab);
+      if (bloqueaPestanaAhora) {
+        _lockTab(_activeTab);
+      }
+      final finalizaAhora = _allTabsBloqueadas;
       final d = _buildDraft(
         finalizar: finalizaAhora,
         syncStatus: MobileAuthLocalStore.votacionSyncLocal,
       );
       await _localStore.saveVotacionDraft(d);
+      if (mounted) {
+        setState(() {
+          _datosBloqueados = d.finalizar;
+        });
+      }
 
       try {
         await _service.sendVotacion(d);
@@ -680,12 +806,19 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           setState(() {
             _mesas = mesas;
             _datosBloqueados = d.finalizar;
+            if (_datosBloqueados) {
+              for (final t in _tabLocks.keys) {
+                _tabLocks[t] = true;
+              }
+            }
           });
           showSuccess(
             context,
             d.finalizar
                 ? 'Votacion finalizada y sincronizada'
-                : 'Votacion sincronizada (EN PROCESO)',
+                : (bloqueaPestanaAhora
+                    ? 'Pestaña ${_tabLabel(_activeTab)} bloqueada y sincronizada'
+                    : 'Datos sincronizados. Falta hoja y/o acta para bloquear ${_tabLabel(_activeTab)}'),
           );
         }
       } catch (e) {
@@ -772,14 +905,17 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
             sum: _sumAlc,
             ok: _okAlc,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.alcalde),
           ),
           _buildFotosCard(
             title: 'Fotos - Alcalde',
             config: _fotoAlcaldeConfig,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.alcalde),
           ),
-          _buildObsCard(_obsAlcCtrl),
+          _buildObsCard(
+            _obsAlcCtrl,
+            editable: _tabEditable(_VotacionTab.alcalde),
+          ),
         ] else if (_activeTab == _VotacionTab.concejal) ...[
           _buildCategoryCard(
             title: '2) Concejal',
@@ -789,14 +925,17 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             papeletasNoUtilizadasCtrl: _pnuConCtrl,
             sum: _sumCon,
             ok: _okCon,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.concejal),
           ),
           _buildFotosCard(
             title: 'Fotos - Concejal',
             config: _fotoConcejalConfig,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.concejal),
           ),
-          _buildObsCard(_obsConCtrl),
+          _buildObsCard(
+            _obsConCtrl,
+            editable: _tabEditable(_VotacionTab.concejal),
+          ),
         ] else if (_activeTab == _VotacionTab.gobernador) ...[
           _buildCategoryCard(
             title: '3) Gobernador',
@@ -806,15 +945,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
             sum: _sumGob,
             ok: _okGob,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.gobernador),
             showPnu: false,
           ),
           _buildFotosCard(
             title: 'Fotos - Gobernador',
             config: _fotoGobernadorConfig,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.gobernador),
           ),
-          _buildObsCard(_obsGobCtrl),
+          _buildObsCard(
+            _obsGobCtrl,
+            editable: _tabEditable(_VotacionTab.gobernador),
+          ),
         ] else if (_activeTab == _VotacionTab.asambleistaDistrito) ...[
           _buildCategoryCard(
             title: '4) Asambleista por Distrito',
@@ -824,15 +966,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
             sum: _sumAsd,
             ok: _okAsd,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.asambleistaDistrito),
             showPnu: false,
           ),
           _buildFotosCard(
             title: 'Fotos - Asambleista por Distrito',
             config: _fotoAsdConfig,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.asambleistaDistrito),
           ),
-          _buildObsCard(_obsAsdCtrl),
+          _buildObsCard(
+            _obsAsdCtrl,
+            editable: _tabEditable(_VotacionTab.asambleistaDistrito),
+          ),
         ] else ...[
           _buildCategoryCard(
             title: '5) Asambleista por Poblacion',
@@ -842,15 +987,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
             sum: _sumAsp,
             ok: _okAsp,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.asambleistaPoblacion),
             showPnu: false,
           ),
           _buildFotosCard(
             title: 'Fotos - Asambleista por Poblacion',
             config: _fotoAspConfig,
-            editable: !_datosBloqueados && _mesaEditablePorEstado,
+            editable: _tabEditable(_VotacionTab.asambleistaPoblacion),
           ),
-          _buildObsCard(_obsAspCtrl),
+          _buildObsCard(
+            _obsAspCtrl,
+            editable: _tabEditable(_VotacionTab.asambleistaPoblacion),
+          ),
         ],
         _buildGuardarMandarActions(),
         const SizedBox(height: 12),
@@ -858,13 +1006,16 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     );
   }
 
-  Widget _buildObsCard(TextEditingController controller) {
+  Widget _buildObsCard(
+    TextEditingController controller, {
+    required bool editable,
+  }) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: TextField(
           controller: controller,
-          enabled: !_datosBloqueados && _mesaEditablePorEstado,
+          enabled: editable,
           maxLines: 3,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
@@ -887,6 +1038,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                 _saving ||
                     !_readyFinalizar ||
                     _datosBloqueados ||
+                    _activeTabBloqueada ||
                     !_mesaEditablePorEstado
                 ? null
                 : _finalizarYEnviar,
@@ -894,6 +1046,8 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             label: Text(
               _datosBloqueados
                   ? 'Ya enviado (bloqueado)'
+                  : _activeTabBloqueada
+                  ? '${_tabLabel(_activeTab)} bloqueado'
                   : (_saving ? 'Procesando...' : 'Guardar y mandar'),
             ),
           ),
@@ -913,15 +1067,35 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _tabButton(tab: _VotacionTab.alcalde, label: 'Alcalde', done: _datosBloqueados),
+          _tabButton(
+            tab: _VotacionTab.alcalde,
+            label: 'Alcalde',
+            done: _tabBloqueada(_VotacionTab.alcalde),
+          ),
           const SizedBox(width: 8),
-          _tabButton(tab: _VotacionTab.concejal, label: 'Concejal', done: _datosBloqueados),
+          _tabButton(
+            tab: _VotacionTab.concejal,
+            label: 'Concejal',
+            done: _tabBloqueada(_VotacionTab.concejal),
+          ),
           const SizedBox(width: 8),
-          _tabButton(tab: _VotacionTab.gobernador, label: 'Gobernador', done: _datosBloqueados),
+          _tabButton(
+            tab: _VotacionTab.gobernador,
+            label: 'Gobernador',
+            done: _tabBloqueada(_VotacionTab.gobernador),
+          ),
           const SizedBox(width: 8),
-          _tabButton(tab: _VotacionTab.asambleistaDistrito, label: 'Asam. Distrito', done: _datosBloqueados),
+          _tabButton(
+            tab: _VotacionTab.asambleistaDistrito,
+            label: 'Asam. Distrito',
+            done: _tabBloqueada(_VotacionTab.asambleistaDistrito),
+          ),
           const SizedBox(width: 8),
-          _tabButton(tab: _VotacionTab.asambleistaPoblacion, label: 'Asam. Poblacion', done: _datosBloqueados),
+          _tabButton(
+            tab: _VotacionTab.asambleistaPoblacion,
+            label: 'Asam. Poblacion',
+            done: _tabBloqueada(_VotacionTab.asambleistaPoblacion),
+          ),
         ],
       ),
     );
@@ -1035,7 +1209,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Control activo: solo Alcalde y Concejal. Funciona online/offline.',
+              'Bloqueo por pestaña: se bloquea cuando tiene hoja y acta de esa categoria.',
               style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
             ),
           ],
