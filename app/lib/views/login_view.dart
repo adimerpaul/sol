@@ -26,10 +26,6 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
-    _ciController.text = '7351660';
-    _selectedDay = 13;
-    _selectedMonth = 3;
-    _selectedYear = 1996;
   }
 
   String? get _fechaNacimiento {
@@ -121,6 +117,7 @@ class _LoginViewState extends State<LoginView> {
                               decoration: _inputDecoration(
                                 label: 'CI',
                                 icon: Icons.badge_outlined,
+                                hint: 'Ingresa tu carnet',
                               ),
                               keyboardType: TextInputType.text,
                             ),
@@ -241,9 +238,11 @@ class _LoginViewState extends State<LoginView> {
   InputDecoration _inputDecoration({
     required String label,
     IconData? icon,
+    String? hint,
   }) {
     return InputDecoration(
       labelText: label,
+      hintText: hint,
       isDense: true,
       prefixIcon: icon != null
           ? Icon(icon, color: const Color(0xFF1C4CA3), size: 18)
@@ -299,7 +298,7 @@ class _LoginViewState extends State<LoginView> {
     final dayField = DropdownButtonFormField<int>(
       value: _selectedDay,
       isExpanded: true,
-      decoration: _inputDecoration(label: 'Dia'),
+      decoration: _inputDecoration(label: 'Dia', hint: 'Selecciona'),
       items: dayItems,
       onChanged: _vm.isLoading ? null : (v) => setState(() => _selectedDay = v),
     );
@@ -307,7 +306,7 @@ class _LoginViewState extends State<LoginView> {
     final monthField = DropdownButtonFormField<int>(
       value: _selectedMonth,
       isExpanded: true,
-      decoration: _inputDecoration(label: 'Mes'),
+      decoration: _inputDecoration(label: 'Mes', hint: 'Selecciona'),
       items: monthItems,
       onChanged: _vm.isLoading
           ? null
@@ -317,7 +316,7 @@ class _LoginViewState extends State<LoginView> {
     final yearField = DropdownButtonFormField<int>(
       value: _selectedYear,
       isExpanded: true,
-      decoration: _inputDecoration(label: 'Ano'),
+      decoration: _inputDecoration(label: 'Ano', hint: 'Selecciona'),
       items: yearItems,
       onChanged: _vm.isLoading ? null : (v) => setState(() => _selectedYear = v),
     );

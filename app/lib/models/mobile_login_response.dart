@@ -40,6 +40,7 @@ class MobilePartido {
     required this.id,
     required this.sigla,
     required this.nombre,
+    required this.color,
     required this.icono,
     required this.iconoUrl,
     required this.iconoBase64,
@@ -55,6 +56,7 @@ class MobilePartido {
   final int id;
   final String sigla;
   final String nombre;
+  final String? color;
   final String? icono;
   final String? iconoUrl;
   final String? iconoBase64;
@@ -71,6 +73,7 @@ class MobilePartido {
       id: _asInt(json['id']) ?? 0,
       sigla: (json['sigla'] ?? '').toString(),
       nombre: (json['nombre'] ?? '').toString(),
+      color: json['color']?.toString(),
       icono: json['icono']?.toString(),
       iconoUrl: json['icono_url']?.toString(),
       iconoBase64: json['icono_base64']?.toString(),

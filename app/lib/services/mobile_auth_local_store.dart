@@ -78,6 +78,7 @@ class MobileAuthLocalStore {
         id INTEGER PRIMARY KEY,
         sigla TEXT NOT NULL,
         nombre TEXT NOT NULL,
+        color TEXT,
         icono TEXT,
         icono_url TEXT,
         icono_base64 TEXT,
@@ -187,6 +188,7 @@ class MobileAuthLocalStore {
         id INTEGER PRIMARY KEY,
         sigla TEXT NOT NULL,
         nombre TEXT NOT NULL,
+        color TEXT,
         icono TEXT,
         icono_url TEXT,
         icono_base64 TEXT,
@@ -262,6 +264,7 @@ class MobileAuthLocalStore {
     await _addColumnIfMissing(db, 'auth_mesas', 'recinto_id', 'INTEGER');
     await _addColumnIfMissing(db, 'votacion_draft', 'fotos_json', 'TEXT');
     await _addColumnIfMissing(db, 'auth_partidos', 'icono_base64', 'TEXT');
+    await _addColumnIfMissing(db, 'auth_partidos', 'color', 'TEXT');
     await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_gobernador', 'INTEGER NOT NULL DEFAULT 1');
     await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_asambleista_poblacion', 'INTEGER NOT NULL DEFAULT 1');
     await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_asambleista_distrito', 'INTEGER NOT NULL DEFAULT 1');
@@ -387,6 +390,7 @@ class MobileAuthLocalStore {
           'id': partido.id,
           'sigla': partido.sigla,
           'nombre': partido.nombre,
+          'color': partido.color,
           'icono': partido.icono,
           'icono_url': partido.iconoUrl,
           'icono_base64': partido.iconoBase64,
@@ -608,6 +612,7 @@ class MobileAuthLocalStore {
             id: row['id'] as int? ?? 0,
             sigla: (row['sigla'] as String?) ?? '',
             nombre: (row['nombre'] as String?) ?? '',
+            color: row['color'] as String?,
             icono: row['icono'] as String?,
             iconoUrl: row['icono_url'] as String?,
             iconoBase64: row['icono_base64'] as String?,
@@ -963,6 +968,7 @@ class MobileAuthLocalStore {
             id: row['id'] as int? ?? 0,
             sigla: (row['sigla'] as String?) ?? '',
             nombre: (row['nombre'] as String?) ?? '',
+            color: row['color'] as String?,
             icono: row['icono'] as String?,
             iconoUrl: row['icono_url'] as String?,
             iconoBase64: row['icono_base64'] as String?,

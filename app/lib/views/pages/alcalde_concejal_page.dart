@@ -151,6 +151,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
               'id': p.id,
               'sigla': p.sigla,
               'nombre': p.nombre,
+              'color': p.color,
               'icono_url': p.iconoUrl,
               'icono_base64': p.iconoBase64,
               'orden_municipal': p.ordenMunicipal,
@@ -211,6 +212,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           'id': v.partidoId,
           'sigla': v.sigla,
           'nombre': v.nombre,
+          'color': null,
           'icono_url': v.iconoUrl,
           'orden_municipal': 0,
           'orden_departamental': 0,
@@ -231,11 +233,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     }
   }
 
-  List<Map<String, dynamic>> get _partidosSorted {
+  List<Map<String, dynamic>> _partidosSortedBy(String orderField) {
     final list = _partidos.map((e) => Map<String, dynamic>.from(e)).toList();
     list.sort((a, b) {
-      final oa = _toInt(a['orden_municipal']) ?? 0;
-      final ob = _toInt(b['orden_municipal']) ?? 0;
+      final oa = _toInt(a[orderField]) ?? 0;
+      final ob = _toInt(b[orderField]) ?? 0;
       if (oa != ob) return oa.compareTo(ob);
       return (a['sigla'] ?? '').toString().compareTo(
         (b['sigla'] ?? '').toString(),
@@ -244,22 +246,34 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return list;
   }
 
-  List<Map<String, dynamic>> get _partidosGobernador =>
-      _partidosSorted.where((p) => p['habilitado_gobernador'] != false).toList();
+  List<Map<String, dynamic>> get _partidosMunicipales =>
+      _partidosSortedBy('orden_municipal');
 
-  List<Map<String, dynamic>> get _partidosAsd => _partidosSorted
+  List<Map<String, dynamic>> get _partidosDepartamentales =>
+      _partidosSortedBy('orden_departamental');
+
+  List<Map<String, dynamic>> get _partidosGobernador =>
+      _partidosDepartamentales
+          .where((p) => p['habilitado_gobernador'] != false)
+          .toList();
+
+  List<Map<String, dynamic>> get _partidosAsd => _partidosDepartamentales
       .where((p) => p['habilitado_asambleista_distrito'] != false)
       .toList();
 
-  List<Map<String, dynamic>> get _partidosAsp => _partidosSorted
+  List<Map<String, dynamic>> get _partidosAsp => _partidosDepartamentales
       .where((p) => p['habilitado_asambleista_poblacion'] != false)
       .toList();
 
   List<Map<String, dynamic>> get _partidosConcejal =>
-      _partidosSorted.where((p) => p['habilitado_concejal'] != false).toList();
+      _partidosMunicipales
+          .where((p) => p['habilitado_concejal'] != false)
+          .toList();
 
   List<Map<String, dynamic>> get _partidosAlcalde =>
-      _partidosSorted.where((p) => p['habilitado_alcalde'] != false).toList();
+      _partidosMunicipales
+          .where((p) => p['habilitado_alcalde'] != false)
+          .toList();
 
   int _ival(TextEditingController c) => int.tryParse(c.text.trim()) ?? 0;
 
@@ -680,7 +694,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     required bool finalizar,
     required String syncStatus,
   }) {
-    final votos = _partidosSorted.map((p) {
+    final votos = _partidos.map((p) {
       final id = _toInt(p['id']) ?? 0;
       return VotoPartidoItem(
         partidoId: id,
@@ -1321,17 +1335,29 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             ...partidos.map((p) {
               final id = _toInt(p['id']) ?? 0;
               final iconBytes = _decodePartidoIconBytes(p);
+              final partidoColor = _partidoColor(p['color']?.toString());
+              final accentColor = partidoColor ?? const Color(0xFF1C4CA3);
+              final surfaceColor = _mixWithWhite(accentColor, 0.93);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7FAFD),
+                    color: surfaceColor,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFD6E3F0)),
+                    border: Border.all(color: _mixWithWhite(accentColor, 0.72)),
                   ),
                   child: Row(
                     children: [
+                    Container(
+                      width: 5,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     if (iconBytes != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
@@ -1346,10 +1372,29 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                       const Icon(Icons.flag, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        '${p['sigla'] ?? ''} - ${p['nombre'] ?? ''}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            (p['sigla'] ?? '').toString(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: _mixWithBlack(accentColor, 0.18),
+                            ),
+                          ),
+                          Text(
+                            (p['nombre'] ?? '').toString(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _mixWithBlack(accentColor, 0.3),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(
@@ -1516,4 +1561,23 @@ int? _toInt(dynamic value) {
   if (value == null) return null;
   if (value is int) return value;
   return int.tryParse(value.toString());
+}
+
+Color? _partidoColor(String? raw) {
+  if (raw == null) return null;
+  final hex = raw.trim();
+  if (hex.isEmpty) return null;
+  final normalized = hex.startsWith('#') ? hex.substring(1) : hex;
+  if (normalized.length != 6 && normalized.length != 8) return null;
+  final value = int.tryParse(normalized, radix: 16);
+  if (value == null) return null;
+  return Color(normalized.length == 6 ? 0xFF000000 | value : value);
+}
+
+Color _mixWithWhite(Color color, double amount) {
+  return Color.lerp(color, Colors.white, amount.clamp(0, 1)) ?? color;
+}
+
+Color _mixWithBlack(Color color, double amount) {
+  return Color.lerp(color, Colors.black, amount.clamp(0, 1)) ?? color;
 }
