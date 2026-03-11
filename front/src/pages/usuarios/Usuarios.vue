@@ -293,58 +293,58 @@
             <q-separator class="q-my-md" />
 
             <!-- ARCHIVOS -->
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-md-4">
-                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (anverso) </div>
-                <q-file
-                  v-model="files.ci_anverso"
-                  dense outlined
-                  accept="image/*,application/pdf"
-                  label="Subir archivo (máx 10MB)"
-                  clearable
-                />
-                <div v-if="user.ci_anverso_url" class="text-caption text-primary q-mt-xs">
-                  Ya cargado:
-<!--                  {{ user.ci_anverso_url }}-->
-                  <q-btn size="12px" :href="$url + '/..' + user.ci_anverso_url" target="_blank" no-caps>
-                    Ver archivo
-                  </q-btn>
-                </div>
-              </div>
+<!--            <div class="row q-col-gutter-sm">-->
+<!--              <div class="col-12 col-md-4">-->
+<!--                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (anverso) </div>-->
+<!--                <q-file-->
+<!--                  v-model="files.ci_anverso"-->
+<!--                  dense outlined-->
+<!--                  accept="image/*,application/pdf"-->
+<!--                  label="Subir archivo (máx 10MB)"-->
+<!--                  clearable-->
+<!--                />-->
+<!--                <div v-if="user.ci_anverso_url" class="text-caption text-primary q-mt-xs">-->
+<!--                  Ya cargado:-->
+<!--&lt;!&ndash;                  {{ user.ci_anverso_url }}&ndash;&gt;-->
+<!--                  <q-btn size="12px" :href="$url + '/..' + user.ci_anverso_url" target="_blank" no-caps>-->
+<!--                    Ver archivo-->
+<!--                  </q-btn>-->
+<!--                </div>-->
+<!--              </div>-->
 
-              <div class="col-12 col-md-4">
-                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (reverso) </div>
-                <q-file
-                  v-model="files.ci_reverso"
-                  dense outlined
-                  accept="image/*,application/pdf"
-                  label="Subir archivo (máx 10MB)"
-                  clearable
-                />
-                <div v-if="user.ci_reverso_url" class="text-caption text-primary q-mt-xs">
-                  Ya cargado:
-<!--                  {{ user.ci_reverso_url }}-->
-                  <q-btn size="12px" :href="$url + '/..' + user.ci_reverso_url" target="_blank" no-caps>
-                    Ver archivo
-                  </q-btn>
-                </div>
-              </div>
+<!--              <div class="col-12 col-md-4">-->
+<!--                <div class="text-caption text-grey-7 q-mb-xs">Foto CI (reverso) </div>-->
+<!--                <q-file-->
+<!--                  v-model="files.ci_reverso"-->
+<!--                  dense outlined-->
+<!--                  accept="image/*,application/pdf"-->
+<!--                  label="Subir archivo (máx 10MB)"-->
+<!--                  clearable-->
+<!--                />-->
+<!--                <div v-if="user.ci_reverso_url" class="text-caption text-primary q-mt-xs">-->
+<!--                  Ya cargado:-->
+<!--&lt;!&ndash;                  {{ user.ci_reverso_url }}&ndash;&gt;-->
+<!--                  <q-btn size="12px" :href="$url + '/..' + user.ci_reverso_url" target="_blank" no-caps>-->
+<!--                    Ver archivo-->
+<!--                  </q-btn>-->
+<!--                </div>-->
+<!--              </div>-->
 
-              <div class="col-12 col-md-4">
-                <div class="text-caption text-grey-7 q-mb-xs">Foto personal (selfie) </div>
-                <q-file
-                  v-model="files.foto_personal"
-                  dense outlined
-                  accept="image/*"
-                  label="Subir archivo (máx 10MB)"
-                  clearable
-                />
-                <div v-if="user.foto_personal_url" class="text-caption text-primary q-mt-xs">
-                  Ya cargado:
-<!--                  {{ user.foto_personal_url }}-->
-                </div>
-              </div>
-            </div>
+<!--              <div class="col-12 col-md-4">-->
+<!--                <div class="text-caption text-grey-7 q-mb-xs">Foto personal (selfie) </div>-->
+<!--                <q-file-->
+<!--                  v-model="files.foto_personal"-->
+<!--                  dense outlined-->
+<!--                  accept="image/*"-->
+<!--                  label="Subir archivo (máx 10MB)"-->
+<!--                  clearable-->
+<!--                />-->
+<!--                <div v-if="user.foto_personal_url" class="text-caption text-primary q-mt-xs">-->
+<!--                  Ya cargado:-->
+<!--&lt;!&ndash;                  {{ user.foto_personal_url }}&ndash;&gt;-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
 
             <div class="text-right q-mt-md">
               <q-btn color="negative" label="Cancelar" @click="closeUserDialog" no-caps :loading="loading"/>

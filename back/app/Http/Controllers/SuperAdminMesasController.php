@@ -218,11 +218,7 @@ class SuperAdminMesasController extends Controller
     // GET /api/admin/mesas/{mesa}/resultado
     public function resultado(Mesa $mesa)
     {
-        $partidos = Partido::query()
-            ->select('id','sigla','nombre','color','orden_municipal','orden_departamental','icono') // icono/logo
-            ->orderBy('orden_municipal')
-            ->orderBy('sigla')
-            ->get();
+        $partidos = $this->partidosPorMesa($mesa);
 
         $res = ResultadoMesa::with(['detalles'])
             ->where('mesa_id', $mesa->id)
@@ -363,6 +359,8 @@ class SuperAdminMesasController extends Controller
             'votos_alcalde',
         ];
 
+        $partidosPermitidos = $this->partidosPorMesa($mesa)->pluck('id')->map(fn ($id) => (int) $id)->values();
+
         foreach ($votos as $row) {
             if (!isset($row['partido_id'])) {
                 return response()->json(['message' => 'Votos incompletos'], 422);
@@ -375,8 +373,8 @@ class SuperAdminMesasController extends Controller
                     return response()->json(['message' => 'Votos invalidos'], 422);
                 }
             }
-            if (!Partido::whereKey($row['partido_id'])->exists()) {
-                return response()->json(['message' => 'Partido invalido'], 422);
+            if (!$partidosPermitidos->contains((int) $row['partido_id'])) {
+                return response()->json(['message' => 'Partido no habilitado para este municipio'], 422);
             }
         }
 
@@ -450,6 +448,13 @@ class SuperAdminMesasController extends Controller
             }
 
             $totalVotos = 0;
+            $partidosEnviados = collect($votos)->pluck('partido_id')->map(fn ($id) => (int) $id)->values();
+
+            ResultadoMesaDetalle::query()
+                ->where('resultado_mesa_id', $res->id)
+                ->whereNotIn('partido_id', $partidosEnviados)
+                ->delete();
+
             foreach ($votos as $row) {
                 $vvGob = (int) $row['votos_gobernador'];
                 $vvAsd = (int) $row['votos_asambleista_distrito'];
@@ -520,6 +525,38 @@ class SuperAdminMesasController extends Controller
         SocketEmitter::votacion($socketPayload);
 
         return response()->json(['message' => 'Resultado guardado']);
+    }
+
+    private function partidosPorMesa(Mesa $mesa)
+    {
+        $municipioId = $mesa->municipio_id ?: $mesa->recinto?->municipio_id;
+
+        $query = Partido::query()
+            ->select('id', 'sigla', 'nombre', 'color', 'orden_municipal', 'orden_departamental', 'icono')
+            ->orderByRaw('CASE WHEN orden_municipal IS NULL OR orden_municipal = 0 THEN 1 ELSE 0 END')
+            ->orderBy('orden_municipal')
+            ->orderBy('sigla');
+
+        if (!$municipioId) {
+            return $query->get();
+        }
+
+        $habilitados = DB::table('municipio_partido')
+            ->where('municipio_id', $municipioId)
+            ->where(function ($qq) {
+                $qq->where('habilitado_gobernador', true)
+                    ->orWhere('habilitado_asambleista_poblacion', true)
+                    ->orWhere('habilitado_asambleista_distrito', true)
+                    ->orWhere('habilitado_alcalde', true)
+                    ->orWhere('habilitado_concejal', true);
+            })
+            ->pluck('partido_id');
+
+        if ($habilitados->isEmpty()) {
+            return $query->get();
+        }
+
+        return $query->whereIn('id', $habilitados)->get();
     }
 
     private function isHoraAperturaValida(?string $hora): bool

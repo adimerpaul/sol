@@ -47,6 +47,8 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::apiResource('paises', PaisController::class);
     Route::apiResource('departamentos', DepartamentoController::class);
     Route::apiResource('provincias', ProvinciaController::class);
+    Route::get('municipios/{municipio}/partidos', [MunicipioController::class, 'partidos']);
+    Route::put('municipios/{municipio}/partidos', [MunicipioController::class, 'syncPartidos']);
     Route::apiResource('municipios', MunicipioController::class);
     Route::apiResource('localidades', LocalidadController::class);
     Route::apiResource('recintos', RecintoController::class);

@@ -38,4 +38,17 @@ class Municipio extends Model implements Auditable
     {
         return $this->hasMany(Mesa::class, 'municipio_id');
     }
+
+    public function partidos()
+    {
+        return $this->belongsToMany(Partido::class, 'municipio_partido', 'municipio_id', 'partido_id')
+            ->withPivot([
+                'habilitado_gobernador',
+                'habilitado_asambleista_poblacion',
+                'habilitado_asambleista_distrito',
+                'habilitado_alcalde',
+                'habilitado_concejal',
+            ])
+            ->withTimestamps();
+    }
 }

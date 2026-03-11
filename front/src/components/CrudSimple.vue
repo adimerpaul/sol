@@ -112,6 +112,20 @@
                   <q-item-label>Editar</q-item-label>
                 </q-item-section>
               </q-item>
+              <q-item
+                v-for="action in rowActions"
+                :key="`${row.id}-${action.key}`"
+                clickable
+                v-close-popup
+                @click="emitRowAction(action, row)"
+              >
+                <q-item-section avatar :class="action.colorClass || 'text-primary'">
+                  <q-icon :name="action.icon || 'tune'" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label :class="action.labelClass || ''">{{ action.label }}</q-item-label>
+                </q-item-section>
+              </q-item>
               <q-item clickable v-close-popup @click="remove(row)">
                 <q-item-section avatar class="text-negative">
                   <q-icon name="delete" />
@@ -185,10 +199,11 @@ export default {
     filters: { type: Object, default: () => ({}) },
 
     // [{ key,label,icon,options,optionLabel,optionValue,disable,resets:[] }]
-    selects: { type: Array, default: () => [] }
+    selects: { type: Array, default: () => [] },
+    rowActions: { type: Array, default: () => [] }
   },
 
-  emits: ['update:filters', 'filters-changed'],
+  emits: ['update:filters', 'filters-changed', 'row-action'],
 
   data () {
     return {
@@ -417,6 +432,10 @@ export default {
           this.$q.notify({ type: 'negative', message: e?.response?.data?.message || 'No se pudo eliminar' })
         }
       })
+    },
+
+    emitRowAction (action, row) {
+      this.$emit('row-action', { action, row })
     }
   }
 }
