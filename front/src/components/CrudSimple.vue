@@ -9,7 +9,7 @@
           {{ title }}
         </div>
         <div class="text-caption text-grey-7">
-          Gestión y búsqueda rápida • Paginación • CRUD
+          Gestión y búsqueda rápida • Paginación
 <!--          <pre>{{selects}}</pre>-->
         </div>
       </div>
@@ -92,20 +92,39 @@
     <q-markup-table dense bordered class="q-ma-none">
       <thead>
       <tr>
-        <th v-for="c in columns" :key="c" class="text-left">{{ c }}</th>
         <th width="140" class="text-right">Acciones</th>
+        <th v-for="c in columns" :key="c" class="text-left">{{ c }}</th>
       </tr>
       </thead>
 
       <tbody>
       <tr v-for="row in paginatedRows" :key="row.id">
+        <td class="text-right">
+<!--          <q-btn flat dense round icon="edit" color="primary" @click="edit(row)" />-->
+<!--          <q-btn flat dense round icon="delete" color="negative" @click="remove(row)" />-->
+          <q-btn-dropdown dense color="primary" size="10px" label="Opciones" no-caps >
+            <q-list>
+              <q-item clickable v-close-popup @click="edit(row)">
+                <q-item-section avatar class="text-primary">
+                  <q-icon name="edit" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Editar</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="remove(row)">
+                <q-item-section avatar class="text-negative">
+                  <q-icon name="delete" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-negative">Eliminar</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+        </td>
         <td v-for="f in fields" :key="f">
           {{ resolve(row, f) }}
-        </td>
-
-        <td class="text-right">
-          <q-btn flat dense round icon="edit" color="primary" @click="edit(row)" />
-          <q-btn flat dense round icon="delete" color="negative" @click="remove(row)" />
         </td>
       </tr>
 

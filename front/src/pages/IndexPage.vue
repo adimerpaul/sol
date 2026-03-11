@@ -2,7 +2,7 @@
   <q-page class="q-pa-md bg-grey-2">
     <q-card flat bordered class="bg-white">
       <q-card-section class="row items-center">
-        <div class="col">
+        <div class="col-12 col-md-auto">
           <div class="text-h6 text-weight-bold">Dashboard Graficos</div>
           <div class="text-caption text-grey-7">
             Votos por categoria y mesas faltantes en tiempo real (Municipio Oruro)
@@ -13,7 +13,7 @@
           <q-chip outline color="secondary">Mesas Oruro: {{ mesas.total }}</q-chip>
           <q-chip outline color="positive">Con resultado: {{ mesas.con_resultado }}</q-chip>
           <q-chip outline color="orange">Mesas faltantes: {{ mesas.faltantes }}</q-chip>
-          <q-btn color="primary" icon="add" round dense :loading="loading" @click="loadGraficos" />
+          <q-btn color="primary" icon="refresh" round dense :loading="loading" @click="loadGraficos" />
         </div>
       </q-card-section>
 

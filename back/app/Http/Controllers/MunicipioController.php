@@ -17,6 +17,11 @@ class MunicipioController extends Controller
             ->with(['provincia:id,nombre'])
             ->select('id','id_original','provincia_id','nombre','created_at')
             ->when($provinciaId, fn($qq) => $qq->where('provincia_id', $provinciaId))
+            ->when($request->has('departamento_id'), function($qq) use ($request) {
+                $qq->whereHas('provincia', function($qqq) use ($request)                    {
+                    $qqq->where('departamento_id', $request->get('departamento_id'));
+                });
+            })
             ->when($search !== '', fn($qq) => $qq->where('nombre','like',"%{$search}%"));
 
         return $q->orderBy('nombre')->paginate($request->get('per_page', 25));
