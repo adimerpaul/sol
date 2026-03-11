@@ -269,14 +269,15 @@
 
           <q-select
             v-model="delegadoPick"
-            :options="delegadosOpt"
-            option-label="name"
+            :options="delegadosAsignarOptFiltered"
+            option-label="label"
             option-value="id"
             emit-value map-options
             use-input input-debounce="200"
             dense outlined
             label="Delegado de Mesa"
             clearable
+            @filter="filterDelegadosAsignar"
           >
             <template v-slot:option="scope">
               <q-item v-bind="scope.itemProps">
@@ -734,6 +735,7 @@ export default {
       recintosBase: [],
       mesasOpt: [],
       delegadosOptFiltered: [],
+      delegadosAsignarOptFiltered: [],
 
       // asignar
       dlgAsignar: false,
@@ -1007,7 +1009,13 @@ export default {
       this.recintosBase = await this.$axios.get('admin/mesas/options/recintos').then(r => r.data)
       this.recintosOpt = this.recintosBase
       this.delegadosOpt = await this.$axios.get('admin/mesas/options/delegados').then(r => r.data)
-      this.delegadosOptFiltered = (this.delegadosOpt || []).map(d => ({
+      const base = this.buildDelegadosOptions()
+      this.delegadosOptFiltered = base
+      this.delegadosAsignarOptFiltered = base
+    },
+
+    buildDelegadosOptions () {
+      return (this.delegadosOpt || []).map(d => ({
         ...d,
         label: `${d.name || '-'} (${d.username || '-'})`
       }))
@@ -1016,15 +1024,27 @@ export default {
     filterDelegados (val, update) {
       update(() => {
         const needle = (val || '').toLowerCase().trim()
-        const base = (this.delegadosOpt || []).map(d => ({
-          ...d,
-          label: `${d.name || '-'} (${d.username || '-'})`
-        }))
+        const base = this.buildDelegadosOptions()
         if (!needle) {
           this.delegadosOptFiltered = base
           return
         }
         this.delegadosOptFiltered = base.filter(d =>
+          String(d.name || '').toLowerCase().includes(needle) ||
+          String(d.username || '').toLowerCase().includes(needle)
+        )
+      })
+    },
+
+    filterDelegadosAsignar (val, update) {
+      update(() => {
+        const needle = (val || '').toLowerCase().trim()
+        const base = this.buildDelegadosOptions()
+        if (!needle) {
+          this.delegadosAsignarOptFiltered = base
+          return
+        }
+        this.delegadosAsignarOptFiltered = base.filter(d =>
           String(d.name || '').toLowerCase().includes(needle) ||
           String(d.username || '').toLowerCase().includes(needle)
         )
@@ -1152,6 +1172,7 @@ export default {
       this.curMesa = row
       this.delegadoPick = row.delegado_id || null
       this.estadoPick = row.estado || 'ASIGNADA'
+      this.delegadosAsignarOptFiltered = this.buildDelegadosOptions()
       this.dlgAsignar = true
     },
 
