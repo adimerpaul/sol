@@ -306,7 +306,7 @@
 
     <!-- DIALOG: RESULTADO -->
     <q-dialog v-model="dlgResultado" persistent>
-      <q-card style="width: 980px; max-width: 98vw;">
+      <q-card style="width: 1180px; max-width: 99vw;">
         <q-card-section class="row items-center">
           <div class="text-weight-bold">Resultado de Mesa</div>
           <q-space />
@@ -316,6 +316,8 @@
         <q-card-section class="q-pt-none">
           <div class="text-caption text-grey-7">
             {{ resMesa?.recinto_nombre }} · Mesa {{ resMesa?.numero_mesa }} ·
+            {{ resMesa?.provincia_nombre || 'Sin provincia' }} ·
+            {{ resMesa?.municipio_nombre || 'Sin municipio' }} ·
             Delegado: <span class="text-weight-medium">{{ resMesa?.delegado?.name || 'SIN ASIGNAR' }}</span>
           </div>
 
@@ -503,7 +505,7 @@
                    <div class="col-12 col-md-6">
                      <q-card flat bordered class="q-pa-sm">
                        <div class="text-weight-bold q-mb-xs">Gobernador</div>
-                       <div v-for="p in partidosDepartamental" :key="'gob_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
+                       <div v-for="p in partidosGobernador" :key="'gob_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                          <div class="col-12 col-md-7 row items-center">
                            <div v-if="p.icono" class="q-mr-sm">
                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
@@ -527,7 +529,7 @@
                    <div class="col-12 col-md-6">
                      <q-card flat bordered class="q-pa-sm">
                        <div class="text-weight-bold q-mb-xs">Asambleísta Distrito</div>
-                       <div v-for="p in partidosDepartamental" :key="'asd_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
+                       <div v-for="p in partidosAsambleistaDistrito" :key="'asd_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                          <div class="col-12 col-md-7 row items-center">
                            <div v-if="p.icono" class="q-mr-sm">
                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
@@ -551,7 +553,7 @@
                    <div class="col-12 col-md-6">
                      <q-card flat bordered class="q-pa-sm">
                        <div class="text-weight-bold q-mb-xs">Asambleísta Población</div>
-                       <div v-for="p in partidosDepartamental" :key="'asp_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
+                       <div v-for="p in partidosAsambleistaPoblacion" :key="'asp_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                          <div class="col-12 col-md-7 row items-center">
                            <div v-if="p.icono" class="q-mr-sm">
                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
@@ -574,7 +576,7 @@
                     <div class="col-12 col-md-6">
                       <q-card flat bordered class="q-pa-sm">
                         <div class="text-weight-bold q-mb-xs">Alcalde</div>
-                        <div v-for="p in partidosMunicipal" :key="'alc_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
+                        <div v-for="p in partidosAlcalde" :key="'alc_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                           <div class="col-12 col-md-7 row items-center">
                             <div v-if="p.icono" class="q-mr-sm">
                               <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
@@ -597,7 +599,7 @@
                     <div class="col-12 col-md-6">
                       <q-card flat bordered class="q-pa-sm">
                         <div class="text-weight-bold q-mb-xs">Concejal</div>
-                        <div v-for="p in partidosMunicipal" :key="'con_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
+                        <div v-for="p in partidosConcejal" :key="'con_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                           <div class="col-12 col-md-7 row items-center">
                             <div v-if="p.icono" class="q-mr-sm">
                               <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
@@ -850,25 +852,24 @@ export default {
     countAsignadas () { return (this.filteredRows || []).filter(x => !!x.delegado_id).length },
     countConResultado () { return (this.filteredRows || []).filter(x => !!x.tiene_resultado).length },
 
-    partidosMunicipal () {
-      return (this.partidos || []).slice().sort((a, b) => {
-        const oa = Number(a.orden_municipal || 0)
-        const ob = Number(b.orden_municipal || 0)
-        if (oa !== ob) return oa - ob
-        return String(a.sigla || '').localeCompare(String(b.sigla || ''))
-      })
+    partidosGobernador () {
+      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_gobernador), 'orden_departamental')
     },
 
-    partidosDepartamental () {
-      return (this.partidos || [])
-        .filter(p => Number(p.orden_departamental || 0) > 0)
-        .slice()
-        .sort((a, b) => {
-          const oa = Number(a.orden_departamental || 0)
-          const ob = Number(b.orden_departamental || 0)
-          if (oa !== ob) return oa - ob
-          return String(a.sigla || '').localeCompare(String(b.sigla || ''))
-        })
+    partidosAsambleistaDistrito () {
+      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_asambleista_distrito), 'orden_departamental')
+    },
+
+    partidosAsambleistaPoblacion () {
+      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_asambleista_poblacion), 'orden_departamental')
+    },
+
+    partidosAlcalde () {
+      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_alcalde), 'orden_municipal')
+    },
+
+    partidosConcejal () {
+      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_concejal), 'orden_municipal')
     },
 
     sumVotos () {
@@ -976,6 +977,15 @@ export default {
         if (!Number.isNaN(v)) s += v
       }
       return s
+    },
+
+    sortPartidosBy (partidos, orderKey) {
+      return (partidos || []).slice().sort((a, b) => {
+        const oa = Number(a?.[orderKey] || 0)
+        const ob = Number(b?.[orderKey] || 0)
+        if (oa !== ob) return oa - ob
+        return String(a?.sigla || '').localeCompare(String(b?.sigla || ''))
+      })
     },
 
     colorEstado (e) {
