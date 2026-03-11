@@ -155,6 +155,13 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
               'icono_base64': p.iconoBase64,
               'orden_municipal': p.ordenMunicipal,
               'orden_departamental': p.ordenDepartamental,
+              'habilitado_gobernador': p.habilitadoGobernador,
+              'habilitado_asambleista_poblacion':
+                  p.habilitadoAsambleistaPoblacion,
+              'habilitado_asambleista_distrito':
+                  p.habilitadoAsambleistaDistrito,
+              'habilitado_concejal': p.habilitadoConcejal,
+              'habilitado_alcalde': p.habilitadoAlcalde,
             },
           )
           .toList();
@@ -237,11 +244,31 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return list;
   }
 
+  List<Map<String, dynamic>> get _partidosGobernador =>
+      _partidosSorted.where((p) => p['habilitado_gobernador'] != false).toList();
+
+  List<Map<String, dynamic>> get _partidosAsd => _partidosSorted
+      .where((p) => p['habilitado_asambleista_distrito'] != false)
+      .toList();
+
+  List<Map<String, dynamic>> get _partidosAsp => _partidosSorted
+      .where((p) => p['habilitado_asambleista_poblacion'] != false)
+      .toList();
+
+  List<Map<String, dynamic>> get _partidosConcejal =>
+      _partidosSorted.where((p) => p['habilitado_concejal'] != false).toList();
+
+  List<Map<String, dynamic>> get _partidosAlcalde =>
+      _partidosSorted.where((p) => p['habilitado_alcalde'] != false).toList();
+
   int _ival(TextEditingController c) => int.tryParse(c.text.trim()) ?? 0;
 
-  int _sum(Map<int, TextEditingController> map) {
+  int _sum(
+    Map<int, TextEditingController> map,
+    List<Map<String, dynamic>> partidos,
+  ) {
     var s = 0;
-    for (final p in _partidosSorted) {
+    for (final p in partidos) {
       final id = _toInt(p['id']) ?? 0;
       final c = map[id];
       if (c != null) s += _ival(c);
@@ -249,11 +276,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return s;
   }
 
-  int get _sumGob => _sum(_gobCtrl);
-  int get _sumAsd => _sum(_asdCtrl);
-  int get _sumAsp => _sum(_aspCtrl);
-  int get _sumCon => _sum(_conCtrl);
-  int get _sumAlc => _sum(_alcCtrl);
+  int get _sumGob => _sum(_gobCtrl, _partidosGobernador);
+  int get _sumAsd => _sum(_asdCtrl, _partidosAsd);
+  int get _sumAsp => _sum(_aspCtrl, _partidosAsp);
+  int get _sumCon => _sum(_conCtrl, _partidosConcejal);
+  int get _sumAlc => _sum(_alcCtrl, _partidosAlcalde);
 
   bool get _okGob =>
       _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl) + _ival(_pnuGobCtrl) == 250;
@@ -483,6 +510,19 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         _tabLocks[t] = true;
       }
     }
+
+    try {
+      final remote = await _service.loadMesa(mesaId);
+      final partidos = ((remote['partidos'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+      if (partidos.isNotEmpty) {
+        _ensureControllers(partidos);
+        _partidos = partidos;
+      }
+    } catch (_) {}
+
     final local = await _localStore.readVotacionDraft(mesaId);
     if (!mounted) return;
     if (local != null) {
@@ -922,6 +962,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         if (_activeTab == _VotacionTab.alcalde) ...[
           _buildCategoryCard(
             title: '1) Alcalde',
+            partidos: _partidosAlcalde,
             voteMap: _alcCtrl,
             blancosCtrl: _balcCtrl,
             nulosCtrl: _nalcCtrl,
@@ -942,6 +983,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         ] else if (_activeTab == _VotacionTab.concejal) ...[
           _buildCategoryCard(
             title: '2) Concejal',
+            partidos: _partidosConcejal,
             voteMap: _conCtrl,
             blancosCtrl: _bconCtrl,
             nulosCtrl: _nconCtrl,
@@ -962,6 +1004,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         ] else if (_activeTab == _VotacionTab.gobernador) ...[
           _buildCategoryCard(
             title: '3) Gobernador',
+            partidos: _partidosGobernador,
             voteMap: _gobCtrl,
             blancosCtrl: _bgCtrl,
             nulosCtrl: _ngCtrl,
@@ -982,6 +1025,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         ] else if (_activeTab == _VotacionTab.asambleistaDistrito) ...[
           _buildCategoryCard(
             title: '4) Asambleista por Distrito',
+            partidos: _partidosAsd,
             voteMap: _asdCtrl,
             blancosCtrl: _basdCtrl,
             nulosCtrl: _nasdCtrl,
@@ -1002,6 +1046,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         ] else ...[
           _buildCategoryCard(
             title: '5) Asambleista por Poblacion',
+            partidos: _partidosAsp,
             voteMap: _aspCtrl,
             blancosCtrl: _baspCtrl,
             nulosCtrl: _naspCtrl,
@@ -1156,12 +1201,24 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   }
 
   Widget _headerCard() {
+    final mesaActual = _mesaActual;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (mesaActual != null) ...[
+              Text(
+                '${mesaActual.departamentoNombre ?? '-'} · ${mesaActual.provinciaNombre ?? '-'} · ${mesaActual.municipioNombre ?? '-'}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.blueGrey.shade700,
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
             // Row(
             //   children: [
             //     const Expanded(
@@ -1240,6 +1297,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   Widget _buildCategoryCard({
     required String title,
+    required List<Map<String, dynamic>> partidos,
     required Map<int, TextEditingController> voteMap,
     required TextEditingController blancosCtrl,
     required TextEditingController nulosCtrl,
@@ -1260,13 +1318,20 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 6),
-            ..._partidosSorted.map((p) {
+            ...partidos.map((p) {
               final id = _toInt(p['id']) ?? 0;
               final iconBytes = _decodePartidoIconBytes(p);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: [
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7FAFD),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFD6E3F0)),
+                  ),
+                  child: Row(
+                    children: [
                     if (iconBytes != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
@@ -1301,7 +1366,8 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                         onChanged: (_) => _onDataChanged(),
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }),

@@ -45,6 +45,11 @@ class MobilePartido {
     required this.iconoBase64,
     required this.ordenMunicipal,
     required this.ordenDepartamental,
+    required this.habilitadoGobernador,
+    required this.habilitadoAsambleistaPoblacion,
+    required this.habilitadoAsambleistaDistrito,
+    required this.habilitadoConcejal,
+    required this.habilitadoAlcalde,
   });
 
   final int id;
@@ -55,6 +60,11 @@ class MobilePartido {
   final String? iconoBase64;
   final int ordenMunicipal;
   final int ordenDepartamental;
+  final bool habilitadoGobernador;
+  final bool habilitadoAsambleistaPoblacion;
+  final bool habilitadoAsambleistaDistrito;
+  final bool habilitadoConcejal;
+  final bool habilitadoAlcalde;
 
   factory MobilePartido.fromJson(Map<String, dynamic> json) {
     return MobilePartido(
@@ -66,6 +76,13 @@ class MobilePartido {
       iconoBase64: json['icono_base64']?.toString(),
       ordenMunicipal: _asInt(json['orden_municipal']) ?? 0,
       ordenDepartamental: _asInt(json['orden_departamental']) ?? 0,
+      habilitadoGobernador: json['habilitado_gobernador'] != false,
+      habilitadoAsambleistaPoblacion:
+          json['habilitado_asambleista_poblacion'] != false,
+      habilitadoAsambleistaDistrito:
+          json['habilitado_asambleista_distrito'] != false,
+      habilitadoConcejal: json['habilitado_concejal'] != false,
+      habilitadoAlcalde: json['habilitado_alcalde'] != false,
     );
   }
 }

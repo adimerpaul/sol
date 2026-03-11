@@ -82,7 +82,12 @@ class MobileAuthLocalStore {
         icono_url TEXT,
         icono_base64 TEXT,
         orden_municipal INTEGER NOT NULL DEFAULT 0,
-        orden_departamental INTEGER NOT NULL DEFAULT 0
+        orden_departamental INTEGER NOT NULL DEFAULT 0,
+        habilitado_gobernador INTEGER NOT NULL DEFAULT 1,
+        habilitado_asambleista_poblacion INTEGER NOT NULL DEFAULT 1,
+        habilitado_asambleista_distrito INTEGER NOT NULL DEFAULT 1,
+        habilitado_concejal INTEGER NOT NULL DEFAULT 1,
+        habilitado_alcalde INTEGER NOT NULL DEFAULT 1
       )
     ''');
 
@@ -186,7 +191,12 @@ class MobileAuthLocalStore {
         icono_url TEXT,
         icono_base64 TEXT,
         orden_municipal INTEGER NOT NULL DEFAULT 0,
-        orden_departamental INTEGER NOT NULL DEFAULT 0
+        orden_departamental INTEGER NOT NULL DEFAULT 0,
+        habilitado_gobernador INTEGER NOT NULL DEFAULT 1,
+        habilitado_asambleista_poblacion INTEGER NOT NULL DEFAULT 1,
+        habilitado_asambleista_distrito INTEGER NOT NULL DEFAULT 1,
+        habilitado_concejal INTEGER NOT NULL DEFAULT 1,
+        habilitado_alcalde INTEGER NOT NULL DEFAULT 1
       )
     ''');
     await db.execute('''
@@ -252,6 +262,11 @@ class MobileAuthLocalStore {
     await _addColumnIfMissing(db, 'auth_mesas', 'recinto_id', 'INTEGER');
     await _addColumnIfMissing(db, 'votacion_draft', 'fotos_json', 'TEXT');
     await _addColumnIfMissing(db, 'auth_partidos', 'icono_base64', 'TEXT');
+    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_gobernador', 'INTEGER NOT NULL DEFAULT 1');
+    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_asambleista_poblacion', 'INTEGER NOT NULL DEFAULT 1');
+    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_asambleista_distrito', 'INTEGER NOT NULL DEFAULT 1');
+    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_concejal', 'INTEGER NOT NULL DEFAULT 1');
+    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_alcalde', 'INTEGER NOT NULL DEFAULT 1');
     await _addColumnIfMissing(db, 'asistencia_state', 'hora_apertura_mesa', 'TEXT');
     await _addColumnIfMissing(db, 'asistencia_queue', 'hora_apertura_mesa', 'TEXT');
   }
@@ -377,6 +392,11 @@ class MobileAuthLocalStore {
           'icono_base64': partido.iconoBase64,
           'orden_municipal': partido.ordenMunicipal,
           'orden_departamental': partido.ordenDepartamental,
+          'habilitado_gobernador': partido.habilitadoGobernador ? 1 : 0,
+          'habilitado_asambleista_poblacion': partido.habilitadoAsambleistaPoblacion ? 1 : 0,
+          'habilitado_asambleista_distrito': partido.habilitadoAsambleistaDistrito ? 1 : 0,
+          'habilitado_concejal': partido.habilitadoConcejal ? 1 : 0,
+          'habilitado_alcalde': partido.habilitadoAlcalde ? 1 : 0,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
 
@@ -593,6 +613,13 @@ class MobileAuthLocalStore {
             iconoBase64: row['icono_base64'] as String?,
             ordenMunicipal: row['orden_municipal'] as int? ?? 0,
             ordenDepartamental: row['orden_departamental'] as int? ?? 0,
+            habilitadoGobernador: (row['habilitado_gobernador'] as int? ?? 1) == 1,
+            habilitadoAsambleistaPoblacion:
+                (row['habilitado_asambleista_poblacion'] as int? ?? 1) == 1,
+            habilitadoAsambleistaDistrito:
+                (row['habilitado_asambleista_distrito'] as int? ?? 1) == 1,
+            habilitadoConcejal: (row['habilitado_concejal'] as int? ?? 1) == 1,
+            habilitadoAlcalde: (row['habilitado_alcalde'] as int? ?? 1) == 1,
           ),
         )
         .toList();
@@ -941,6 +968,13 @@ class MobileAuthLocalStore {
             iconoBase64: row['icono_base64'] as String?,
             ordenMunicipal: row['orden_municipal'] as int? ?? 0,
             ordenDepartamental: row['orden_departamental'] as int? ?? 0,
+            habilitadoGobernador: (row['habilitado_gobernador'] as int? ?? 1) == 1,
+            habilitadoAsambleistaPoblacion:
+                (row['habilitado_asambleista_poblacion'] as int? ?? 1) == 1,
+            habilitadoAsambleistaDistrito:
+                (row['habilitado_asambleista_distrito'] as int? ?? 1) == 1,
+            habilitadoConcejal: (row['habilitado_concejal'] as int? ?? 1) == 1,
+            habilitadoAlcalde: (row['habilitado_alcalde'] as int? ?? 1) == 1,
           ),
         )
         .toList();

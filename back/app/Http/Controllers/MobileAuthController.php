@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Mesa;
 use App\Models\Partido;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MobileAuthController extends Controller
 {
@@ -212,12 +213,12 @@ class MobileAuthController extends Controller
             })
             ->values();
 
-        $partidos = Partido::query()
-            ->select('id', 'sigla', 'nombre', 'icono', 'orden_municipal', 'orden_departamental')
-            ->whereNull('deleted_at')
-            ->orderBy('orden_municipal')
-            ->orderBy('sigla')
-            ->get()
+        $mesaReferencia = Mesa::query()
+            ->where('delegado_id', $user->id)
+            ->orderBy('numero_mesa')
+            ->first();
+
+        $partidos = $this->partidosPorMesa($mesaReferencia)
             ->map(function ($p) {
                 $iconoBase64 = $this->partidoIconoBase64($p->icono);
                 return [
@@ -229,6 +230,11 @@ class MobileAuthController extends Controller
                     'icono_base64' => $iconoBase64,
                     'orden_municipal' => (int) ($p->orden_municipal ?? 0),
                     'orden_departamental' => (int) ($p->orden_departamental ?? 0),
+                    'habilitado_gobernador' => (bool) ($p->habilitado_gobernador ?? true),
+                    'habilitado_asambleista_poblacion' => (bool) ($p->habilitado_asambleista_poblacion ?? true),
+                    'habilitado_asambleista_distrito' => (bool) ($p->habilitado_asambleista_distrito ?? true),
+                    'habilitado_concejal' => (bool) ($p->habilitado_concejal ?? true),
+                    'habilitado_alcalde' => (bool) ($p->habilitado_alcalde ?? true),
                 ];
             })
             ->values();
@@ -295,5 +301,87 @@ class MobileAuthController extends Controller
                 'celular' => $u->celular ?? null,
             ],
         ]);
+    }
+
+    private function partidosPorMesa(?Mesa $mesa)
+    {
+        $municipioId = $mesa?->municipio_id ?: $mesa?->recinto?->municipio_id;
+
+        $baseQuery = Partido::query()
+            ->whereNull('deleted_at')
+            ->orderByRaw('CASE WHEN orden_municipal IS NULL OR orden_municipal = 0 THEN 1 ELSE 0 END')
+            ->orderBy('orden_municipal')
+            ->orderBy('sigla');
+
+        if (!$municipioId) {
+            return $baseQuery
+                ->select([
+                    'id',
+                    'sigla',
+                    'nombre',
+                    'icono',
+                    'orden_municipal',
+                    'orden_departamental',
+                    DB::raw('1 as habilitado_gobernador'),
+                    DB::raw('1 as habilitado_asambleista_poblacion'),
+                    DB::raw('1 as habilitado_asambleista_distrito'),
+                    DB::raw('1 as habilitado_concejal'),
+                    DB::raw('1 as habilitado_alcalde'),
+                ])
+                ->get();
+        }
+
+        $tieneConfig = DB::table('municipio_partido')
+            ->where('municipio_id', $municipioId)
+            ->exists();
+
+        if (!$tieneConfig) {
+            return $baseQuery
+                ->select([
+                    'id',
+                    'sigla',
+                    'nombre',
+                    'icono',
+                    'orden_municipal',
+                    'orden_departamental',
+                    DB::raw('1 as habilitado_gobernador'),
+                    DB::raw('1 as habilitado_asambleista_poblacion'),
+                    DB::raw('1 as habilitado_asambleista_distrito'),
+                    DB::raw('1 as habilitado_concejal'),
+                    DB::raw('1 as habilitado_alcalde'),
+                ])
+                ->get();
+        }
+
+        return Partido::query()
+            ->join('municipio_partido as mp', function ($join) use ($municipioId) {
+                $join->on('mp.partido_id', '=', 'partidos.id')
+                    ->where('mp.municipio_id', '=', $municipioId);
+            })
+            ->whereNull('partidos.deleted_at')
+            ->select([
+                'partidos.id',
+                'partidos.sigla',
+                'partidos.nombre',
+                'partidos.icono',
+                'partidos.orden_municipal',
+                'partidos.orden_departamental',
+                'mp.habilitado_gobernador',
+                'mp.habilitado_asambleista_poblacion',
+                'mp.habilitado_asambleista_distrito',
+                'mp.habilitado_concejal',
+                'mp.habilitado_alcalde',
+            ])
+            ->where(function ($qq) {
+                $qq->where('mp.habilitado_gobernador', true)
+                    ->orWhere('mp.habilitado_asambleista_poblacion', true)
+                    ->orWhere('mp.habilitado_asambleista_distrito', true)
+                    ->orWhere('mp.habilitado_concejal', true)
+                    ->orWhere('mp.habilitado_alcalde', true);
+            })
+            ->orderByRaw('CASE WHEN partidos.orden_municipal IS NULL OR partidos.orden_municipal = 0 THEN 1 ELSE 0 END')
+            ->orderBy('partidos.orden_municipal')
+            ->orderBy('partidos.sigla')
+            ->get();
     }
 }

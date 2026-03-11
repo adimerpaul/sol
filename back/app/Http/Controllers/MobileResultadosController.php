@@ -251,14 +251,16 @@ class MobileResultadosController extends Controller
     {
         $user = $request->user();
 
-        $mesas = Mesa::query()
+        $mesasCollection = Mesa::query()
             ->where('delegado_id', $user->id)
             ->with([
                 'recinto:id,nombre',
                 'resultado:id,mesa_id,total_validos,total_blancos,total_nulos,etapa_2',
             ])
             ->orderBy('numero_mesa')
-            ->get()
+            ->get();
+
+        $mesas = $mesasCollection
             ->map(function ($m) {
                 return [
                     'id' => $m->id,
@@ -271,12 +273,7 @@ class MobileResultadosController extends Controller
             })
             ->values();
 
-        $partidos = Partido::query()
-            ->select('id', 'sigla', 'nombre', 'icono', 'orden_municipal', 'orden_departamental')
-            ->whereNull('deleted_at')
-            ->orderBy('orden_municipal')
-            ->orderBy('sigla')
-            ->get()
+        $partidos = $this->partidosPorMesa($mesasCollection->first())
             ->map(function ($p) {
                 $iconoBase64 = $this->partidoIconoBase64($p->icono);
                 return [
@@ -288,6 +285,11 @@ class MobileResultadosController extends Controller
                     'icono_base64' => $iconoBase64,
                     'orden_municipal' => (int) ($p->orden_municipal ?? 0),
                     'orden_departamental' => (int) ($p->orden_departamental ?? 0),
+                    'habilitado_gobernador' => (bool) ($p->habilitado_gobernador ?? true),
+                    'habilitado_asambleista_poblacion' => (bool) ($p->habilitado_asambleista_poblacion ?? true),
+                    'habilitado_asambleista_distrito' => (bool) ($p->habilitado_asambleista_distrito ?? true),
+                    'habilitado_concejal' => (bool) ($p->habilitado_concejal ?? true),
+                    'habilitado_alcalde' => (bool) ($p->habilitado_alcalde ?? true),
                 ];
             })
             ->values();
@@ -323,9 +325,31 @@ class MobileResultadosController extends Controller
             $resultado->foto10_url = $resultado->foto10 ? Storage::url($resultado->foto10) : null;
         }
 
+        $partidos = $this->partidosPorMesa($mesa)
+            ->map(function ($p) {
+                $iconoBase64 = $this->partidoIconoBase64($p->icono);
+                return [
+                    'id' => $p->id,
+                    'sigla' => $p->sigla,
+                    'nombre' => $p->nombre,
+                    'icono' => $p->icono,
+                    'icono_url' => null,
+                    'icono_base64' => $iconoBase64,
+                    'orden_municipal' => (int) ($p->orden_municipal ?? 0),
+                    'orden_departamental' => (int) ($p->orden_departamental ?? 0),
+                    'habilitado_gobernador' => (bool) ($p->habilitado_gobernador ?? true),
+                    'habilitado_asambleista_poblacion' => (bool) ($p->habilitado_asambleista_poblacion ?? true),
+                    'habilitado_asambleista_distrito' => (bool) ($p->habilitado_asambleista_distrito ?? true),
+                    'habilitado_concejal' => (bool) ($p->habilitado_concejal ?? true),
+                    'habilitado_alcalde' => (bool) ($p->habilitado_alcalde ?? true),
+                ];
+            })
+            ->values();
+
         return response()->json([
             'mesa_id' => $mesa->id,
             'resultado' => $resultado,
+            'partidos' => $partidos,
         ]);
     }
 
@@ -382,8 +406,7 @@ class MobileResultadosController extends Controller
             return response()->json(['message' => 'Formato de votos invalido'], 422);
         }
 
-        $partidoIds = Partido::query()->pluck('id')->all();
-        $partidoSet = array_fill_keys($partidoIds, true);
+        $partidosPermitidos = $this->partidosPorMesa($mesa)->pluck('id')->map(fn ($id) => (int) $id)->values();
 
         $sum = [
             'gobernador' => 0,
@@ -395,8 +418,8 @@ class MobileResultadosController extends Controller
 
         foreach ($votos as $row) {
             $pid = (int) ($row['partido_id'] ?? 0);
-            if (!isset($partidoSet[$pid])) {
-                return response()->json(['message' => "Partido invalido: {$pid}"], 422);
+            if (!$partidosPermitidos->contains($pid)) {
+                return response()->json(['message' => "Partido no habilitado para esta mesa: {$pid}"], 422);
             }
             foreach ([
                 'votos_gobernador',
@@ -493,6 +516,13 @@ class MobileResultadosController extends Controller
             $rm->etapa_2 = $puedeFinalizar;
             $rm->save();
 
+            $partidosEnviados = collect($votos)->pluck('partido_id')->map(fn ($id) => (int) $id)->values();
+
+            ResultadoMesaDetalle::query()
+                ->where('resultado_mesa_id', $rm->id)
+                ->whereNotIn('partido_id', $partidosEnviados)
+                ->delete();
+
             foreach ($votos as $row) {
                 ResultadoMesaDetalle::updateOrCreate(
                     [
@@ -550,6 +580,88 @@ class MobileResultadosController extends Controller
             }
         }
         return true;
+    }
+
+    private function partidosPorMesa(?Mesa $mesa)
+    {
+        $municipioId = $mesa?->municipio_id ?: $mesa?->recinto?->municipio_id;
+
+        $baseQuery = Partido::query()
+            ->whereNull('deleted_at')
+            ->orderByRaw('CASE WHEN orden_municipal IS NULL OR orden_municipal = 0 THEN 1 ELSE 0 END')
+            ->orderBy('orden_municipal')
+            ->orderBy('sigla');
+
+        if (!$municipioId) {
+            return $baseQuery
+                ->select([
+                    'id',
+                    'sigla',
+                    'nombre',
+                    'icono',
+                    'orden_municipal',
+                    'orden_departamental',
+                    DB::raw('1 as habilitado_gobernador'),
+                    DB::raw('1 as habilitado_asambleista_poblacion'),
+                    DB::raw('1 as habilitado_asambleista_distrito'),
+                    DB::raw('1 as habilitado_concejal'),
+                    DB::raw('1 as habilitado_alcalde'),
+                ])
+                ->get();
+        }
+
+        $tieneConfig = DB::table('municipio_partido')
+            ->where('municipio_id', $municipioId)
+            ->exists();
+
+        if (!$tieneConfig) {
+            return $baseQuery
+                ->select([
+                    'id',
+                    'sigla',
+                    'nombre',
+                    'icono',
+                    'orden_municipal',
+                    'orden_departamental',
+                    DB::raw('1 as habilitado_gobernador'),
+                    DB::raw('1 as habilitado_asambleista_poblacion'),
+                    DB::raw('1 as habilitado_asambleista_distrito'),
+                    DB::raw('1 as habilitado_concejal'),
+                    DB::raw('1 as habilitado_alcalde'),
+                ])
+                ->get();
+        }
+
+        return Partido::query()
+            ->join('municipio_partido as mp', function ($join) use ($municipioId) {
+                $join->on('mp.partido_id', '=', 'partidos.id')
+                    ->where('mp.municipio_id', '=', $municipioId);
+            })
+            ->whereNull('partidos.deleted_at')
+            ->select([
+                'partidos.id',
+                'partidos.sigla',
+                'partidos.nombre',
+                'partidos.icono',
+                'partidos.orden_municipal',
+                'partidos.orden_departamental',
+                'mp.habilitado_gobernador',
+                'mp.habilitado_asambleista_poblacion',
+                'mp.habilitado_asambleista_distrito',
+                'mp.habilitado_concejal',
+                'mp.habilitado_alcalde',
+            ])
+            ->where(function ($qq) {
+                $qq->where('mp.habilitado_gobernador', true)
+                    ->orWhere('mp.habilitado_asambleista_poblacion', true)
+                    ->orWhere('mp.habilitado_asambleista_distrito', true)
+                    ->orWhere('mp.habilitado_concejal', true)
+                    ->orWhere('mp.habilitado_alcalde', true);
+            })
+            ->orderByRaw('CASE WHEN partidos.orden_municipal IS NULL OR partidos.orden_municipal = 0 THEN 1 ELSE 0 END')
+            ->orderBy('partidos.orden_municipal')
+            ->orderBy('partidos.sigla')
+            ->get();
     }
 
     public function sync(Request $request)
