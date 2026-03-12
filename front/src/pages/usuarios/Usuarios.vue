@@ -9,7 +9,8 @@
       flat
       bordered
       class="users-table"
-      :rows-per-page-options="[0]"
+      v-model:pagination="pagination"
+      :rows-per-page-options="[15, 30, 50, 100]"
       title="Usuarios"
       :filter="filter"
     >
@@ -87,6 +88,10 @@
           :loading="loading"
           class="q-mr-sm"
         />
+
+        <q-input v-model="filter" label="Buscar" dense outlined style="width: 260px">
+          <template v-slot:append><q-icon name="search"/></template>
+        </q-input>
         <q-btn
           color="primary"
           label="Actualizar"
@@ -96,9 +101,6 @@
           :loading="loading"
           class="q-mr-sm"
         />
-        <q-input v-model="filter" label="Buscar" dense outlined style="width: 260px">
-          <template v-slot:append><q-icon name="search"/></template>
-        </q-input>
       </template>
 
       <template v-slot:body-cell-actions="props">
@@ -487,6 +489,12 @@ export default {
       roles: ['Administrador', 'Supervisor', 'Jefe de Recinto', 'Delegado de Mesa'],
       recintoOptions: [],
       loadingRecintos: false,
+      pagination: {
+        sortBy: 'id',
+        descending: true,
+        page: 1,
+        rowsPerPage: 15
+      },
 
       // archivos nuevos (temporal)
       files: {
