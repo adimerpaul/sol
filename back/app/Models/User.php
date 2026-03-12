@@ -24,6 +24,7 @@ class User extends Authenticatable implements Auditable
     protected $fillable = [
         'created_by',
         'recinto_id',
+        'numero_mesa',
         'nombres',
         'apellido_paterno',
         'apellido_materno',

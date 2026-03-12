@@ -122,7 +122,7 @@
       <!-- CHIPS -->
       <q-card-section class="q-pt-sm q-pb-none">
         <div class="row items-center q-col-gutter-sm">
-          <div class="col-auto"><q-chip outline color="primary">Total: {{ totalReal }}</q-chip></div>
+          <div class="col-auto"><q-chip outline color="primary">Total: {{ summaryTotal }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="positive">Asignadas: {{ countAsignadas }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="negative">Sin delegado: {{ countSinDelegado }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="teal">Con resultado: {{ countConResultado }}</q-chip></div>
@@ -300,7 +300,7 @@
 
         <q-card-actions align="right">
           <q-btn color="grey-7" label="Cancelar" no-caps @click="dlgAsignar=false" />
-          <q-btn color="primary" label="Guardar" no-caps :disable="!delegadoPick" :loading="saving" @click="saveAsignar" />
+          <q-btn color="primary" label="Guardar" no-caps :disable="!curMesa?.id" :loading="saving" @click="saveAsignar" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -692,6 +692,12 @@ export default {
       // datos
       allRows: [],
       totalReal: 0,
+      summary: {
+        total: 0,
+        asignadas: 0,
+        sin_delegado: 0,
+        con_resultado: 0
+      },
       truncated: false,
       maxCap: 250,
 
@@ -846,13 +852,15 @@ export default {
       return this.showAll ? this.filteredRows.length : Number(this.backendTotal || 0)
     },
 
-    countSinDelegado () {
-      // this.allRows.length
-      // return (this.filteredRows || []).filter(x => !x.delegado_id).length
-      return this.totalReal - this.countAsignadas
+    summaryTotal () {
+      return Number(this.summary?.total || this.totalReal || 0)
     },
-    countAsignadas () { return (this.filteredRows || []).filter(x => !!x.delegado_id).length },
-    countConResultado () { return (this.filteredRows || []).filter(x => !!x.tiene_resultado).length },
+
+    countSinDelegado () {
+      return Number(this.summary?.sin_delegado || 0)
+    },
+    countAsignadas () { return Number(this.summary?.asignadas || 0) },
+    countConResultado () { return Number(this.summary?.con_resultado || 0) },
 
     partidosGobernador () {
       return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_gobernador), 'orden_departamental')
@@ -1119,11 +1127,15 @@ export default {
 
           // opcional: feedback
           this.totalReal = total
+          if (res.summary) this.summary = res.summary
           this.allRows = all
         } while (page <= last)
 
         this.allRows = all
         this.totalReal = total
+        if (last > 0) {
+          // summary ya llega por página; se conserva el último valor recibido
+        }
         this.truncated = false
         this.maxCap = total
 
@@ -1159,6 +1171,7 @@ export default {
 
         this.allRows = res.data || []
         this.totalReal = res.total || this.allRows.length
+        this.summary = res.summary || this.summary
         this.backendTotal = res.total || 0
         this.backendLast = res.last_page || 1
         this.truncated = false
@@ -1177,14 +1190,14 @@ export default {
     },
 
     async saveAsignar () {
-      if (!this.curMesa?.id || !this.delegadoPick) return
+      if (!this.curMesa?.id) return
       this.saving = true
       try {
         await this.$axios.put(`admin/mesas/${this.curMesa.id}/delegado`, {
           delegado_id: this.delegadoPick,
           estado: this.estadoPick
         })
-        this.$alert.success('Delegado asignado')
+        this.$alert.success(this.delegadoPick ? 'Delegado asignado' : 'Mesa liberada')
         this.dlgAsignar = false
         this.refresh()
       } catch (e) {

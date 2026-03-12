@@ -147,6 +147,21 @@
         </q-td>
       </template>
 
+      <template v-slot:body-cell-created_by="props">
+        <q-td :props="props">
+          <q-chip
+            v-if="props.row.creator_name || props.row.creator_username"
+            dense
+            outline
+            color="primary"
+            size="12px"
+          >
+            {{ props.row.creator_name || '-' }}<span v-if="props.row.creator_username"> ({{ props.row.creator_username }})</span>
+          </q-chip>
+          <q-badge v-else outline color="grey-6">Sin registro</q-badge>
+        </q-td>
+      </template>
+
       <template v-slot:body-cell-permissions="props">
         <q-td :props="props">
           <div class="row items-center q-col-gutter-xs">
@@ -255,6 +270,9 @@
                   dense outlined
                   :rules="[v => !!v || 'Campo requerido']"
                 />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input v-model="user.numero_mesa" label="Numero de mesa" dense outlined />
               </div>
               <div class="col-12 col-md-4">
                 <q-input v-model="user.celular" label="Celular" dense outlined />
@@ -469,6 +487,8 @@ export default {
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
         { name: 'username', label: 'Codigo de ingresos', align: 'left', field: 'username' },
+        { name: 'created_by', label: 'Registrado por', align: 'left', field: row => row.creator_name || row.creator_username || '-' },
+        { name: 'numero_mesa', label: 'Numero mesa', align: 'left', field: 'numero_mesa' },
         { name: 'celular', label: 'Celular', align: 'left', field: 'celular' },
         { name: 'nombres', label: 'Nombre(s)', align: 'left', field: 'nombres' },
         { name: 'apellido_paterno', label: 'Ap. paterno', align: 'left', field: 'apellido_paterno' },
@@ -543,6 +563,7 @@ export default {
         ci: '',
         fecha_nacimiento: '',
         bloque: '',
+        numero_mesa: '',
         celular: '',
         role: 'Supervisor',
         recinto_id: null,
@@ -828,9 +849,11 @@ export default {
           'Apellido materno': u.apellido_materno ?? '',
           CI: u.ci ?? '',
           'Fecha nacimiento': u.fecha_nacimiento ?? '',
+          'Numero mesa': u.numero_mesa ?? '',
           Celular: u.celular ?? '',
           Bloque: u.bloque ?? '',
           Rol: u.role ?? '',
+          'Registrado por': u.creator_name || u.creator_username || '',
           Recinto: u.recinto_nombre || u.recinto?.nombre || ''
         }))
 
@@ -844,9 +867,11 @@ export default {
             { label: 'Apellido materno', value: 'Apellido materno' },
             { label: 'CI', value: 'CI' },
             { label: 'Fecha nacimiento', value: 'Fecha nacimiento' },
+            { label: 'Numero mesa', value: 'Numero mesa' },
             { label: 'Celular', value: 'Celular' },
             { label: 'Bloque', value: 'Bloque' },
             { label: 'Rol', value: 'Rol' },
+            { label: 'Registrado por', value: 'Registrado por' },
             { label: 'Recinto', value: 'Recinto' }
           ],
           content

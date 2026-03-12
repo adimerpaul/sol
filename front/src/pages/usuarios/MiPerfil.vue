@@ -11,6 +11,11 @@
             <div class="text-caption text-primary q-mt-xs">
               El username es el dato que usarás para ingresar al login.
             </div>
+            <div v-if="creatorLabel" class="q-mt-sm">
+              <q-chip dense outline color="primary">
+                Registrado por: {{ creatorLabel }}
+              </q-chip>
+            </div>
           </q-card-section>
 
           <q-separator />
@@ -51,6 +56,7 @@ import { getCurrentInstance, onMounted, ref } from 'vue'
 
 const { proxy } = getCurrentInstance()
 const saving = ref(false)
+const creatorLabel = ref('')
 
 const form = ref({
   username: '',
@@ -69,6 +75,7 @@ function loadFromStore () {
   form.value.apellido_materno = u.apellido_materno || ''
   form.value.celular = u.celular || ''
   form.value.email = u.email || ''
+  creatorLabel.value = u.creator_name || u.creator?.name || u.creator_username || u.creator?.username || ''
 }
 
 function canAccessProfile () {

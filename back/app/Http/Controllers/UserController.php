@@ -64,10 +64,17 @@ class UserController extends Controller
 
     private function userPayload(User $user): array
     {
-        $user->loadMissing('recinto:id,nombre');
+        $user->loadMissing('recinto:id,nombre', 'creator:id,name,username');
         $data = $user->toArray();
         $data['permissions'] = $this->resolvedPermissions($user);
         $data['recinto_nombre'] = $user->recinto?->nombre;
+        $data['creator'] = $user->creator ? [
+            'id' => $user->creator->id,
+            'name' => $user->creator->name,
+            'username' => $user->creator->username,
+        ] : null;
+        $data['creator_name'] = $user->creator?->name;
+        $data['creator_username'] = $user->creator?->username;
 
         return $data;
     }
@@ -109,6 +116,7 @@ class UserController extends Controller
         $users = $q->get()->map(function ($u) {
             return [
                 'username' => $u->username,
+                'numero_mesa' => $u->numero_mesa,
                 'nombres' => $u->nombres,
                 'apellido_paterno' => $u->apellido_paterno,
                 'apellido_materno' => $u->apellido_materno,
@@ -257,7 +265,7 @@ class UserController extends Controller
         }
 
         return $q
-            ->with(['permissions:id,name', 'recinto:id,nombre'])
+            ->with(['permissions:id,name', 'recinto:id,nombre', 'creator:id,name,username'])
             ->orderBy('id', 'desc')
             ->get()
             ->map(function ($u) {
@@ -266,6 +274,8 @@ class UserController extends Controller
                 $u->foto_personal_url = $u->foto_personal ? Storage::url($u->foto_personal) : null;
                 $u->permissions = $this->resolvedPermissions($u);
                 $u->recinto_nombre = $u->recinto?->nombre;
+                $u->creator_name = $u->creator?->name;
+                $u->creator_username = $u->creator?->username;
 
                 return $u;
             });
@@ -340,6 +350,7 @@ class UserController extends Controller
             'bloque' => 'required|string|max:180',
             'celular' => 'nullable|string|max:30',
             'recinto_id' => 'nullable|integer|exists:recintos,id',
+            'numero_mesa' => 'nullable|string|max:50',
 
             'username' => 'nullable|string|max:120|unique:users,username',
             'password' => 'nullable|string|min:4',
@@ -384,6 +395,7 @@ class UserController extends Controller
             'bloque' => 'required|string|max:180',
             'celular' => 'nullable|string|max:30',
             'recinto_id' => 'nullable|integer|exists:recintos,id',
+            'numero_mesa' => 'nullable|string|max:50',
 
             'username' => 'nullable|string|max:120|unique:users,username,' . $user->id,
             'role' => 'required|string|max:60',

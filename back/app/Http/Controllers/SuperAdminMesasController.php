@@ -36,6 +36,21 @@ class SuperAdminMesasController extends Controller
         $perPage = (int) $request->get('per_page', $this->MAX_ROWS);
         $perPage = max(10, min($perPage, 500));              // techo de seguridad
 
+        $scopeOruro = function ($qq) {
+            $qq->whereNull('deleted_at')
+                ->where('departamento_id', 5);
+        };
+
+        $summaryBase = Mesa::query()
+            ->whereHas('recinto', $scopeOruro);
+
+        $summary = [
+            'total' => (clone $summaryBase)->count(),
+            'asignadas' => (clone $summaryBase)->whereNotNull('delegado_id')->count(),
+            'sin_delegado' => (clone $summaryBase)->whereNull('delegado_id')->count(),
+            'con_resultado' => (clone $summaryBase)->whereHas('resultado')->count(),
+        ];
+
         $base = Mesa::query()
             ->select([
                 'mesas.id',
@@ -49,9 +64,8 @@ class SuperAdminMesasController extends Controller
                 'delegado:id,name,username',
                 'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos'
             ])
-            ->whereHas('recinto', function ($qq) {
-                $qq->whereNull('deleted_at')
-                    ->where('departamento_id', 5);
+            ->whereHas('recinto', function ($qq) use ($scopeOruro) {
+                $scopeOruro($qq);
 //                    ->where('provincia_id', 57)
 //                    ->where('municipio_id', 191);
             })
@@ -107,6 +121,7 @@ class SuperAdminMesasController extends Controller
 
             return response()->json([
                 'mode' => 'paginate',
+                'summary' => $summary,
                 'total' => $pag->total(),
                 'page' => $pag->currentPage(),
                 'per_page' => $pag->perPage(),
@@ -149,6 +164,7 @@ class SuperAdminMesasController extends Controller
 
         return response()->json([
             'mode' => 'cap',
+            'summary' => $summary,
             'total' => $total,
             'returned' => $data->count(),
             'truncated' => $total > $this->MAX_ROWS,
@@ -199,20 +215,28 @@ class SuperAdminMesasController extends Controller
     public function asignarDelegado(Request $request, Mesa $mesa)
     {
         $data = $request->validate([
-            'delegado_id' => 'required|exists:users,id',
+            'delegado_id' => 'nullable|exists:users,id',
             'estado' => 'nullable|string|max:30',
         ]);
 
-        $delegado = User::findOrFail($data['delegado_id']);
-        if ($delegado->role !== 'Delegado de Mesa') {
-            return response()->json(['message' => 'El usuario no es Delegado de Mesa'], 422);
+        if (!empty($data['delegado_id'])) {
+            $delegado = User::findOrFail($data['delegado_id']);
+            if ($delegado->role !== 'Delegado de Mesa') {
+                return response()->json(['message' => 'El usuario no es Delegado de Mesa'], 422);
+            }
+
+            $mesa->delegado_id = $data['delegado_id'];
+            $mesa->estado = $data['estado'] ?? 'ASIGNADA';
+            $mesa->save();
+
+            return response()->json(['message' => 'Delegado asignado']);
         }
 
-        $mesa->delegado_id = $data['delegado_id'];
-        $mesa->estado = $data['estado'] ?? 'ASIGNADA';
+        $mesa->delegado_id = null;
+        $mesa->estado = 'PENDIENTE';
         $mesa->save();
 
-        return response()->json(['message' => 'Delegado asignado']);
+        return response()->json(['message' => 'Mesa liberada']);
     }
 
     // GET /api/admin/mesas/{mesa}/resultado

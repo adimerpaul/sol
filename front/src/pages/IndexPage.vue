@@ -5,7 +5,7 @@
         <div class="col-12 col-md-auto">
           <div class="text-h6 text-weight-bold">Dashboard Graficos</div>
           <div class="text-caption text-grey-7">
-            Votos por categoria y mesas faltantes en tiempo real (Municipio Oruro)
+            Votos por categoria y mesas faltantes en tiempo real (Departamento de Oruro)
           </div>
         </div>
         <div class="col-auto row items-center q-gutter-sm">
@@ -18,6 +18,61 @@
       </q-card-section>
 
       <q-separator />
+
+      <q-card-section class="q-pb-none">
+        <div class="row q-col-gutter-sm items-center">
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="filters.provincia_id"
+              :options="provinciaOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              dense
+              outlined
+              clearable
+              label="Provincia"
+              @update:model-value="onProvinciaChange"
+            />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="filters.municipio_id"
+              :options="municipioOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              dense
+              outlined
+              clearable
+              label="Municipio"
+              :disable="!filters.provincia_id"
+              @update:model-value="onMunicipioChange"
+            />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="filters.localidad_id"
+              :options="localidadOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              dense
+              outlined
+              clearable
+              label="Localidad"
+              :disable="!filters.municipio_id"
+              @update:model-value="loadGraficos"
+            />
+          </div>
+          <div class="col-12 col-md-auto">
+            <q-btn flat color="grey-7" no-caps label="Limpiar" @click="clearFilters" />
+          </div>
+        </div>
+      </q-card-section>
 
       <q-card-section class="q-pa-md">
         <div
@@ -98,12 +153,40 @@ export default {
         con_resultado: 0,
         faltantes: 0
       },
+      filters: {
+        provincia_id: null,
+        municipio_id: null,
+        localidad_id: null
+      },
+      geoOptions: {
+        provincias: [],
+        municipios: [],
+        localidades: []
+      },
       socket: null,
       socketRefreshTimer: null
     }
   },
 
   computed: {
+    provinciaOptions () {
+      return (this.geoOptions.provincias || []).map(p => ({
+        label: p.nombre,
+        value: p.id
+      }))
+    },
+    municipioOptions () {
+      return (this.geoOptions.municipios || []).map(m => ({
+        label: m.nombre,
+        value: m.id
+      }))
+    },
+    localidadOptions () {
+      return (this.geoOptions.localidades || []).map(l => ({
+        label: l.nombre,
+        value: l.id
+      }))
+    },
     chartCards () {
       return CATEGORY_DEFS.map(def => {
         const ranking = Array.isArray(this.categoryRankings[def.key]) ? this.categoryRankings[def.key] : []
@@ -167,6 +250,21 @@ export default {
       this.socketRefreshTimer = setTimeout(() => {
         this.loadGraficos()
       }, 400)
+    },
+    onProvinciaChange () {
+      this.filters.municipio_id = null
+      this.filters.localidad_id = null
+      this.loadGraficos()
+    },
+    onMunicipioChange () {
+      this.filters.localidad_id = null
+      this.loadGraficos()
+    },
+    clearFilters () {
+      this.filters.provincia_id = null
+      this.filters.municipio_id = null
+      this.filters.localidad_id = null
+      this.loadGraficos()
     },
     toNameCase (text) {
       const value = String(text || '').trim().toLowerCase()
@@ -232,7 +330,12 @@ export default {
     async loadGraficos () {
       this.loading = true
       try {
-        const res = await this.$axios.get('dashboard/graficos')
+        const params = {
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined
+        }
+        const res = await this.$axios.get('dashboard/graficos', { params })
         const data = res.data || {}
 
         this.votosValidosTotal = Number(data.votos_validos_total || 0)
@@ -249,6 +352,11 @@ export default {
           total: Number(data?.mesas?.total || 0),
           con_resultado: Number(data?.mesas?.con_resultado || 0),
           faltantes: Number(data?.mesas?.faltantes || 0)
+        }
+        this.geoOptions = {
+          provincias: Array.isArray(data?.options?.provincias) ? data.options.provincias : [],
+          municipios: Array.isArray(data?.options?.municipios) ? data.options.municipios : [],
+          localidades: Array.isArray(data?.options?.localidades) ? data.options.localidades : []
         }
       } catch (e) {
         this.$q.notify({

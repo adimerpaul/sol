@@ -2,18 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Localidad;
 use App\Models\Mesa;
+use App\Models\Municipio;
+use App\Models\Provincia;
 use App\Models\ResultadoMesa;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class GraficosController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $departamentoId = 5;
+        $provinciaId = $request->input('provincia_id');
+        $municipioId = $request->input('municipio_id');
+        $localidadId = $request->input('localidad_id');
+
         $scope = [
-            'departamento_id' => 5,
-            'provincia_id' => 57,
-            'municipio_id' => 191,
+            'departamento_id' => $departamentoId,
+            'provincia_id' => $provinciaId ? (int) $provinciaId : null,
+            'municipio_id' => $municipioId ? (int) $municipioId : null,
+            'localidad_id' => $localidadId ? (int) $localidadId : null,
         ];
 
         $partidosRaw = DB::table('partidos as p')
@@ -28,9 +38,16 @@ class GraficosController extends Controller
             ->leftJoin('mesas as m', function ($join) use ($scope) {
                 $join->on('m.id', '=', 'r.mesa_id')
                     ->whereNull('m.deleted_at')
-                    ->where('m.departamento_id', '=', $scope['departamento_id'])
-                    ->where('m.provincia_id', '=', $scope['provincia_id'])
-                    ->where('m.municipio_id', '=', $scope['municipio_id']);
+                    ->where('m.departamento_id', '=', $scope['departamento_id']);
+                if (!empty($scope['provincia_id'])) {
+                    $join->where('m.provincia_id', '=', $scope['provincia_id']);
+                }
+                if (!empty($scope['municipio_id'])) {
+                    $join->where('m.municipio_id', '=', $scope['municipio_id']);
+                }
+                if (!empty($scope['localidad_id'])) {
+                    $join->where('m.localidad_id', '=', $scope['localidad_id']);
+                }
             })
             ->whereNull('p.deleted_at')
             ->groupBy('p.id', 'p.sigla', 'p.nombre', 'p.color')
@@ -78,18 +95,44 @@ class GraficosController extends Controller
 
         $mesasBase = Mesa::query()
             ->where('departamento_id', $scope['departamento_id'])
-            ->where('provincia_id', $scope['provincia_id'])
-            ->where('municipio_id', $scope['municipio_id']);
+            ->when($scope['provincia_id'], fn ($q) => $q->where('provincia_id', $scope['provincia_id']))
+            ->when($scope['municipio_id'], fn ($q) => $q->where('municipio_id', $scope['municipio_id']))
+            ->when($scope['localidad_id'], fn ($q) => $q->where('localidad_id', $scope['localidad_id']));
         $mesasTotal = (int) $mesasBase->count();
         $mesasConResultado = (int) ResultadoMesa::query()
             ->whereHas('mesa', function ($q) use ($scope) {
                 $q->where('departamento_id', $scope['departamento_id'])
-                    ->where('provincia_id', $scope['provincia_id'])
-                    ->where('municipio_id', $scope['municipio_id']);
+                    ->when($scope['provincia_id'], fn ($qq) => $qq->where('provincia_id', $scope['provincia_id']))
+                    ->when($scope['municipio_id'], fn ($qq) => $qq->where('municipio_id', $scope['municipio_id']))
+                    ->when($scope['localidad_id'], fn ($qq) => $qq->where('localidad_id', $scope['localidad_id']));
             })
             ->distinct('mesa_id')
             ->count('mesa_id');
         $mesasFaltantes = max(0, $mesasTotal - $mesasConResultado);
+
+        $provincias = Provincia::query()
+            ->select('id', 'nombre')
+            ->where('departamento_id', $departamentoId)
+            ->orderBy('nombre')
+            ->get();
+
+        $municipios = Municipio::query()
+            ->select('id', 'nombre', 'provincia_id')
+            ->whereHas('provincia', function ($q) use ($departamentoId) {
+                $q->where('departamento_id', $departamentoId);
+            })
+            ->when($scope['provincia_id'], fn ($q) => $q->where('provincia_id', $scope['provincia_id']))
+            ->orderBy('nombre')
+            ->get();
+
+        $localidades = Localidad::query()
+            ->select('id', 'nombre', 'municipio_id')
+            ->whereHas('municipio.provincia', function ($q) use ($departamentoId) {
+                $q->where('departamento_id', $departamentoId);
+            })
+            ->when($scope['municipio_id'], fn ($q) => $q->where('municipio_id', $scope['municipio_id']))
+            ->orderBy('nombre')
+            ->get();
 
         return response()->json([
             'votos_validos_total' => $votosValidosTotal,
@@ -120,6 +163,11 @@ class GraficosController extends Controller
                 'total' => $mesasTotal,
                 'con_resultado' => $mesasConResultado,
                 'faltantes' => $mesasFaltantes,
+            ],
+            'options' => [
+                'provincias' => $provincias,
+                'municipios' => $municipios,
+                'localidades' => $localidades,
             ],
             'scope' => $scope,
             'generated_at' => now()->toIso8601String(),
