@@ -8,6 +8,7 @@
       wrap-cells
       flat
       bordered
+      class="users-table"
       :rows-per-page-options="[0]"
       title="Usuarios"
       :filter="filter"
@@ -149,18 +150,28 @@
 
       <template v-slot:body-cell-created_by="props">
         <q-td :props="props">
+          {{ [props.row.nombres, props.row.apellido_paterno, props.row.apellido_materno].filter(Boolean).join(' ') || '-' }}
           <q-chip
-            v-if="props.row.creator_name || props.row.creator_username"
+            v-if="props.row.creator_name"
             dense
             outline
             color="primary"
             size="12px"
+            class="creator-chip"
           >
-            {{ props.row.creator_name || '-' }}<span v-if="props.row.creator_username"> ({{ props.row.creator_username }})</span>
+            {{ props.row.creator_name }}
           </q-chip>
           <q-badge v-else outline color="grey-6">Sin registro</q-badge>
         </q-td>
       </template>
+
+<!--      <template v-slot:body-cell-full_name="props">-->
+<!--        <q-td :props="props" class="full-name-cell">-->
+<!--          <div class="text-weight-medium">-->
+<!--            {{ [props.row.nombres, props.row.apellido_paterno, props.row.apellido_materno].filter(Boolean).join(' ') || '-' }}-->
+<!--          </div>-->
+<!--        </q-td>-->
+<!--      </template>-->
 
       <template v-slot:body-cell-permissions="props">
         <q-td :props="props">
@@ -487,13 +498,10 @@ export default {
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
         { name: 'username', label: 'Codigo de ingresos', align: 'left', field: 'username' },
-        { name: 'created_by', label: 'Registrado por', align: 'left', field: row => row.creator_name || row.creator_username || '-' },
+        { name: 'created_by', label: 'Nombre', align: 'left', field: row => row.creator_name || '-', style: 'width: 180px; white-space: normal;' },
+        // { name: 'full_name', label: 'Nombre completo', align: 'left', field: row => [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' '), style: 'width: 240px; white-space: normal;' },
         { name: 'numero_mesa', label: 'Numero mesa', align: 'left', field: 'numero_mesa' },
         { name: 'celular', label: 'Celular', align: 'left', field: 'celular' },
-        { name: 'nombres', label: 'Nombre(s)', align: 'left', field: 'nombres' },
-        { name: 'apellido_paterno', label: 'Ap. paterno', align: 'left', field: 'apellido_paterno' },
-        { name: 'apellido_materno', label: 'Ap. materno', align: 'left', field: 'apellido_materno' },
-        { name: 'ci', label: 'CI', align: 'left', field: 'ci' },
         { name: 'fecha_nacimiento', label: 'Nacimiento', align: 'left', field: 'fecha_nacimiento' },
         { name: 'bloque', label: 'Bloque', align: 'left', field: 'bloque' },
         { name: 'recinto_nombre', label: 'Recinto', align: 'left', field: row => row.recinto_nombre || row.recinto?.nombre || '-' },
@@ -888,3 +896,22 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.users-table :deep(.q-table thead th),
+.users-table :deep(.q-table tbody td) {
+  padding: 6px 8px;
+}
+
+.full-name-cell {
+  min-width: 220px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.creator-chip {
+  max-width: 170px;
+  white-space: normal;
+  line-height: 1.15;
+}
+</style>
