@@ -121,7 +121,7 @@
                   {{ selected.mesas_faltan > 0 ? `Faltan ${selected.mesas_faltan}` : 'Delegados OK' }}
                 </q-badge>
               </div>
-<!-- 
+
               <q-select
                 class="q-mt-md"
                 v-model="jefeId"
@@ -142,7 +142,7 @@
                 :disable="!jefeId"
                 @click="save"
               />
-                -->
+                
             </div>
           </div>
         </div>
