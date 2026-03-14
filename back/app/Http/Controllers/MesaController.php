@@ -72,13 +72,13 @@ class MesaController extends Controller
     {
         // en update tu componente manda numero_mesa
         $data = $request->validate([
-            'id_original'       => ['nullable','string','max:100'],
-            'pais_id'           => ['required','exists:paises,id'],
-            'departamento_id'   => ['required','exists:departamentos,id'],
-            'provincia_id'      => ['required','exists:provincias,id'],
-            'municipio_id'      => ['required','exists:municipios,id'],
-            'localidad_id'      => ['required','exists:localidades,id'],
-            'recinto_id'        => ['required','exists:recintos,id'],
+//            'id_original'       => ['nullable','string','max:100'],
+//            'pais_id'           => ['required','exists:paises,id'],
+//            'departamento_id'   => ['required','exists:departamentos,id'],
+//            'provincia_id'      => ['required','exists:provincias,id'],
+//            'municipio_id'      => ['required','exists:municipios,id'],
+//            'localidad_id'      => ['required','exists:localidades,id'],
+//            'recinto_id'        => ['required','exists:recintos,id'],
             'numero_mesa'       => ['required','string','max:50'],
         ]);
 
