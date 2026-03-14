@@ -12,22 +12,82 @@
         <div class="col-12 col-md-8">
           <div class="row q-col-gutter-sm justify-end items-center">
 
-            <div class="col-12 col-sm-5">
+            <div class="col-12 col-sm-3 col-md-2">
+              <q-select
+                v-model="filters.departamento_id"
+                :options="departamentosOpt"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                dense outlined
+                label="Departamento"
+                @update:model-value="onDepartamentoChange"
+              />
+            </div>
+
+            <div class="col-12 col-sm-3 col-md-2">
+              <q-select
+                v-model="filters.provincia_id"
+                :options="provinciasOpt"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                dense outlined clearable
+                label="Provincia"
+                :disable="!filters.departamento_id"
+                @update:model-value="onProvinciaChange"
+              />
+            </div>
+
+            <div class="col-12 col-sm-3 col-md-2">
+              <q-select
+                v-model="filters.municipio_id"
+                :options="municipiosOpt"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                dense outlined clearable
+                label="Municipio"
+                :disable="!filters.provincia_id"
+                @update:model-value="onMunicipioChange"
+              />
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+              <q-select
+                v-model="filters.municipio_full_id"
+                :options="municipiosFullOpt"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                use-input input-debounce="200"
+                dense outlined clearable
+                label="Buscar provincia y municipio"
+                @filter="filterMunicipiosFull"
+                @update:model-value="onPickMunicipioFull"
+              />
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
               <q-select
                 v-model="filters.recinto_id"
                 :options="recintosOpt"
-                option-label="nombre"
-                option-value="id"
+                option-label="label"
+                option-value="value"
                 emit-value map-options
                 use-input input-debounce="200"
                 dense outlined clearable
-                label="Recinto"
+                label="Buscar recinto completo"
                 @filter="filterRecintos"
                 @update:model-value="onPickRecinto"
               />
             </div>
 
-            <div class="col-6 col-sm-2">
+            <div class="col-6 col-sm-3 col-md-2">
               <q-select
                 v-model="filters.mesa_id"
                 :options="mesasOpt"
@@ -41,7 +101,7 @@
               />
             </div>
 
-            <div class="col-6 col-sm-2">
+            <div class="col-6 col-sm-3 col-md-2">
               <q-select
                 v-model="filters.asignado"
                 dense outlined
@@ -52,7 +112,7 @@
               />
             </div>
 
-            <div class="col-12 col-sm-4">
+            <div class="col-12 col-sm-6 col-md-4">
               <q-select
                 v-model="filters.delegado_id"
                 :options="delegadosOptFiltered"
@@ -71,7 +131,7 @@
               />
             </div>
 
-            <div class="col-6 col-sm-2">
+            <div class="col-6 col-sm-3 col-md-2">
               <q-select
                 v-model="filters.estado"
                 dense outlined clearable
@@ -80,7 +140,7 @@
               />
             </div>
 
-            <div class="col-6 col-sm-2">
+            <div class="col-6 col-sm-3 col-md-2">
               <q-select
                 v-model="filters.con_resultado"
                 dense outlined
@@ -182,6 +242,9 @@
             <td class="text-left">
               <div class="text-weight-bold">Mesa {{ r.numero_mesa }}</div>
               <div class="text-caption text-grey-7">{{ r.recinto_nombre }}</div>
+              <div class="text-caption text-grey-6">
+                {{ r.municipio_nombre || 'Sin municipio' }} · {{ r.provincia_nombre || 'Sin provincia' }}
+              </div>
             </td>
 
             <td class="text-left">
@@ -717,6 +780,10 @@ export default {
       showAll: false,
 
       filters: {
+        departamento_id: 5,
+        provincia_id: null,
+        municipio_id: null,
+        municipio_full_id: null,
         recinto_id: null,
         mesa_id: null,
         asignado: 'ALL',
@@ -735,8 +802,15 @@ export default {
         {label:'Todos', value:'ALL'},
         {label:'Con resultado', value:'YES'},
         {label:'Sin resultado', value:'NO'}
-      ],
+      ], 
 
+      geoOptions: {
+        departamentos: [],
+        provincias: [],
+        municipios: []
+      },
+      municipiosFullBase: [],
+      municipiosFullOpt: [],
       recintosOpt: [],
       recintosBase: [],
       mesasOpt: [],
@@ -850,6 +924,31 @@ export default {
 
     displayTotal () {
       return this.showAll ? this.filteredRows.length : Number(this.backendTotal || 0)
+    },
+
+    departamentosOpt () {
+      return (this.geoOptions.departamentos || []).map(d => ({
+        label: d.nombre,
+        value: d.id
+      }))
+    },
+
+    provinciasOpt () {
+      return (this.geoOptions.provincias || [])
+        .filter(p => !this.filters.departamento_id || p.departamento_id === this.filters.departamento_id)
+        .map(p => ({
+          label: p.nombre,
+          value: p.id
+        }))
+    },
+
+    municipiosOpt () {
+      return (this.geoOptions.municipios || [])
+        .filter(m => !this.filters.provincia_id || m.provincia_id === this.filters.provincia_id)
+        .map(m => ({
+          label: m.nombre,
+          value: m.id
+        }))
     },
 
     summaryTotal () {
@@ -1014,12 +1113,72 @@ export default {
     },
 
     async loadOptions () {
-      this.recintosBase = await this.$axios.get('admin/mesas/options/recintos').then(r => r.data)
-      this.recintosOpt = this.recintosBase
-      this.delegadosOpt = await this.$axios.get('admin/mesas/options/delegados').then(r => r.data)
+      const [geo, delegados] = await Promise.all([
+        this.$axios.get('geo/options').then(r => r.data),
+        this.$axios.get('admin/mesas/options/delegados').then(r => r.data)
+      ])
+
+      this.geoOptions = {
+        departamentos: Array.isArray(geo?.departamentos) ? geo.departamentos : [],
+        provincias: Array.isArray(geo?.provincias) ? geo.provincias : [],
+        municipios: Array.isArray(geo?.municipios) ? geo.municipios : []
+      }
+      this.delegadosOpt = delegados
+      this.buildMunicipiosFullOptions()
+      await this.loadRecintosOptions()
       const base = this.buildDelegadosOptions()
       this.delegadosOptFiltered = base
       this.delegadosAsignarOptFiltered = base
+    },
+
+    async loadRecintosOptions () {
+      const data = await this.$axios.get('admin/mesas/options/recintos', {
+        params: {
+          departamento_id: this.filters.departamento_id || undefined,
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined
+        }
+      }).then(r => r.data)
+
+      this.recintosBase = (Array.isArray(data) ? data : []).map(r => ({
+        ...r,
+        value: r.id,
+        label: this.buildRecintoLabel(r)
+      }))
+      this.recintosOpt = this.recintosBase
+      return this.recintosBase
+    },
+
+    buildMunicipiosFullOptions () {
+      this.municipiosFullBase = (this.geoOptions.municipios || [])
+        .filter(m => !this.filters.departamento_id || this.provinciaById(m.provincia_id)?.departamento_id === this.filters.departamento_id)
+        .map(m => {
+          const provincia = this.provinciaById(m.provincia_id)
+          return {
+            value: m.id,
+            label: `${provincia?.nombre || 'Sin provincia'} · ${m.nombre}`,
+            municipio_id: m.id,
+            provincia_id: m.provincia_id,
+            departamento_id: provincia?.departamento_id || null
+          }
+        })
+      this.municipiosFullOpt = this.municipiosFullBase
+    },
+
+    provinciaById (id) {
+      return (this.geoOptions.provincias || []).find(p => p.id === id) || null
+    },
+
+    recintoById (id) {
+      return (this.recintosBase || []).find(r => r.id === id) || null
+    },
+
+    buildRecintoLabel (recinto) {
+      return [
+        recinto?.nombre,
+        recinto?.municipio_nombre,
+        recinto?.provincia_nombre
+      ].filter(Boolean).join(' · ')
     },
 
     buildDelegadosOptions () {
@@ -1071,15 +1230,90 @@ export default {
       }
     },
 
+    async onDepartamentoChange () {
+      this.filters.provincia_id = null
+      this.filters.municipio_id = null
+      this.filters.municipio_full_id = null
+      this.filters.recinto_id = null
+      this.filters.mesa_id = null
+      this.mesasOpt = []
+      this.buildMunicipiosFullOptions()
+      await this.loadRecintosOptions()
+    },
+
+    async onProvinciaChange () {
+      this.filters.municipio_id = null
+      this.filters.municipio_full_id = null
+      this.filters.recinto_id = null
+      this.filters.mesa_id = null
+      this.mesasOpt = []
+      this.buildMunicipiosFullOptions()
+      await this.loadRecintosOptions()
+    },
+
+    async onMunicipioChange () {
+      this.filters.municipio_full_id = this.filters.municipio_id || null
+      this.filters.recinto_id = null
+      this.filters.mesa_id = null
+      this.mesasOpt = []
+      await this.loadRecintosOptions()
+    },
+
+    filterMunicipiosFull (val, update) {
+      update(() => {
+        const needle = (val || '').toLowerCase().trim()
+        if (!needle) {
+          this.buildMunicipiosFullOptions()
+          return
+        }
+        this.municipiosFullOpt = (this.municipiosFullBase || []).filter(m =>
+          String(m.label || '').toLowerCase().includes(needle)
+        )
+      })
+    },
+
+    async onPickMunicipioFull (municipioId) {
+      if (!municipioId) {
+        this.filters.provincia_id = null
+        this.filters.municipio_id = null
+        this.filters.recinto_id = null
+        this.filters.mesa_id = null
+        this.mesasOpt = []
+        await this.loadRecintosOptions()
+        return
+      }
+      const picked = (this.municipiosFullBase || []).find(m => m.value === municipioId) || null
+      this.filters.departamento_id = picked?.departamento_id || this.filters.departamento_id
+      this.filters.provincia_id = picked?.provincia_id || null
+      this.filters.municipio_id = picked?.municipio_id || null
+      this.filters.recinto_id = null
+      this.filters.mesa_id = null
+      this.mesasOpt = []
+      await this.loadRecintosOptions()
+    },
+
     filterRecintos (val, update) {
       update(() => {
         const needle = (val || '').toLowerCase().trim()
         if (!needle) { this.recintosOpt = this.recintosBase; return }
-        this.recintosOpt = (this.recintosBase || []).filter(r => (r.nombre || '').toLowerCase().includes(needle))
+        this.recintosOpt = (this.recintosBase || []).filter(r =>
+          String(r.label || '').toLowerCase().includes(needle) ||
+          String(r.nombre || '').toLowerCase().includes(needle) ||
+          String(r.municipio_nombre || '').toLowerCase().includes(needle) ||
+          String(r.provincia_nombre || '').toLowerCase().includes(needle) ||
+          String(r.departamento_nombre || '').toLowerCase().includes(needle)
+        )
       })
     },
 
     async onPickRecinto (recintoId) {
+      const recinto = this.recintoById(recintoId)
+      if (recinto) {
+        this.filters.departamento_id = recinto.departamento_id || this.filters.departamento_id
+        this.filters.provincia_id = recinto.provincia_id || null
+        this.filters.municipio_id = recinto.municipio_id || null
+        this.filters.municipio_full_id = recinto.municipio_id || null
+      }
       this.filters.mesa_id = null
       this.mesasOpt = []
       if (!recintoId) return
@@ -1099,6 +1333,9 @@ export default {
       this.loadingAll = true
       try {
         const baseParams = {
+          departamento_id: this.filters.departamento_id || undefined,
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined,
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,
@@ -1156,6 +1393,9 @@ export default {
         this.showAll = false
         const perPage = this.rowsPerPage === 0 ? 250 : this.rowsPerPage
         const params = {
+          departamento_id: this.filters.departamento_id || undefined,
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined,
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,

@@ -23,6 +23,9 @@ class SuperAdminMesasController extends Controller
      */
     public function index(Request $request)
     {
+        $departamentoId = $request->get('departamento_id', 5);
+        $provinciaId  = $request->get('provincia_id');
+        $municipioId  = $request->get('municipio_id');
         $recintoId    = $request->get('recinto_id');
         $mesaId       = $request->get('mesa_id');
         $asignado     = $request->get('asignado', 'ALL');
@@ -36,13 +39,35 @@ class SuperAdminMesasController extends Controller
         $perPage = (int) $request->get('per_page', $this->MAX_ROWS);
         $perPage = max(10, min($perPage, 500));              // techo de seguridad
 
-        $scopeOruro = function ($qq) {
+        $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $recintoId) {
             $qq->whereNull('deleted_at')
-                ->where('departamento_id', 5);
+                ->where('departamento_id', $departamentoId)
+                ->when($provinciaId, fn($q) => $q->where('provincia_id', $provinciaId))
+                ->when($municipioId, fn($q) => $q->where('municipio_id', $municipioId))
+                ->when($recintoId, fn($q) => $q->where('id', $recintoId));
         };
 
         $summaryBase = Mesa::query()
-            ->whereHas('recinto', $scopeOruro);
+            ->whereHas('recinto', $scopeRecinto)
+            ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
+            ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
+            ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
+            ->when($asignado !== 'ALL', function ($qq) use ($asignado) {
+                if ($asignado === 'YES') {
+                    $qq->whereNotNull('mesas.delegado_id');
+                }
+                if ($asignado === 'NO') {
+                    $qq->whereNull('mesas.delegado_id');
+                }
+            })
+            ->when($conResultado !== 'ALL', function ($qq) use ($conResultado) {
+                if ($conResultado === 'YES') {
+                    $qq->whereHas('resultado');
+                }
+                if ($conResultado === 'NO') {
+                    $qq->whereDoesntHave('resultado');
+                }
+            });
 
         $summary = [
             'total' => (clone $summaryBase)->count(),
@@ -54,6 +79,9 @@ class SuperAdminMesasController extends Controller
         $base = Mesa::query()
             ->select([
                 'mesas.id',
+                'mesas.departamento_id',
+                'mesas.provincia_id',
+                'mesas.municipio_id',
                 'mesas.recinto_id',
                 'mesas.numero_mesa',
                 'mesas.delegado_id',
@@ -61,25 +89,31 @@ class SuperAdminMesasController extends Controller
             ])
             ->with([
                 'recinto:id,nombre',
+                'departamento:id,nombre',
+                'provincia:id,nombre',
+                'municipio:id,nombre',
                 'delegado:id,name,username',
                 'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos'
             ])
-            ->whereHas('recinto', function ($qq) use ($scopeOruro) {
-                $scopeOruro($qq);
-//                    ->where('provincia_id', 57)
-//                    ->where('municipio_id', 191);
-            })
-            ->when($recintoId, fn($qq) => $qq->where('mesas.recinto_id', $recintoId))
+            ->whereHas('recinto', $scopeRecinto)
             ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
             ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
             ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
             ->when($asignado !== 'ALL', function ($qq) use ($asignado) {
-                if ($asignado === 'YES') $qq->whereNotNull('mesas.delegado_id');
-                if ($asignado === 'NO')  $qq->whereNull('mesas.delegado_id');
+                if ($asignado === 'YES') {
+                    $qq->whereNotNull('mesas.delegado_id');
+                }
+                if ($asignado === 'NO') {
+                    $qq->whereNull('mesas.delegado_id');
+                }
             })
             ->when($conResultado !== 'ALL', function ($qq) use ($conResultado) {
-                if ($conResultado === 'YES') $qq->whereHas('resultado');
-                if ($conResultado === 'NO')  $qq->whereDoesntHave('resultado');
+                if ($conResultado === 'YES') {
+                    $qq->whereHas('resultado');
+                }
+                if ($conResultado === 'NO') {
+                    $qq->whereDoesntHave('resultado');
+                }
             })
             ->orderBy('mesas.numero_mesa');
 
@@ -90,6 +124,12 @@ class SuperAdminMesasController extends Controller
             $data = collect($pag->items())->map(function ($m) {
                 return [
                     'id' => $m->id,
+                    'departamento_id' => $m->departamento_id,
+                    'departamento_nombre' => $m->departamento?->nombre,
+                    'provincia_id' => $m->provincia_id,
+                    'provincia_nombre' => $m->provincia?->nombre,
+                    'municipio_id' => $m->municipio_id,
+                    'municipio_nombre' => $m->municipio?->nombre,
                     'recinto_id' => $m->recinto_id,
                     'recinto_nombre' => $m->recinto?->nombre,
 
@@ -137,6 +177,12 @@ class SuperAdminMesasController extends Controller
         $data = $rows->map(function ($m) {
             return [
                 'id' => $m->id,
+                'departamento_id' => $m->departamento_id,
+                'departamento_nombre' => $m->departamento?->nombre,
+                'provincia_id' => $m->provincia_id,
+                'provincia_nombre' => $m->provincia?->nombre,
+                'municipio_id' => $m->municipio_id,
+                'municipio_nombre' => $m->municipio?->nombre,
                 'recinto_id' => $m->recinto_id,
                 'recinto_nombre' => $m->recinto?->nombre,
                 'numero_mesa' => $m->numero_mesa,
@@ -175,15 +221,33 @@ class SuperAdminMesasController extends Controller
 
 
     // combos (recintos)
-    public function recintosOptions()
+    public function recintosOptions(Request $request)
     {
-        return DB::table('recintos')
-            ->select('id', 'nombre')
-            ->whereNull('deleted_at')
-            ->where('departamento_id', 5)
-            ->where('provincia_id', 57)
-            ->where('municipio_id', 191)
-            ->orderBy('nombre')
+        $departamentoId = $request->get('departamento_id', 5);
+        $provinciaId = $request->get('provincia_id');
+        $municipioId = $request->get('municipio_id');
+
+        return DB::table('recintos as r')
+            ->leftJoin('provincias as p', 'p.id', '=', 'r.provincia_id')
+            ->leftJoin('municipios as m', 'm.id', '=', 'r.municipio_id')
+            ->leftJoin('departamentos as d', 'd.id', '=', 'r.departamento_id')
+            ->select(
+                'r.id',
+                'r.nombre',
+                'r.departamento_id',
+                'r.provincia_id',
+                'r.municipio_id',
+                'd.nombre as departamento_nombre',
+                'p.nombre as provincia_nombre',
+                'm.nombre as municipio_nombre'
+            )
+            ->whereNull('r.deleted_at')
+            ->where('r.departamento_id', $departamentoId)
+            ->when($provinciaId, fn($qq) => $qq->where('r.provincia_id', $provinciaId))
+            ->when($municipioId, fn($qq) => $qq->where('r.municipio_id', $municipioId))
+            ->orderBy('p.nombre')
+            ->orderBy('m.nombre')
+            ->orderBy('r.nombre')
             ->get();
     }
 
