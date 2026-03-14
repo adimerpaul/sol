@@ -13,6 +13,7 @@
       :rows-per-page-options="[15, 30, 50, 100]"
       title="Usuarios"
       :filter="filter"
+      :filter-method="filterUsers"
     >
       <template v-slot:top-right>
         <q-btn-dropdown
@@ -506,7 +507,13 @@ export default {
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
         { name: 'username', label: 'Codigo de ingresos', align: 'left', field: 'username' },
-        { name: 'created_by', label: 'Nombre', align: 'left', field: row => row.creator_name || '-', style: 'width: 180px; white-space: normal;' },
+        {
+          name: 'created_by',
+          label: 'Nombre',
+          align: 'left',
+          field: row => [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' ') || row.name || '-',
+          style: 'width: 180px; white-space: normal;'
+        },
         // { name: 'full_name', label: 'Nombre completo', align: 'left', field: row => [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' '), style: 'width: 240px; white-space: normal;' },
         { name: 'numero_mesa', label: 'Numero mesa', align: 'left', field: 'numero_mesa' },
         { name: 'celular', label: 'Celular', align: 'left', field: 'celular' },
@@ -566,6 +573,36 @@ export default {
   },
 
   methods: {
+    filterUsers (rows, terms) {
+      const needle = String(terms || '').toLowerCase().trim()
+      if (!needle) return rows
+
+      return (rows || []).filter(row => {
+        const fullName = [row.nombres, row.apellido_paterno, row.apellido_materno]
+          .filter(Boolean)
+          .join(' ')
+        const values = [
+          row.username,
+          row.nombres,
+          row.apellido_paterno,
+          row.apellido_materno,
+          fullName,
+          row.name,
+          row.ci,
+          row.numero_mesa,
+          row.celular,
+          row.fecha_nacimiento,
+          row.bloque,
+          row.recinto_nombre,
+          row.recinto?.nombre,
+          row.role,
+          row.creator_name
+        ]
+
+        return values.some(value => String(value || '').toLowerCase().includes(needle))
+      })
+    },
+
     closeUserDialog () {
       this.userDialog = false
       this.files = { ci_anverso: null, ci_reverso: null, foto_personal: null }
