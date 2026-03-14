@@ -133,10 +133,10 @@ class MobileAuthController extends Controller
         ]);
 
         $fecha = substr($data['fecha_nacimiento'], 0, 10);
-//        error_log("Login attempt - CI: {$data['ci']}, Fecha Nacimiento: {$fecha}");
+        error_log("Login attempt - CI: {$data['ci']}, Fecha Nacimiento: {$fecha}");
 
         $user = User::query()
-            ->where('ci', $data['ci'])
+            ->where('username', $data['ci'])
             ->whereDate('fecha_nacimiento', $fecha)
             ->first();
 

@@ -29,6 +29,9 @@ enum _VotacionTab {
 }
 
 class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
+  static const int _targetTotalPorCategoria = 250;
+  static const int _maxTotalPermitidoPorCategoria = 260;
+
   final MobileAuthLocalStore _localStore = MobileAuthLocalStore.instance;
   final MobileVotacionService _service = MobileVotacionService();
   final ImagePicker _picker = ImagePicker();
@@ -81,6 +84,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final Map<String, String?> _localFotos = {
     for (final slot in votacionFotoSlots) slot: null,
   };
+  DateTime? _lastLimitAlertAt;
 
   static const List<Map<String, String>> _fotoAlcaldeConfig = [
     {'slot': 'foto1', 'label': 'Hoja trabajo - Alcalde'},
@@ -297,19 +301,20 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   int get _sumAlc => _sum(_alcCtrl, _partidosAlcalde);
 
   bool get _okGob =>
-      _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl) + _ival(_pnuGobCtrl) == 250;
+      _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl) + _ival(_pnuGobCtrl) ==
+      _targetTotalPorCategoria;
   bool get _okAsd =>
       _sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl) + _ival(_pnuAsdCtrl) ==
-      250;
+      _targetTotalPorCategoria;
   bool get _okAsp =>
       _sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl) + _ival(_pnuAspCtrl) ==
-      250;
+      _targetTotalPorCategoria;
   bool get _okCon =>
       _sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl) ==
-      250;
+      _targetTotalPorCategoria;
   bool get _okAlc =>
       _sumAlc + _ival(_balcCtrl) + _ival(_nalcCtrl) + _ival(_pnuAlcCtrl) ==
-      250;
+      _targetTotalPorCategoria;
 
   bool get _allFotosReady {
     for (final slot in votacionFotoSlots) {
@@ -411,7 +416,46 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     }
   }
 
-  bool _tabTotalesOk(_VotacionTab tab) => _tabTotalActual(tab) == 250;
+  bool _tabTotalesOk(_VotacionTab tab) =>
+      _tabTotalActual(tab) == _targetTotalPorCategoria;
+
+  void _showLimitAlert() {
+    final now = DateTime.now();
+    final last = _lastLimitAlertAt;
+    if (last != null && now.difference(last).inMilliseconds < 900) return;
+    _lastLimitAlertAt = now;
+    showError(
+      context,
+      'El total por categoria no puede exceder $_maxTotalPermitidoPorCategoria votos.',
+    );
+  }
+
+  void _setNumericControllerValue(TextEditingController controller, int value) {
+    final safeValue = value <= 0 ? '' : value.toString();
+    controller.value = TextEditingValue(
+      text: safeValue,
+      selection: TextSelection.collapsed(offset: safeValue.length),
+    );
+  }
+
+  void _enforceCategoryLimit(
+    _VotacionTab tab,
+    TextEditingController controller,
+  ) {
+    final current = _ival(controller);
+    final otherValues = _tabTotalActual(tab) - current;
+    final maxAllowed = (_maxTotalPermitidoPorCategoria - otherValues).clamp(
+      0,
+      _maxTotalPermitidoPorCategoria,
+    ) as int;
+    if (current <= maxAllowed) {
+      _onDataChanged();
+      return;
+    }
+    _setNumericControllerValue(controller, maxAllowed);
+    _onDataChanged();
+    _showLimitAlert();
+  }
 
   String? _tabActaSlot(_VotacionTab tab) {
     switch (tab) {
@@ -795,7 +839,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         builder: (context) => AlertDialog(
           title: const Text('Advertencia de totales'),
           content: Text(
-            '${_tabLabel(_activeTab)} no suma 250.\n'
+            '${_tabLabel(_activeTab)} no suma $_targetTotalPorCategoria.\n'
             'Total actual: ${_tabTotalActual(_activeTab)}\n\n'
             'Deseas enviar de todas formas?',
           ),
@@ -976,6 +1020,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         if (_activeTab == _VotacionTab.alcalde) ...[
           _buildCategoryCard(
             title: '1) Alcalde',
+            tab: _VotacionTab.alcalde,
             partidos: _partidosAlcalde,
             voteMap: _alcCtrl,
             blancosCtrl: _balcCtrl,
@@ -997,6 +1042,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         ] else if (_activeTab == _VotacionTab.concejal) ...[
           _buildCategoryCard(
             title: '2) Concejal',
+            tab: _VotacionTab.concejal,
             partidos: _partidosConcejal,
             voteMap: _conCtrl,
             blancosCtrl: _bconCtrl,
@@ -1018,6 +1064,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         ] else if (_activeTab == _VotacionTab.gobernador) ...[
           _buildCategoryCard(
             title: '3) Gobernador',
+            tab: _VotacionTab.gobernador,
             partidos: _partidosGobernador,
             voteMap: _gobCtrl,
             blancosCtrl: _bgCtrl,
@@ -1039,6 +1086,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         ] else if (_activeTab == _VotacionTab.asambleistaDistrito) ...[
           _buildCategoryCard(
             title: '4) Asambleista por Distrito',
+            tab: _VotacionTab.asambleistaDistrito,
             partidos: _partidosAsd,
             voteMap: _asdCtrl,
             blancosCtrl: _basdCtrl,
@@ -1060,6 +1108,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         ] else ...[
           _buildCategoryCard(
             title: '5) Asambleista por Poblacion',
+            tab: _VotacionTab.asambleistaPoblacion,
             partidos: _partidosAsp,
             voteMap: _aspCtrl,
             blancosCtrl: _baspCtrl,
@@ -1311,6 +1360,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   Widget _buildCategoryCard({
     required String title,
+    required _VotacionTab tab,
     required List<Map<String, dynamic>> partidos,
     required Map<int, TextEditingController> voteMap,
     required TextEditingController blancosCtrl,
@@ -1408,7 +1458,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                           labelText: 'Votos',
                           isDense: true,
                         ),
-                        onChanged: (_) => _onDataChanged(),
+                        onChanged: (_) => _enforceCategoryLimit(tab, voteMap[id]!),
                       ),
                     ),
                     ],
@@ -1429,7 +1479,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                       labelText: 'Blancos',
                       isDense: true,
                     ),
-                    onChanged: (_) => _onDataChanged(),
+                    onChanged: (_) => _enforceCategoryLimit(tab, blancosCtrl),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1443,7 +1493,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                       labelText: 'Nulos',
                       isDense: true,
                     ),
-                    onChanged: (_) => _onDataChanged(),
+                    onChanged: (_) => _enforceCategoryLimit(tab, nulosCtrl),
                   ),
                 ),
               ],
@@ -1459,11 +1509,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                   labelText: 'Papeletas no utilizadas',
                   isDense: true,
                 ),
-                onChanged: (_) => _onDataChanged(),
+                onChanged: (_) => _enforceCategoryLimit(tab, papeletasNoUtilizadasCtrl),
               ),
             const SizedBox(height: 6),
             Text(
-              'Total ${sum + _ival(blancosCtrl) + _ival(nulosCtrl) + (showPnu ? _ival(papeletasNoUtilizadasCtrl) : 0)}/250',
+              'Total ${sum + _ival(blancosCtrl) + _ival(nulosCtrl) + (showPnu ? _ival(papeletasNoUtilizadasCtrl) : 0)}/$_targetTotalPorCategoria',
               style: TextStyle(
                 color: ok ? Colors.green : Colors.red,
                 fontWeight: FontWeight.w700,

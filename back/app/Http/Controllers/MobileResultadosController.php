@@ -75,6 +75,7 @@ class MobileResultadosController extends Controller
         'aviso_antes',
         'aviso_manana',
         'aviso_mediodia',
+        'aviso_tarde',
         'hora_apertura_mesa',
     ];
 
@@ -92,8 +93,8 @@ class MobileResultadosController extends Controller
                     'aviso_antes' => false,
                     'aviso_manana' => false,
                     'aviso_mediodia' => false,
+                    'aviso_tarde' => false,
                     'hora_apertura_mesa' => null,
-                    'aviso_tarde' => null,
                     'etapa_1' => null,
                     'etapa_2' => null,
                 ],
@@ -115,7 +116,6 @@ class MobileResultadosController extends Controller
                 ? $rows->pluck('hora_apertura_mesa')->filter()->first()
                 : $allTrue;
         }
-        $state['aviso_tarde'] = null;
         $state['etapa_1'] = null;
         $state['etapa_2'] = null;
 
@@ -128,7 +128,7 @@ class MobileResultadosController extends Controller
     public function asistenciaUpdate(Request $request)
     {
         $data = $request->validate([
-            'field' => 'required|string|in:aviso_antes,aviso_manana,aviso_mediodia',
+            'field' => 'required|string|in:aviso_antes,aviso_manana,aviso_mediodia,aviso_tarde',
             'value' => 'required|boolean',
             'hora_apertura_mesa' => 'nullable|string|max:5',
         ]);
@@ -174,7 +174,6 @@ class MobileResultadosController extends Controller
                 if (($data['field'] ?? null) === 'aviso_manana') {
                     $rm->hora_apertura_mesa = $data['hora_apertura_mesa'] ?? null;
                 }
-                $rm->aviso_tarde = null;
                 $rm->etapa_1 = null;
                 $rm->etapa_2 = null;
                 $rm->registrado_por = $user->id;
@@ -183,7 +182,8 @@ class MobileResultadosController extends Controller
                 if (
                     (bool) $rm->aviso_antes ||
                     (bool) $rm->aviso_manana ||
-                    (bool) $rm->aviso_mediodia
+                    (bool) $rm->aviso_mediodia ||
+                    (bool) $rm->aviso_tarde
                 ) {
                     $mesa->estado = 'EN_PROCESO';
                 } else {
@@ -196,7 +196,8 @@ class MobileResultadosController extends Controller
         $labels = [
             'aviso_antes' => 'Estoy presente en mi mesa',
             'aviso_manana' => 'Abrí la mesa',
-            'aviso_mediodia' => 'Tengo el acta en mi poder',
+            'aviso_mediodia' => 'Tengo el acta de la alcaldia en mi poder',
+            'aviso_tarde' => 'Tengo el acta de la gobernacion en mi poder',
         ];
         $field = $data['field'];
         $message = trim(sprintf(

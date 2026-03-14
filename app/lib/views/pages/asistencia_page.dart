@@ -26,6 +26,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   bool _avisoAntes = false;
   bool _avisoManana = false;
   bool _avisoMediodia = false;
+  bool _avisoTarde = false;
   String? _horaAperturaMesa;
 
   final Set<String> _lockedFields = <String>{};
@@ -77,8 +78,8 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         avisoAntes: state['aviso_antes'] == true,
         avisoManana: state['aviso_manana'] == true,
         avisoMediodia: state['aviso_mediodia'] == true,
+        avisoTarde: state['aviso_tarde'] == true,
         horaAperturaMesa: state['hora_apertura_mesa']?.toString(),
-        avisoTarde: false,
         etapa1: false,
         etapa2: false,
         syncStatus: MobileAuthLocalStore.asistenciaSyncSynced,
@@ -94,12 +95,14 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     _avisoAntes = state['aviso_antes'] == true;
     _avisoManana = state['aviso_manana'] == true;
     _avisoMediodia = state['aviso_mediodia'] == true;
+    _avisoTarde = state['aviso_tarde'] == true;
     _horaAperturaMesa = state['hora_apertura_mesa']?.toString();
 
     _lockedFields.clear();
     if (_avisoAntes) _lockedFields.add('aviso_antes');
     if (_avisoManana) _lockedFields.add('aviso_manana');
     if (_avisoMediodia) _lockedFields.add('aviso_mediodia');
+    if (_avisoTarde) _lockedFields.add('aviso_tarde');
   }
 
   Future<void> _toggleUpdate({
@@ -127,8 +130,8 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       avisoAntes: _avisoAntes,
       avisoManana: _avisoManana,
       avisoMediodia: _avisoMediodia,
+      avisoTarde: _avisoTarde,
       horaAperturaMesa: _horaAperturaMesa,
-      avisoTarde: false,
       etapa1: false,
       etapa2: false,
       syncStatus: MobileAuthLocalStore.asistenciaSyncLocal,
@@ -152,8 +155,8 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         avisoAntes: _avisoAntes,
         avisoManana: _avisoManana,
         avisoMediodia: _avisoMediodia,
+        avisoTarde: _avisoTarde,
         horaAperturaMesa: _horaAperturaMesa,
-        avisoTarde: false,
         etapa1: false,
         etapa2: false,
         syncStatus: _hasPending
@@ -204,6 +207,9 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         case 'aviso_mediodia':
           _avisoMediodia = value;
           break;
+        case 'aviso_tarde':
+          _avisoTarde = value;
+          break;
       }
     });
   }
@@ -246,8 +252,8 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         avisoAntes: _avisoAntes,
         avisoManana: _avisoManana,
         avisoMediodia: _avisoMediodia,
+        avisoTarde: _avisoTarde,
         horaAperturaMesa: _horaAperturaMesa,
-        avisoTarde: false,
         etapa1: false,
         etapa2: false,
         syncStatus: _hasPending
@@ -322,9 +328,14 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
             title: Text('Hora de apertura: $_horaAperturaMesa'),
           ),
         _buildToggleTile(
-          label: 'Tengo el acta en mi poder',
+          label: 'Tengo el acta de la alcaldia en mi poder',
           field: 'aviso_mediodia',
           value: _avisoMediodia,
+        ),
+        _buildToggleTile(
+          label: 'Tengo el acta de la gobernacion en mi poder',
+          field: 'aviso_tarde',
+          value: _avisoTarde,
         ),
       ],
     );
