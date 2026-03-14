@@ -147,8 +147,8 @@ class SuperAdminMesasController extends Controller
                     'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
                     'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
                     'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
+                    'aviso_tarde' => (bool) optional($m->resultado)->aviso_tarde,
                     'hora_apertura_mesa' => optional($m->resultado)->hora_apertura_mesa,
-                    'aviso_tarde' => null,
                     'etapa_1' => null,
                     'etapa_2' => null,
 
@@ -197,8 +197,8 @@ class SuperAdminMesasController extends Controller
                 'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
                 'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
                 'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
+                'aviso_tarde' => (bool) optional($m->resultado)->aviso_tarde,
                 'hora_apertura_mesa' => optional($m->resultado)->hora_apertura_mesa,
-                'aviso_tarde' => null,
                 'etapa_1' => null,
                 'etapa_2' => null,
                 'total_votos' => (int) (optional($m->resultado)->total_votos ?? 0),
@@ -482,7 +482,7 @@ class SuperAdminMesasController extends Controller
 
             $res->registrado_por = $request->user()->id;
 
-            foreach (['aviso_antes', 'aviso_manana', 'aviso_mediodia'] as $k) {
+            foreach (['aviso_antes', 'aviso_manana', 'aviso_mediodia', 'aviso_tarde'] as $k) {
                 if ($request->has($k)) {
                     $res->{$k} = (bool) $request->boolean($k);
                 }
@@ -493,7 +493,6 @@ class SuperAdminMesasController extends Controller
             }
 
             // Campos fuera del flujo actual
-            $res->aviso_tarde = null;
             $res->etapa_1 = null;
             $res->etapa_2 = null;
 
@@ -583,7 +582,7 @@ class SuperAdminMesasController extends Controller
 
             $res->save();
 
-            if ($res->aviso_antes || $res->aviso_manana || $res->aviso_mediodia) {
+            if ($res->aviso_antes || $res->aviso_manana || $res->aviso_mediodia || $res->aviso_tarde) {
                 $mesa->estado = 'EN_PROCESO';
             } else {
                 $mesa->estado = $mesa->delegado_id ? 'ASIGNADA' : 'PENDIENTE';
@@ -609,6 +608,7 @@ class SuperAdminMesasController extends Controller
                 'aviso_antes' => (bool) $res->aviso_antes,
                 'aviso_manana' => (bool) $res->aviso_manana,
                 'aviso_mediodia' => (bool) $res->aviso_mediodia,
+                'aviso_tarde' => (bool) $res->aviso_tarde,
                 'hora_apertura_mesa' => $res->hora_apertura_mesa,
                 'total_votos' => (int) ($res->total_votos ?? 0),
                 'total_validos' => (int) ($res->total_validos ?? 0),

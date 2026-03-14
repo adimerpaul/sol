@@ -278,7 +278,8 @@
               <div class="row items-center q-gutter-xs">
                 <q-chip dense size="11px" :color="b(r.aviso_antes)" text-color="white">Estoy presente</q-chip>
                 <q-chip dense size="11px" :color="b(r.aviso_manana)" text-color="white">Mesa abierta</q-chip>
-                <q-chip dense size="11px" :color="b(r.aviso_mediodia)" text-color="white">Tengo el acta</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_mediodia)" text-color="white">Acta alcaldia</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_tarde)" text-color="white">Acta gobernacion</q-chip>
                 <q-chip v-if="r.hora_apertura_mesa" dense size="11px" color="indigo" text-color="white">
                   {{ r.hora_apertura_mesa }}
                 </q-chip>
@@ -406,7 +407,8 @@
                     label="Hora de apertura (08:00 a 04:00)"
                     :disable="!resForm.aviso_manana"
                   />
-                  <q-toggle v-model="resForm.aviso_mediodia" label="Tengo el acta en mi poder" />
+                  <q-toggle v-model="resForm.aviso_mediodia" label="Tengo el acta de la alcaldia en mi poder" />
+                  <q-toggle v-model="resForm.aviso_tarde" label="Tengo el acta de la gobernacion en mi poder" />
                 </q-card-section>
               </q-card>
 
@@ -1640,6 +1642,7 @@ export default {
         fd.append('aviso_antes', this.resForm.aviso_antes ? '1' : '0')
         fd.append('aviso_manana', this.resForm.aviso_manana ? '1' : '0')
         fd.append('aviso_mediodia', this.resForm.aviso_mediodia ? '1' : '0')
+        fd.append('aviso_tarde', this.resForm.aviso_tarde ? '1' : '0')
         fd.append('hora_apertura_mesa', this.resForm.hora_apertura_mesa || '')
 
         const totalBlancos =
