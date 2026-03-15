@@ -1,16 +1,13 @@
 <template>
   <q-page class="q-pa-md bg-grey-2">
     <q-card flat bordered class="bg-white">
-
       <q-card-section>
         <div class="text-h6 text-weight-bold">
-          Asignación de Jefes por Recinto (Mapa)
-<!--          btn atulizar-->
+          Asignacion de Jefes por Recinto (Mapa)
           <q-btn icon="refresh" round dense flat class="q-ml-sm" @click="load" />
         </div>
         <div class="text-caption text-grey-7">Selecciona un recinto en el mapa y asigna su jefe</div>
 
-        <!-- chips -->
         <div class="row items-center q-col-gutter-sm q-mt-sm">
           <div class="col-auto">
             <q-chip color="primary" text-color="white" outline>
@@ -36,7 +33,6 @@
           </div>
         </div>
 
-        <!-- ✅ filtro rápido -->
         <div class="row q-col-gutter-sm q-mt-sm">
           <div class="col-12 col-md-6">
             <q-select
@@ -48,7 +44,7 @@
               input-debounce="250"
               dense
               outlined
-              label="Buscar recinto rápido..."
+              label="Buscar recinto rapido..."
               option-label="label"
               option-value="value"
               emit-value
@@ -61,7 +57,6 @@
                 <q-icon name="search" />
               </template>
 
-              <!-- cómo se ve cada opción -->
               <template v-slot:option="scope">
                 <q-item v-bind="scope.itemProps">
                   <q-item-section>
@@ -76,10 +71,7 @@
                     </q-item-label>
                   </q-item-section>
                   <q-item-section side>
-                    <q-badge
-                      outline
-                      :color="scope.opt.okDelegados ? 'positive' : 'negative'"
-                    >
+                    <q-badge outline :color="scope.opt.okDelegados ? 'positive' : 'negative'">
                       {{ scope.opt.okDelegados ? 'completo' : 'falta' }}
                     </q-badge>
                   </q-item-section>
@@ -125,13 +117,18 @@
               <q-select
                 class="q-mt-md"
                 v-model="jefeId"
-                :options="jefes"
+                :options="jefesOptions"
                 option-label="name"
                 option-value="id"
                 emit-value
                 map-options
                 label="Jefe de Recinto"
-                dense outlined
+                use-input
+                input-debounce="0"
+                clearable
+                dense
+                outlined
+                @filter="filterJefes"
               />
 
               <q-btn
@@ -142,12 +139,83 @@
                 :disable="!jefeId"
                 @click="save"
               />
-                
+
+              <q-separator class="q-my-md" />
+
+              <div class="row items-center q-mb-sm">
+                <div class="text-subtitle2 text-weight-medium">Mesas</div>
+                <q-space />
+                <q-btn icon="refresh" round dense flat :loading="loadingMesas" @click="loadMesas" />
+              </div>
+
+              <q-banner v-if="loadingMesas" dense class="bg-grey-2 q-mb-sm">
+                Cargando mesas...
+              </q-banner>
+
+              <q-banner v-else-if="mesas.length === 0" dense class="bg-grey-2 q-mb-sm">
+                No hay mesas para este recinto.
+              </q-banner>
+
+              <q-list v-else bordered separator class="rounded-borders">
+                <q-item v-for="mesa in mesas" :key="mesa.id">
+                  <q-item-section>
+                    <q-item-label class="text-weight-medium">
+                      Mesa {{ mesa.numero_mesa }}
+                    </q-item-label>
+                    <q-item-label caption>
+                      {{ mesa.delegado ? `${mesa.delegado.name} (${mesa.delegado.username})` : 'Sin delegado asignado' }}
+                    </q-item-label>
+                    <q-item-label caption>
+                      Estado: {{ mesa.estado || (mesa.delegado_id ? 'ASIGNADA' : 'PENDIENTE') }}
+                    </q-item-label>
+
+                    <div class="row q-col-gutter-sm q-mt-sm">
+                      <div class="col-12">
+                        <q-select
+                          v-model="mesa.delegadoDraftId"
+                          :options="delegadosOptions"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          use-input
+                          input-debounce="0"
+                          clearable
+                          dense
+                          outlined
+                          label="Delegado de Mesa"
+                          @filter="filterDelegados"
+                        />
+                      </div>
+                      <div class="col-6">
+                        <q-btn
+                          color="primary"
+                          label="Guardar delegado"
+                          no-caps
+                          class="full-width"
+                          :loading="savingMesaId === mesa.id"
+                          @click="saveMesa(mesa)"
+                        />
+                      </div>
+                      <div class="col-6">
+                        <q-btn
+                          flat
+                          color="negative"
+                          label="Quitar"
+                          no-caps
+                          class="full-width"
+                          :disable="!mesa.delegado_id && !mesa.delegadoDraftId"
+                          @click="clearMesa(mesa)"
+                        />
+                      </div>
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </q-list>
             </div>
           </div>
         </div>
       </q-card-section>
-
     </q-card>
   </q-page>
 </template>
@@ -163,10 +231,15 @@ export default {
     return {
       recintos: [],
       jefes: [],
+      jefesOptions: [],
+      jefesOptionsAll: [],
+      delegadosOptions: [],
+      delegadosOptionsAll: [],
       selected: null,
       jefeId: null,
-
-      // ✅ filtro
+      mesas: [],
+      loadingMesas: false,
+      savingMesaId: null,
       recintoPick: null,
       recintosOptions: [],
       focusRecinto: null
@@ -179,16 +252,29 @@ export default {
 
   methods: {
     async load () {
-      const [r, j] = await Promise.all([
+      const [r, j, d] = await Promise.all([
         this.$axios.get('admin/mapa-recintos/recintos'),
-        this.$axios.get('admin/mapa-recintos/jefes')
+        this.$axios.get('admin/mapa-recintos/jefes'),
+        this.$axios.get('admin/mesas/options/delegados')
       ])
 
       this.recintos = Array.isArray(r.data) ? r.data : []
       this.jefes = Array.isArray(j.data) ? j.data : []
-
-      // construir options inicial
+      this.jefesOptionsAll = this.jefes
+      this.jefesOptions = this.jefesOptionsAll
+      this.delegadosOptionsAll = (Array.isArray(d.data) ? d.data : []).map(item => ({
+        value: item.id,
+        label: `${item.name} (${item.username})`
+      }))
+      this.delegadosOptions = this.delegadosOptionsAll
       this.recintosOptions = this.buildOptions(this.recintos)
+
+      if (this.selected?.id) {
+        const again = (this.recintos || []).find(x => x.id === this.selected.id)
+        if (again) {
+          await this.onSelectRecinto(again)
+        }
+      }
     },
 
     buildOptions (list) {
@@ -201,7 +287,7 @@ export default {
         const okDelegados = tieneJefe && (mesasTotal === 0 || mesasAsignadas >= mesasTotal)
 
         return {
-          label: `${x.nombre} — ${jefeNombre}`, // para búsqueda rápida
+          label: `${x.nombre} - ${jefeNombre}`,
           value: x.id,
           nombre: x.nombre,
           jefeNombre,
@@ -230,7 +316,36 @@ export default {
       })
     },
 
-    onPickRecinto (id) {
+    filterJefes (val, update) {
+      update(() => {
+        const needle = String(val || '').toLowerCase().trim()
+        if (!needle) {
+          this.jefesOptions = this.jefesOptionsAll
+          return
+        }
+
+        this.jefesOptions = (this.jefesOptionsAll || []).filter(j =>
+          String(j.name || '').toLowerCase().includes(needle) ||
+          String(j.username || '').toLowerCase().includes(needle)
+        )
+      })
+    },
+
+    filterDelegados (val, update) {
+      update(() => {
+        const needle = String(val || '').toLowerCase().trim()
+        if (!needle) {
+          this.delegadosOptions = this.delegadosOptionsAll
+          return
+        }
+
+        this.delegadosOptions = (this.delegadosOptionsAll || []).filter(d =>
+          String(d.label || '').toLowerCase().includes(needle)
+        )
+      })
+    },
+
+    async onPickRecinto (id) {
       if (!id) {
         this.focusRecinto = null
         return
@@ -239,10 +354,8 @@ export default {
       const r = (this.recintos || []).find(x => x.id === id)
       if (!r) return
 
-      // seleccionar panel derecho
-      this.onSelectRecinto(r)
+      await this.onSelectRecinto(r)
 
-      // pedir al mapa que enfoque ese recinto
       this.focusRecinto = {
         id: r.id,
         latitud: r.latitud,
@@ -250,12 +363,41 @@ export default {
       }
     },
 
-    onSelectRecinto (recinto) {
+    async onSelectRecinto (recinto) {
       this.selected = { ...recinto }
       this.jefeId = recinto.jefe?.[0]?.id ?? null
-
-      // sincroniza el combo con selección de mapa
+      this.jefesOptions = this.jefesOptionsAll
       this.recintoPick = recinto.id
+      await this.loadMesas()
+    },
+
+    async loadMesas () {
+      if (!this.selected?.id) {
+        this.mesas = []
+        return
+      }
+
+      this.loadingMesas = true
+      try {
+        const response = await this.$axios.get('admin/mesas', {
+          params: {
+            recinto_id: this.selected.id,
+            all: 1,
+            per_page: 500
+          }
+        })
+
+        this.mesas = (Array.isArray(response.data?.data) ? response.data.data : []).map(m => ({
+          ...m,
+          delegadoDraftId: m.delegado_id ?? null
+        }))
+        this.delegadosOptions = this.delegadosOptionsAll
+      } catch (e) {
+        this.mesas = []
+        this.$alert?.error(e.response?.data?.message || 'No se pudo cargar mesas del recinto')
+      } finally {
+        this.loadingMesas = false
+      }
     },
 
     async save () {
@@ -266,12 +408,31 @@ export default {
       this.$alert.success('Jefe asignado')
       await this.load()
 
-      // re-seleccionar el mismo recinto con data actualizado
       const again = (this.recintos || []).find(x => x.id === this.selected.id)
       if (again) {
-        this.onSelectRecinto(again)
+        await this.onSelectRecinto(again)
         this.focusRecinto = { id: again.id, latitud: again.latitud, longitud: again.longitud }
       }
+    },
+
+    async saveMesa (mesa) {
+      this.savingMesaId = mesa.id
+      try {
+        await this.$axios.put(`admin/mesas/${mesa.id}/delegado`, {
+          delegado_id: mesa.delegadoDraftId || null
+        })
+        this.$alert.success(mesa.delegadoDraftId ? 'Delegado asignado' : 'Mesa liberada')
+        await this.load()
+      } catch (e) {
+        this.$alert?.error(e.response?.data?.message || 'No se pudo guardar delegado')
+      } finally {
+        this.savingMesaId = null
+      }
+    },
+
+    async clearMesa (mesa) {
+      mesa.delegadoDraftId = null
+      await this.saveMesa(mesa)
     }
   }
 }
