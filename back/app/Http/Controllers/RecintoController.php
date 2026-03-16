@@ -81,7 +81,9 @@ class RecintoController extends Controller
 
         // Municipio ID 191 is Oruro City
         $q = Recinto::query()
-            ->where('municipio_id', 191)
+//            departamento_id de oruro
+//            ->where('municipio_id', 191)
+            ->where('departamento_id', 9)
             ->when($search !== '', fn($qq) => $qq->where('nombre','like',"%{$search}%"));
 
         return $q->orderBy('nombre')->paginate($request->get('per_page', 25));

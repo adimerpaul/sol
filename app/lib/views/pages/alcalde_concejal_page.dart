@@ -35,6 +35,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final MobileAuthLocalStore _localStore = MobileAuthLocalStore.instance;
   final MobileVotacionService _service = MobileVotacionService();
   final ImagePicker _picker = ImagePicker();
+  final Map<String, int> _fotoVersion = {
+    for (final slot in votacionFotoSlots) slot: 0,
+  };
 
   bool _loading = true;
   bool _saving = false;
@@ -721,12 +724,22 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     final dir = await _getVotacionCacheDir();
     final mesa = _mesaId ?? 0;
     final target = _cachedFotoPath(dir: dir, mesaId: mesa, slot: slot);
+    final targetFile = File(target);
+    final provider = FileImage(targetFile);
+
+    if (await targetFile.exists()) {
+      await provider.evict();
+      await targetFile.delete();
+    }
+
     await _service.compressImageToWebp(
       sourcePath: picked.path,
       targetPath: target,
     );
 
     _localFotos[slot] = target;
+    await FileImage(File(target)).evict();
+    _fotoVersion[slot] = (_fotoVersion[slot] ?? 0) + 1;
     _onDataChanged();
 
     if (mounted) {
@@ -1569,7 +1582,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   Widget _photoPreview(String slot) {
     final localPath = _localFotos[slot];
     if (localPath != null && localPath.isNotEmpty) {
-      return _imgFile(localPath);
+      return _imgFile(localPath, slot: slot);
     }
     return _emptyImage();
   }
@@ -1586,12 +1599,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     );
   }
 
-  Widget _imgFile(String path) {
+  Widget _imgFile(String path, {required String slot}) {
     return Padding(
       padding: const EdgeInsets.only(top: 2),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.file(File(path), height: 130, fit: BoxFit.cover),
+        child: Image.file(
+          File(path),
+          key: ValueKey('$slot:${_fotoVersion[slot] ?? 0}:$path'),
+          height: 130,
+          fit: BoxFit.cover,
+          gaplessPlayback: false,
+        ),
       ),
     );
   }
