@@ -126,7 +126,7 @@ class _LoginViewState extends State<LoginView> {
                             const SizedBox(height: 16),
                             FilledButton(
                               style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFF0B5ED7),
+                                backgroundColor: const Color(0xFFF53333),
                                 foregroundColor: Colors.white,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Recinto;
@@ -14,26 +15,22 @@ class AdminRecintoJefeMapaController extends Controller
     {
         $user = $request->user();
 
-        // Admin ve TODOS sus recintos asignados
         if ($user->role === 'Administrador') {
-            return Recinto::with(['jefe:id,name,username'])
+            return Recinto::with(['jefe:id,name,username,celular'])
                 ->withCount([
                     'mesas',
                     'mesas as mesas_asignadas_count' => function ($qq) {
                         $qq->whereNotNull('delegado_id');
                     }
                 ])
-//                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id))
-                //        &pais_id=1&departamento_id=5&provincia_id=57&municipio_id=191&localidad_id=1988&page=1&per_page=10
                 ->where('pais_id', 1)
                 ->where('departamento_id', 5)
-//                ->where('provincia_id', 57)
-//                ->where('municipio_id', 191)
-//                ->where('localidad_id', 1988)
                 ->get()
                 ->map(function ($r) {
-                    $total = (int)($r->mesas_count ?? 0);
-                    $asignadas = (int)($r->mesas_asignadas_count ?? 0);
+                    $jefes = collect($r->jefe ?? [])->values()->sortBy('name')->values();
+                    $r->setRelation('jefe', $jefes);
+                    $total = (int) ($r->mesas_count ?? 0);
+                    $asignadas = (int) ($r->mesas_asignadas_count ?? 0);
                     $delegadosOk = $total > 0 ? ($asignadas >= $total) : true;
                     $r->mesas_total = $total;
                     $r->mesas_asignadas = $asignadas;
@@ -43,9 +40,8 @@ class AdminRecintoJefeMapaController extends Controller
                 });
         }
 
-        // Supervisor ve SOLO sus recintos
         if ($user->role === 'Supervisor') {
-            return Recinto::with(['jefe:id,name,username'])
+            return Recinto::with(['jefe:id,name,username,celular'])
                 ->withCount([
                     'mesas',
                     'mesas as mesas_asignadas_count' => function ($qq) {
@@ -55,8 +51,10 @@ class AdminRecintoJefeMapaController extends Controller
                 ->whereHas('users', fn ($q) => $q->where('users.id', $user->id))
                 ->get()
                 ->map(function ($r) {
-                    $total = (int)($r->mesas_count ?? 0);
-                    $asignadas = (int)($r->mesas_asignadas_count ?? 0);
+                    $jefes = collect($r->jefe ?? [])->values()->sortBy('name')->values();
+                    $r->setRelation('jefe', $jefes);
+                    $total = (int) ($r->mesas_count ?? 0);
+                    $asignadas = (int) ($r->mesas_asignadas_count ?? 0);
                     $delegadosOk = $total > 0 ? ($asignadas >= $total) : true;
                     $r->mesas_total = $total;
                     $r->mesas_asignadas = $asignadas;
@@ -76,42 +74,48 @@ class AdminRecintoJefeMapaController extends Controller
     {
         $user = $request->user();
 
-        if (!in_array($user->role, ['Administrador','Supervisor'])) {
+        if (!in_array($user->role, ['Administrador', 'Supervisor'])) {
             return response()->json([], 403);
         }
+
         if ($user->role === 'Administrador') {
             return User::where('role', 'Jefe de Recinto')
-                ->select('id','name','username')
+                ->select('id', 'name', 'username', 'celular')
                 ->orderBy('name')
                 ->get();
-
         }
 
         return $user->jefesAsignados()
-            ->select('users.id','users.name','users.username')  // ✅ prefijo users.
+            ->select('users.id', 'users.name', 'users.username', 'users.celular')
             ->orderBy('users.name')
             ->get();
     }
 
-
     /**
-     * Asignar jefe a recinto
+     * Asignar multiples jefes a recinto
      */
     public function asignar(Request $request, Recinto $recinto)
     {
         $data = $request->validate([
-            'jefe_id' => 'required|exists:users,id'
+            'jefe_ids' => 'present|array',
+            'jefe_ids.*' => 'integer|exists:users,id',
         ]);
 
-        // validar que el jefe sea JEFE DE RECINTO
-        $jefe = User::findOrFail($data['jefe_id']);
-        if ($jefe->role !== 'Jefe de Recinto') {
-            return response()->json(['message'=>'Usuario no es Jefe de Recinto'], 422);
+        $ids = collect($data['jefe_ids'] ?? [])->map(fn ($id) => (int) $id)->unique()->values();
+
+        if ($ids->isNotEmpty()) {
+            $validCount = User::query()
+                ->whereIn('id', $ids)
+                ->where('role', 'Jefe de Recinto')
+                ->count();
+
+            if ($validCount !== $ids->count()) {
+                return response()->json(['message' => 'Uno o mas usuarios no son Jefe de Recinto'], 422);
+            }
         }
 
-        // reemplaza asignación
-        $recinto->jefe()->sync([$jefe->id]);
+        $recinto->jefe()->sync($ids->all());
 
-        return response()->json(['ok'=>true]);
+        return response()->json(['ok' => true]);
     }
 }

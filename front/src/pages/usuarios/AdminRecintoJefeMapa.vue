@@ -6,7 +6,7 @@
           Asignacion de Jefes por Recinto (Mapa)
           <q-btn icon="refresh" round dense flat class="q-ml-sm" @click="load" />
         </div>
-        <div class="text-caption text-grey-7">Selecciona un recinto en el mapa y asigna su jefe</div>
+        <div class="text-caption text-grey-7">Selecciona un recinto en el mapa y asigna sus jefes</div>
 
         <div class="row items-center q-col-gutter-sm q-mt-sm">
           <div class="col-auto">
@@ -104,7 +104,7 @@
               <div class="text-subtitle1 text-weight-bold">{{ selected.nombre }}</div>
 
               <q-badge class="q-mt-xs" outline :color="selected?.jefe?.length ? 'positive' : 'negative'">
-                {{ selected?.jefe?.length ? `Actual: ${selected.jefe[0].name}` : 'Sin jefe asignado' }}
+                {{ selected?.jefe?.length ? `${selected.jefe.length} jefe(s) asignado(s)` : 'Sin jefe asignado' }}
               </q-badge>
               <div class="row q-gutter-xs q-mt-xs">
                 <q-badge outline color="grey-8">Mesas: {{ selected.mesas_total }}</q-badge>
@@ -114,31 +114,81 @@
                 </q-badge>
               </div>
 
-              <q-select
-                class="q-mt-md"
-                v-model="jefeId"
-                :options="jefesOptions"
-                option-label="name"
-                option-value="id"
-                emit-value
-                map-options
-                label="Jefe de Recinto"
-                use-input
-                input-debounce="0"
-                clearable
-                dense
-                outlined
-                @filter="filterJefes"
-              />
+              <q-card flat bordered class="q-mt-md bg-grey-1">
+                <q-card-section class="q-pb-sm">
+                  <div class="text-subtitle2 text-weight-medium">Jefes asignados</div>
+                </q-card-section>
 
-              <q-btn
-                color="primary"
-                icon="save"
-                label="Asignar"
-                class="q-mt-sm full-width"
-                :disable="!jefeId"
-                @click="save"
-              />
+                <q-card-section class="q-pt-none">
+                  <q-markup-table dense flat bordered separator="horizontal">
+                    <thead>
+                    <tr>
+                      <th class="text-left">Jefe</th>
+                      <th class="text-left">Celular</th>
+                      <th class="text-right" style="width: 90px;">Quitar</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="jefe in (selected.jefe || [])" :key="jefe.id">
+                      <td>
+                        <div class="text-weight-medium">{{ jefe.name }}</div>
+                        <div class="text-caption text-grey-7">{{ jefe.username }}</div>
+                      </td>
+                      <td>{{ jefe.celular || 'Sin celular' }}</td>
+                      <td class="text-right">
+                        <q-btn
+                          flat
+                          dense
+                          color="negative"
+                          icon="delete"
+                          label="Quitar"
+                          no-caps
+                          :loading="savingJefe && pendingJefeActionId === jefe.id"
+                          @click="confirmRemoveJefe(jefe)"
+                        />
+                      </td>
+                    </tr>
+                    <tr v-if="!(selected.jefe || []).length">
+                      <td colspan="3" class="text-center text-grey-7 q-pa-md">
+                        Sin jefes asignados
+                      </td>
+                    </tr>
+                    </tbody>
+                  </q-markup-table>
+                </q-card-section>
+              </q-card>
+
+              <div class="row q-col-gutter-sm q-mt-md">
+                <div class="col-12 col-sm-8">
+                  <q-select
+                    v-model="jefeIdToAdd"
+                    :options="jefesOptions"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    use-input
+                    input-debounce="0"
+                    clearable
+                    dense
+                    outlined
+                    label="Jefe de Recinto"
+                    @filter="filterJefes"
+                  />
+                </div>
+                <div class="col-12 col-sm-4">
+                  <q-btn
+                    color="primary"
+                    icon="add"
+                    label="Agregar"
+                    class="full-width"
+                    no-caps
+                    :disable="!jefeIdToAdd"
+                    :loading="savingJefe && pendingJefeActionId === jefeIdToAdd"
+                    @click="addJefe"
+                  />
+                </div>
+              </div>
 
               <q-separator class="q-my-md" />
 
@@ -236,7 +286,9 @@ export default {
       delegadosOptions: [],
       delegadosOptionsAll: [],
       selected: null,
-      jefeId: null,
+      jefeIdToAdd: null,
+      savingJefe: false,
+      pendingJefeActionId: null,
       mesas: [],
       loadingMesas: false,
       savingMesaId: null,
@@ -258,9 +310,9 @@ export default {
         this.$axios.get('admin/mesas/options/delegados')
       ])
 
-      this.recintos = Array.isArray(r.data) ? r.data : []
+      this.recintos = (Array.isArray(r.data) ? r.data : []).map(this.normalizeRecinto)
       this.jefes = Array.isArray(j.data) ? j.data : []
-      this.jefesOptionsAll = this.jefes
+      this.jefesOptionsAll = this.buildJefesOptions(this.jefes)
       this.jefesOptions = this.jefesOptionsAll
       this.delegadosOptionsAll = (Array.isArray(d.data) ? d.data : []).map(item => ({
         value: item.id,
@@ -277,11 +329,28 @@ export default {
       }
     },
 
+    normalizeRecinto (recinto) {
+      return {
+        ...recinto,
+        jefe: Array.isArray(recinto?.jefe) ? recinto.jefe : []
+      }
+    },
+
+    buildJefesOptions (list) {
+      return (list || []).map(j => ({
+        value: j.id,
+        label: `${j.name || '-'} · ${j.celular || 'Sin celular'}`,
+        search: `${j.name || ''} ${j.username || ''} ${j.celular || ''}`.toLowerCase()
+      }))
+    },
+
     buildOptions (list) {
       return (list || []).map(x => {
-        const jefe = x?.jefe?.[0]
-        const jefeNombre = jefe ? `${jefe.name} (${jefe.username})` : 'Sin jefe asignado'
-        const tieneJefe = !!jefe
+        const jefes = Array.isArray(x?.jefe) ? x.jefe : []
+        const jefeNombre = jefes.length
+          ? jefes.map(j => `${j.name} (${j.celular || j.username || 'sin dato'})`).join(', ')
+          : 'Sin jefe asignado'
+        const tieneJefe = jefes.length > 0
         const mesasTotal = Number(x?.mesas_total || 0)
         const mesasAsignadas = Number(x?.mesas_asignadas || 0)
         const okDelegados = tieneJefe && (mesasTotal === 0 || mesasAsignadas >= mesasTotal)
@@ -320,15 +389,19 @@ export default {
       update(() => {
         const needle = String(val || '').toLowerCase().trim()
         if (!needle) {
-          this.jefesOptions = this.jefesOptionsAll
+          this.jefesOptions = this.availableJefesOptions()
           return
         }
 
-        this.jefesOptions = (this.jefesOptionsAll || []).filter(j =>
-          String(j.name || '').toLowerCase().includes(needle) ||
-          String(j.username || '').toLowerCase().includes(needle)
+        this.jefesOptions = this.availableJefesOptions().filter(j =>
+          String(j.search || '').includes(needle)
         )
       })
+    },
+
+    availableJefesOptions () {
+      const assignedIds = new Set((this.selected?.jefe || []).map(j => j.id))
+      return (this.jefesOptionsAll || []).filter(j => !assignedIds.has(j.value))
     },
 
     filterDelegados (val, update) {
@@ -364,11 +437,54 @@ export default {
     },
 
     async onSelectRecinto (recinto) {
-      this.selected = { ...recinto }
-      this.jefeId = recinto.jefe?.[0]?.id ?? null
-      this.jefesOptions = this.jefesOptionsAll
+      this.selected = this.normalizeRecinto(recinto)
+      this.jefeIdToAdd = null
+      this.jefesOptions = this.availableJefesOptions()
       this.recintoPick = recinto.id
       await this.loadMesas()
+    },
+
+    async persistJefes (ids, successMessage) {
+      this.savingJefe = true
+      try {
+        await this.$axios.put(
+          `admin/mapa-recintos/recintos/${this.selected.id}/jefe`,
+          { jefe_ids: ids }
+        )
+        this.$alert.success(successMessage)
+        await this.load()
+      } catch (e) {
+        this.$alert?.error(e.response?.data?.message || 'No se pudo guardar jefes')
+      } finally {
+        this.savingJefe = false
+        this.pendingJefeActionId = null
+      }
+    },
+
+    async addJefe () {
+      if (!this.jefeIdToAdd || !this.selected?.id) return
+      const ids = [...new Set([...(this.selected?.jefe || []).map(j => j.id), this.jefeIdToAdd])]
+      this.pendingJefeActionId = this.jefeIdToAdd
+      this.jefeIdToAdd = null
+      await this.persistJefes(ids, 'Jefe agregado')
+    },
+
+    confirmRemoveJefe (jefe) {
+      this.$q.dialog({
+        title: 'Confirmar',
+        message: `Quitar a ${jefe.name} de este recinto?`,
+        cancel: true,
+        persistent: true
+      }).onOk(() => {
+        this.removeJefe(jefe)
+      })
+    },
+
+    async removeJefe (jefe) {
+      if (!this.selected?.id) return
+      this.pendingJefeActionId = jefe.id
+      const ids = (this.selected?.jefe || []).map(j => j.id).filter(id => id !== jefe.id)
+      await this.persistJefes(ids, 'Jefe quitado')
     },
 
     async loadMesas () {
@@ -397,21 +513,6 @@ export default {
         this.$alert?.error(e.response?.data?.message || 'No se pudo cargar mesas del recinto')
       } finally {
         this.loadingMesas = false
-      }
-    },
-
-    async save () {
-      await this.$axios.put(
-        `admin/mapa-recintos/recintos/${this.selected.id}/jefe`,
-        { jefe_id: this.jefeId }
-      )
-      this.$alert.success('Jefe asignado')
-      await this.load()
-
-      const again = (this.recintos || []).find(x => x.id === this.selected.id)
-      if (again) {
-        await this.onSelectRecinto(again)
-        this.focusRecinto = { id: again.id, latitud: again.latitud, longitud: again.longitud }
       }
     },
 

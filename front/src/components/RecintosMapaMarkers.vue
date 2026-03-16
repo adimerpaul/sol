@@ -50,7 +50,8 @@
 
             <div class="q-mt-xs">
               <span v-if="r.jefe?.length" class="text-positive">
-                Jefe: {{ r.jefe[0].name }} ({{ r.jefe[0].username }})
+                Jefes:
+                {{ r.jefe.map(j => `${j.name} (${j.celular || j.username})`).join(', ') }}
               </span>
               <span v-else class="text-negative">Sin jefe asignado</span>
             </div>
