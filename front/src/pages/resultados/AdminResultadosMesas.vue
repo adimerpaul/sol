@@ -586,7 +586,7 @@
                        <div v-for="p in partidosGobernador" :key="'gob_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                          <div class="col-12 col-md-7 row items-center">
                            <div v-if="p.icono" class="q-mr-sm">
-                             <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
+                             <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
                            </div>
                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
                              {{ p.sigla }}
@@ -610,7 +610,7 @@
                        <div v-for="p in partidosAsambleistaDistrito" :key="'asd_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                          <div class="col-12 col-md-7 row items-center">
                            <div v-if="p.icono" class="q-mr-sm">
-                             <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
+                             <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
                            </div>
                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
                              {{ p.sigla }}
@@ -634,7 +634,7 @@
                        <div v-for="p in partidosAsambleistaPoblacion" :key="'asp_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                          <div class="col-12 col-md-7 row items-center">
                            <div v-if="p.icono" class="q-mr-sm">
-                             <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
+                             <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
                            </div>
                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
                              {{ p.sigla }}
@@ -657,7 +657,7 @@
                         <div v-for="p in partidosAlcalde" :key="'alc_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                           <div class="col-12 col-md-7 row items-center">
                             <div v-if="p.icono" class="q-mr-sm">
-                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
+                              <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
                             </div>
                             <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
                               {{ p.sigla }}
@@ -680,7 +680,7 @@
                         <div v-for="p in partidosConcejal" :key="'con_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                           <div class="col-12 col-md-7 row items-center">
                             <div v-if="p.icono" class="q-mr-sm">
-                              <q-img :src="$url + '/../images/partidos/' + p.icono" style="width:26px; height:26px;" />
+                              <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
                             </div>
                             <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
                               {{ p.sigla }}
@@ -1461,17 +1461,22 @@ export default {
       }
     },
 
+    getImageUrl (path) {
+      if (!path) return null
+      if (path.startsWith('http')) return path
+      const baseUrl = this.$url.split('/api')[0] || this.$url
+      return baseUrl + (path.startsWith('/') ? '' : '/') + path
+    },
+
     // preview: primero archivo local, si no hay -> foto server
     fotoPreview (n) {
       const key = `foto${n}`
-      // console.log('fotoPreview', key, this.fotos[key], this.fotosServer[`${key}_url`])
       const f =  this.fotos[key]
-      // console.log('fotoPreview file', f)
       if (f) return URL.createObjectURL(f)
       if (this.fotosToClear[key]) return null
-      // console.log('fotoPreview server', this.fotosServer[`${key}_url`])
+      
       const serverUrl = this.fotosServer[`${key}_url`]
-      return serverUrl ? (this.$url + '/..' + serverUrl) : null
+      return this.getImageUrl(serverUrl)
     },
 
     openPhotoExternal (n) {

@@ -12,6 +12,8 @@ import '../../models/mobile_login_response.dart';
 import '../../models/votacion_model.dart';
 import '../../services/mobile_auth_local_store.dart';
 import '../../services/mobile_votacion_service.dart';
+import '../../services/document_scan_helper.dart';
+import '../image_enhance_screen.dart';
 
 class AlcaldeConcejalPage extends StatefulWidget {
   const AlcaldeConcejalPage({super.key});
@@ -718,8 +720,29 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     );
     if (source == null) return;
 
-    final picked = await _picker.pickImage(source: source, imageQuality: 100);
-    if (picked == null) return;
+    String? imagePath;
+    
+    if (source == ImageSource.camera) {
+      // Usar escáner nativo con detección de bordes
+      imagePath = await DocumentScanHelper.scanDocument(context);
+    } else {
+      // Mantener picker regular para la galería
+      final picked = await _picker.pickImage(source: source, imageQuality: 100);
+      imagePath = picked?.path;
+    }
+
+    if (imagePath == null) return;
+
+    // Abrir pantalla intermedia de optimización/filtros
+    if (!mounted) return;
+    final finalImagePath = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ImageEnhanceScreen(imagePath: imagePath!),
+      ),
+    );
+
+    if (finalImagePath == null) return; // El usuario canceló o retrocedió
 
     final dir = await _getVotacionCacheDir();
     final mesa = _mesaId ?? 0;
@@ -732,8 +755,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       await targetFile.delete();
     }
 
+    // Comprimir al formato final esperado
     await _service.compressImageToWebp(
-      sourcePath: picked.path,
+      sourcePath: finalImagePath,
       targetPath: target,
     );
 
