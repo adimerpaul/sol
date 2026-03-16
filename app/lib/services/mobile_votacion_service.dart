@@ -172,7 +172,7 @@ class MobileVotacionService {
     final compressed = await FlutterImageCompress.compressAndGetFile(
       sourcePath,
       targetPath,
-      quality: 90,
+      quality: 75,
       format: CompressFormat.webp,
       keepExif: true,
     );

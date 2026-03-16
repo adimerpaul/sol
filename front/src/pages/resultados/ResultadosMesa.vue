@@ -376,14 +376,20 @@ export default {
   },
 
   methods: {
+    getBaseUrl () {
+      return this.$url.split('/api')[0] || this.$url
+    },
+
     partyLogoUrl (filename) {
-      // logos en /public/images/partidos/
-      return `${this.$url}/../images/partidos/${filename}`
+      if (!filename) return null
+      if (filename.startsWith('http')) return filename
+      return `${this.getBaseUrl()}/images/partidos/${filename}`
     },
 
     actaUrl (filename) {
-      // actas en /public/actas/
-      return `${this.$url}/../actas/${filename}`
+      if (!filename) return null
+      if (filename.startsWith('http')) return filename
+      return `${this.getBaseUrl()}/actas/${filename}`
     },
 
     async loadAll () {

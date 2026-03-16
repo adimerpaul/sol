@@ -664,7 +664,7 @@ export default {
       try {
         const res = await this.$axios.get('admin/recintos-oruro-city', {
           params: {
-            per_page: 30,
+            per_page: 500,
             search: search || undefined
           }
         })
