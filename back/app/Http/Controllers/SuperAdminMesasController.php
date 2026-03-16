@@ -92,7 +92,7 @@ class SuperAdminMesasController extends Controller
                 'departamento:id,nombre',
                 'provincia:id,nombre',
                 'municipio:id,nombre',
-                'delegado:id,name,username',
+                'delegado:id,name,username,celular',
                 'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos'
             ])
             ->whereHas('recinto', $scopeRecinto)
@@ -139,6 +139,7 @@ class SuperAdminMesasController extends Controller
                         'id' => $m->delegado->id,
                         'name' => $m->delegado->name,
                         'username' => $m->delegado->username,
+                        'celular' => $m->delegado->celular,
                     ] : null,
 
                     'estado' => $m->estado,
@@ -191,6 +192,7 @@ class SuperAdminMesasController extends Controller
                     'id' => $m->delegado->id,
                     'name' => $m->delegado->name,
                     'username' => $m->delegado->username,
+                    'celular' => $m->delegado->celular,
                 ] : null,
                 'estado' => $m->estado,
                 'tiene_resultado' => (bool) $m->resultado,
@@ -314,7 +316,7 @@ class SuperAdminMesasController extends Controller
 
         $mesa->load([
             'recinto:id,nombre',
-            'delegado:id,name,username',
+            'delegado:id,name,username,celular',
             'provincia:id,nombre',
             'municipio:id,nombre',
         ]);
@@ -330,6 +332,7 @@ class SuperAdminMesasController extends Controller
                 'id' => $mesa->delegado->id,
                 'name' => $mesa->delegado->name,
                 'username' => $mesa->delegado->username,
+                'celular' => $mesa->delegado->celular,
             ] : null,
         ];
 

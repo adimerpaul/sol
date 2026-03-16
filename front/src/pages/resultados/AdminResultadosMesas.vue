@@ -248,8 +248,20 @@
             </td>
 
             <td class="text-left">
-              <q-badge outline :color="r.delegado ? 'positive' : 'negative'">
-                {{ r.delegado ? (r.delegado.name + ' (' + r.delegado.username + ')') : 'SIN ASIGNAR' }}
+              <div v-if="r.delegado">
+                <div class="text-weight-medium">{{ r.delegado.name }}</div>
+                <div class="text-caption text-grey-7">
+                  <strong>Username:</strong>
+                  {{ r.delegado.username }}
+                </div>
+                <div class="text-caption text-grey-7">
+                  <strong>Celular:</strong>
+                  {{ r.delegado.celular || 'Sin celular' }}
+<!--                  <pre>{{r.delegado}}</pre>-->
+                </div>
+              </div>
+              <q-badge v-else outline color="negative">
+                SIN ASIGNAR
               </q-badge>
             </td>
 
@@ -804,7 +816,7 @@ export default {
         {label:'Todos', value:'ALL'},
         {label:'Con resultado', value:'YES'},
         {label:'Sin resultado', value:'NO'}
-      ], 
+      ],
 
       geoOptions: {
         departamentos: [],
