@@ -78,14 +78,14 @@ class RecintoController extends Controller
     public function oruroCity(Request $request)
     {
         $search = trim((string)$request->get('search', ''));
+        $departamentoId = (int) $request->get('departamento_id', 5);
 
-        // Municipio ID 191 is Oruro City
         $q = Recinto::query()
-//            departamento_id de oruro
-//            ->where('municipio_id', 191)
-            ->where('departamento_id', 9)
-            ->when($search !== '', fn($qq) => $qq->where('nombre','like',"%{$search}%"));
+            ->where('departamento_id', $departamentoId)
+            ->when($search !== '', function ($qq) use ($search) {
+                $qq->whereRaw('LOWER(nombre) LIKE ?', ['%' . mb_strtolower($search) . '%']);
+            });
 
-        return $q->orderBy('nombre')->paginate($request->get('per_page', 25));
+        return $q->orderBy('nombre')->get(['id', 'nombre']);
     }
 }

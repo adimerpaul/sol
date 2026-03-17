@@ -664,12 +664,13 @@ export default {
       try {
         const res = await this.$axios.get('admin/recintos-oruro-city', {
           params: {
-            per_page: 500,
             search: search || undefined
           }
         })
 
-        const rows = Array.isArray(res?.data?.data) ? res.data.data : []
+        const rows = Array.isArray(res?.data)
+          ? res.data
+          : (Array.isArray(res?.data?.data) ? res.data.data : [])
         this.recintoOptions = rows.map(r => ({
           label: r.nombre,
           value: r.id
