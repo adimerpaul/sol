@@ -162,15 +162,34 @@
               />
             </div>
             <div class="col-12 col-sm-3">
-              <q-btn
+              <q-btn-dropdown
                 color="teal"
                 icon="download"
-                label="Traer TODO"
+                label="Extraer / Imprimir"
                 no-caps
                 class="full-width"
-                :loading="loadingAll"
-                @click="fetchAll"
-              />
+                :loading="loadingAll || loadingPrint"
+              >
+                <q-list>
+                  <q-item clickable v-close-popup @click="fetchAll">
+                    <q-item-section avatar><q-icon name="download" /></q-item-section>
+                    <q-item-section><q-item-label>Extraer todos</q-item-label></q-item-section>
+                  </q-item>
+                  <q-separator />
+                  <q-item clickable v-close-popup @click="printAsistenciaCapacitacion(true)">
+                    <q-item-section avatar><q-icon name="print" /></q-item-section>
+                    <q-item-section><q-item-label>Imprimir asistencia SI</q-item-label></q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="printAsistenciaCapacitacion(false)">
+                    <q-item-section avatar><q-icon name="print" /></q-item-section>
+                    <q-item-section><q-item-label>Imprimir asistencia NO</q-item-label></q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="printActas">
+                    <q-item-section avatar><q-icon name="description" /></q-item-section>
+                    <q-item-section><q-item-label>Imprimir actas</q-item-label></q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
             </div>
 
           </div>
@@ -214,8 +233,8 @@
         <q-markup-table dense flat bordered separator="horizontal" class="bg-white">
           <thead>
           <tr>
-            <th class="text-center" style="width: 110px;">Acciones</th>
-            <th class="text-left">Mesa</th>
+            <th class="text-center" style="width: 76px;">Acciones</th>
+            <th class="text-left" style="width: 180px;">Mesa</th>
             <th class="text-left">Delegado</th>
             <th class="text-left">Estado</th>
             <th class="text-left">Resultado</th>
@@ -226,7 +245,7 @@
           <tbody v-if="pagedRows.length">
           <tr v-for="(r,i) in pagedRows" :key="r.id">
             <td class="text-center">
-              <q-btn-dropdown dense color="primary" :label="'Acciones ' + (r.id)" no-caps>
+              <q-btn-dropdown dense color="primary" icon="more_horiz" label="" no-caps size="sm">
                 <q-list>
                   <q-item clickable v-close-popup @click="openAsignar(r)">
                     <q-item-section avatar><q-icon name="person_add" /></q-item-section>
@@ -258,6 +277,16 @@
                   <strong>Celular:</strong>
                   {{ r.delegado.celular || 'Sin celular' }}
 <!--                  <pre>{{r.delegado}}</pre>-->
+                </div>
+                <div class="q-mt-xs">
+                  <q-checkbox
+                    v-model="r.asistencia_capacitacion"
+                    dense
+                    size="xs"
+                    label="Capacitacion"
+                    :disable="capacitacionSavingId === r.id"
+                    @update:model-value="val => toggleAsistenciaCapacitacion(r, val)"
+                  />
                 </div>
               </div>
               <q-badge v-else outline color="negative">
@@ -762,9 +791,11 @@ export default {
   data () {
     return {
       loadingAll: false,
+      loadingPrint: false,
       loading: false,
       saving: false,
       loadingMesas: false,
+      capacitacionSavingId: null,
 
       // datos
       allRows: [],
@@ -1119,6 +1150,22 @@ export default {
       if (e === 'OBSERVADA') return 'negative'
       return 'grey-7'
     },
+    async toggleAsistenciaCapacitacion (row, value) {
+      const previous = !value
+      this.capacitacionSavingId = row.id
+      try {
+        await this.$axios.put(`admin/mesas/${row.id}/asistencia-capacitacion`, {
+          asistencia_capacitacion: value
+        })
+        row.asistencia_capacitacion = value
+        this.$alert.success(value ? 'Asistencia marcada' : 'Asistencia desmarcada')
+      } catch (e) {
+        row.asistencia_capacitacion = previous
+        this.$alert?.error(e.response?.data?.message || 'No se pudo actualizar asistencia')
+      } finally {
+        this.capacitacionSavingId = null
+      }
+    },
     b (val) { return val ? 'positive' : 'grey-6' },
 
     onChangeRowsPerPage () {
@@ -1343,6 +1390,77 @@ export default {
         this.loadingMesas = false
       }
     },
+    buildMesaQueryParams () {
+      return {
+        departamento_id: this.filters.departamento_id || undefined,
+        provincia_id: this.filters.provincia_id || undefined,
+        municipio_id: this.filters.municipio_id || undefined,
+        recinto_id: this.filters.recinto_id || undefined,
+        mesa_id: this.filters.mesa_id || undefined,
+        asignado: this.filters.asignado,
+        delegado_id: this.filters.delegado_id || undefined,
+        estado: this.filters.estado || undefined,
+        con_resultado: this.filters.con_resultado
+      }
+    },
+
+    buildPrintUrl (path, extraParams = {}) {
+      const params = new URLSearchParams()
+      const query = { departamento_id: 5, ...extraParams }
+
+      Object.entries(query).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return
+        params.append(key, value)
+      })
+
+      return `${this.$url}/${path}?${params.toString()}`
+    },
+
+    async openPdfBlob (path, extraParams = {}, filename = 'reporte.pdf') {
+      this.loadingPrint = true
+      try {
+        const url = this.buildPrintUrl(path, extraParams)
+        const response = await this.$axios.get(url, {
+          responseType: 'blob'
+        })
+
+        const blob = new Blob([response.data], { type: 'application/pdf' })
+        const blobUrl = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.target = '_blank'
+        link.rel = 'noopener'
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+
+        setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl)
+        }, 1000)
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo generar el PDF')
+      } finally {
+        this.loadingPrint = false
+      }
+    },
+
+    async printAsistenciaCapacitacion (asistio) {
+      await this.openPdfBlob(
+        'admin/mesas-print/asistencia-capacitacion',
+        { asistio: asistio ? 1 : 0 },
+        asistio ? 'asistencia_capacitacion_si.pdf' : 'asistencia_capacitacion_no.pdf'
+      )
+    },
+
+    async printActas () {
+      await this.openPdfBlob(
+        'admin/mesas-print/actas',
+        {},
+        'actas_mesas.pdf'
+      )
+    },
+
     async fetchAll () {
       this.loadingAll = true
       try {

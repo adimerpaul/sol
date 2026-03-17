@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\SocketEmitter;
 use App\Models\Mesa;
 use App\Models\Partido;
@@ -86,6 +87,7 @@ class SuperAdminMesasController extends Controller
                 'mesas.numero_mesa',
                 'mesas.delegado_id',
                 'mesas.estado',
+                'mesas.asistencia_capacitacion',
             ])
             ->with([
                 'recinto:id,nombre',
@@ -143,6 +145,7 @@ class SuperAdminMesasController extends Controller
                     ] : null,
 
                     'estado' => $m->estado,
+                    'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
 
                     'tiene_resultado' => (bool) $m->resultado,
                     'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
@@ -195,6 +198,7 @@ class SuperAdminMesasController extends Controller
                     'celular' => $m->delegado->celular,
                 ] : null,
                 'estado' => $m->estado,
+                'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
                 'tiene_resultado' => (bool) $m->resultado,
                 'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
                 'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
@@ -253,6 +257,172 @@ class SuperAdminMesasController extends Controller
             ->get();
     }
 
+    public function printAsistenciaCapacitacion(Request $request)
+    {
+        $actor = $request->user();
+        $asistio = $request->boolean('asistio', true);
+
+        $rows = $this->buildMesasPrintBaseQuery($request)
+            ->whereNotNull('mesas.delegado_id')
+            ->where('mesas.asistencia_capacitacion', $asistio)
+            ->get()
+            ->map(function ($m) {
+                return [
+                    'mesa_numero' => $m->numero_mesa,
+                    'recinto_nombre' => $m->recinto?->nombre,
+                    'delegado_nombre' => $m->delegado?->name,
+                    'delegado_username' => $m->delegado?->username,
+                    'delegado_celular' => $m->delegado?->celular,
+                    'estado' => $m->estado,
+                ];
+            })
+            ->sortBy([
+                ['delegado_nombre', 'asc'],
+                ['delegado_username', 'asc'],
+                ['mesa_numero', 'asc'],
+            ])
+            ->values();
+
+        $pdf = Pdf::loadView('pdf.mesas_asistencia_capacitacion', [
+            'title' => $asistio
+                ? 'Asistencia a Capacitacion · Asistieron'
+                : 'Asistencia a Capacitacion · No asistieron',
+            'rows' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('mesas_asistencia_capacitacion_' . ($asistio ? 'si' : 'no') . '.pdf');
+    }
+
+    public function printActas(Request $request)
+    {
+        $actor = $request->user();
+
+        $rows = $this->buildMesasPrintBaseQuery($request)
+            ->get()
+            ->map(function ($m) {
+                return [
+                    'mesa_numero' => $m->numero_mesa,
+                    'recinto_nombre' => $m->recinto?->nombre,
+                    'municipio_nombre' => $m->municipio?->nombre,
+                    'provincia_nombre' => $m->provincia?->nombre,
+                    'delegado_nombre' => $m->delegado?->name,
+                    'delegado_username' => $m->delegado?->username,
+                    'estado' => $m->estado,
+                    'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
+                ];
+            })
+            ->sortBy([
+                ['provincia_nombre', 'asc'],
+                ['municipio_nombre', 'asc'],
+                ['recinto_nombre', 'asc'],
+                ['mesa_numero', 'asc'],
+            ])
+            ->values();
+
+        $pdf = Pdf::loadView('pdf.mesas_actas_list', [
+            'title' => 'Listado de Actas / Mesas',
+            'rows' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('mesas_actas_list.pdf');
+    }
+
+    private function buildMesasBaseQuery(Request $request)
+    {
+        $departamentoId = $request->get('departamento_id', 5);
+        $provinciaId = $request->get('provincia_id');
+        $municipioId = $request->get('municipio_id');
+        $recintoId = $request->get('recinto_id');
+        $mesaId = $request->get('mesa_id');
+        $asignado = $request->get('asignado', 'ALL');
+        $delegadoId = $request->get('delegado_id');
+        $estado = $request->get('estado');
+        $conResultado = $request->get('con_resultado', 'ALL');
+
+        $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $recintoId) {
+            $qq->whereNull('deleted_at')
+                ->where('departamento_id', $departamentoId)
+                ->when($provinciaId, fn($q) => $q->where('provincia_id', $provinciaId))
+                ->when($municipioId, fn($q) => $q->where('municipio_id', $municipioId))
+                ->when($recintoId, fn($q) => $q->where('id', $recintoId));
+        };
+
+        return Mesa::query()
+            ->select([
+                'mesas.id',
+                'mesas.departamento_id',
+                'mesas.provincia_id',
+                'mesas.municipio_id',
+                'mesas.recinto_id',
+                'mesas.numero_mesa',
+                'mesas.delegado_id',
+                'mesas.estado',
+                'mesas.asistencia_capacitacion',
+            ])
+            ->with([
+                'recinto:id,nombre',
+                'provincia:id,nombre',
+                'municipio:id,nombre',
+                'delegado:id,name,username,celular',
+                'resultado:id,mesa_id',
+            ])
+            ->whereHas('recinto', $scopeRecinto)
+            ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
+            ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
+            ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
+            ->when($asignado !== 'ALL', function ($qq) use ($asignado) {
+                if ($asignado === 'YES') {
+                    $qq->whereNotNull('mesas.delegado_id');
+                }
+                if ($asignado === 'NO') {
+                    $qq->whereNull('mesas.delegado_id');
+                }
+            })
+            ->when($conResultado !== 'ALL', function ($qq) use ($conResultado) {
+                if ($conResultado === 'YES') {
+                    $qq->whereHas('resultado');
+                }
+                if ($conResultado === 'NO') {
+                    $qq->whereDoesntHave('resultado');
+                }
+            });
+    }
+
+    private function buildMesasPrintBaseQuery(Request $request)
+    {
+        $departamentoId = (int) $request->get('departamento_id', 5);
+
+        $scopeRecinto = function ($qq) use ($departamentoId) {
+            $qq->whereNull('deleted_at')
+                ->where('departamento_id', $departamentoId);
+        };
+
+        return Mesa::query()
+            ->select([
+                'mesas.id',
+                'mesas.departamento_id',
+                'mesas.provincia_id',
+                'mesas.municipio_id',
+                'mesas.recinto_id',
+                'mesas.numero_mesa',
+                'mesas.delegado_id',
+                'mesas.estado',
+                'mesas.asistencia_capacitacion',
+            ])
+            ->with([
+                'recinto:id,nombre',
+                'provincia:id,nombre',
+                'municipio:id,nombre',
+                'delegado:id,name,username,celular',
+                'resultado:id,mesa_id',
+            ])
+            ->whereHas('recinto', $scopeRecinto);
+    }
+
     // combos (mesas por recinto)
     // GET /api/admin/mesas/options/mesas?recinto_id=
     public function mesasOptions(Request $request)
@@ -303,6 +473,21 @@ class SuperAdminMesasController extends Controller
         $mesa->save();
 
         return response()->json(['message' => 'Mesa liberada']);
+    }
+
+    public function asistenciaCapacitacion(Request $request, Mesa $mesa)
+    {
+        $data = $request->validate([
+            'asistencia_capacitacion' => 'required|boolean',
+        ]);
+
+        $mesa->asistencia_capacitacion = (bool) $data['asistencia_capacitacion'];
+        $mesa->save();
+
+        return response()->json([
+            'message' => 'Asistencia de capacitacion actualizada',
+            'asistencia_capacitacion' => (bool) $mesa->asistencia_capacitacion,
+        ]);
     }
 
     // GET /api/admin/mesas/{mesa}/resultado
