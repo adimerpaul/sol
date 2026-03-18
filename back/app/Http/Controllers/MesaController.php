@@ -31,7 +31,7 @@ class MesaController extends Controller
                 'localidad:id,nombre',
                 'recinto:id,nombre',
             ])
-            ->select('id','id_original','pais_id','departamento_id','provincia_id','municipio_id','localidad_id','recinto_id','numero_mesa','created_at')
+            ->select('id','id_original','pais_id','departamento_id','provincia_id','municipio_id','localidad_id','recinto_id','numero_mesa','habilitados','created_at')
             ->when($paisId, fn($qq) => $qq->where('pais_id', $paisId))
             ->when($departamentoId, fn($qq) => $qq->where('departamento_id', $departamentoId))
             ->when($provinciaId, fn($qq) => $qq->where('provincia_id', $provinciaId))
@@ -55,9 +55,11 @@ class MesaController extends Controller
             'recinto_id'        => ['required','exists:recintos,id'],
             // el front usa "nombre" para todo; acá lo convertimos
             'nombre'            => ['required','string','max:50'],
+            'habilitados'       => ['nullable','integer','min:0'],
         ]);
 
         $data['numero_mesa'] = $data['nombre'];
+        $data['habilitados'] = (int) ($data['habilitados'] ?? 260);
         unset($data['nombre']);
 
         $row = Mesa::create($data);
@@ -80,6 +82,7 @@ class MesaController extends Controller
 //            'localidad_id'      => ['required','exists:localidades,id'],
 //            'recinto_id'        => ['required','exists:recintos,id'],
             'numero_mesa'       => ['required','string','max:50'],
+            'habilitados'       => ['required','integer','min:0'],
         ]);
 
         $mesa->update($data);

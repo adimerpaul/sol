@@ -125,6 +125,7 @@
                     <tr>
                       <th class="text-left">Jefe</th>
                       <th class="text-left">Celular</th>
+                      <th class="text-center" style="width: 110px;">Super jefe</th>
                       <th class="text-right" style="width: 90px;">Quitar</th>
                     </tr>
                     </thead>
@@ -135,6 +136,14 @@
                         <div class="text-caption text-grey-7">{{ jefe.username }}</div>
                       </td>
                       <td>{{ jefe.celular || 'Sin celular' }}</td>
+                      <td class="text-center">
+                        <q-checkbox
+                          :model-value="!!jefe.super_jefe"
+                          dense
+                          :disable="savingJefe"
+                          @update:model-value="toggleSuperJefe(jefe, $event)"
+                        />
+                      </td>
                       <td class="text-right">
                         <q-btn
                           flat
@@ -149,7 +158,7 @@
                       </td>
                     </tr>
                     <tr v-if="!(selected.jefe || []).length">
-                      <td colspan="3" class="text-center text-grey-7 q-pa-md">
+                      <td colspan="4" class="text-center text-grey-7 q-pa-md">
                         Sin jefes asignados
                       </td>
                     </tr>
@@ -332,7 +341,12 @@ export default {
     normalizeRecinto (recinto) {
       return {
         ...recinto,
-        jefe: Array.isArray(recinto?.jefe) ? recinto.jefe : []
+        jefe: Array.isArray(recinto?.jefe)
+          ? recinto.jefe.map(jefe => ({
+            ...jefe,
+            super_jefe: !!jefe.super_jefe
+          }))
+          : []
       }
     },
 
@@ -444,17 +458,28 @@ export default {
       await this.loadMesas()
     },
 
-    async persistJefes (ids, successMessage) {
+    currentJefesPayload (overrideJefes = null) {
+      const list = Array.isArray(overrideJefes) ? overrideJefes : (this.selected?.jefe || [])
+
+      return list.map(jefe => ({
+        id: jefe.id,
+        super_jefe: !!jefe.super_jefe
+      }))
+    },
+
+    async persistJefes (jefes, successMessage) {
       this.savingJefe = true
       try {
         await this.$axios.put(
           `admin/mapa-recintos/recintos/${this.selected.id}/jefe`,
-          { jefe_ids: ids }
+          { jefes }
         )
         this.$alert.success(successMessage)
         await this.load()
+        return true
       } catch (e) {
         this.$alert?.error(e.response?.data?.message || 'No se pudo guardar jefes')
+        return false
       } finally {
         this.savingJefe = false
         this.pendingJefeActionId = null
@@ -463,10 +488,14 @@ export default {
 
     async addJefe () {
       if (!this.jefeIdToAdd || !this.selected?.id) return
-      const ids = [...new Set([...(this.selected?.jefe || []).map(j => j.id), this.jefeIdToAdd])]
+      const actuales = this.currentJefesPayload()
+      const existe = actuales.some(j => j.id === this.jefeIdToAdd)
+      const jefes = existe
+        ? actuales
+        : [...actuales, { id: this.jefeIdToAdd, super_jefe: false }]
       this.pendingJefeActionId = this.jefeIdToAdd
       this.jefeIdToAdd = null
-      await this.persistJefes(ids, 'Jefe agregado')
+      await this.persistJefes(jefes, 'Jefe agregado')
     },
 
     confirmRemoveJefe (jefe) {
@@ -483,8 +512,21 @@ export default {
     async removeJefe (jefe) {
       if (!this.selected?.id) return
       this.pendingJefeActionId = jefe.id
-      const ids = (this.selected?.jefe || []).map(j => j.id).filter(id => id !== jefe.id)
-      await this.persistJefes(ids, 'Jefe quitado')
+      const jefes = this.currentJefesPayload(this.selected?.jefe || []).filter(item => item.id !== jefe.id)
+      await this.persistJefes(jefes, 'Jefe quitado')
+    },
+
+    async toggleSuperJefe (jefe, value) {
+      if (!this.selected?.id) return
+
+      const previous = !!jefe.super_jefe
+      jefe.super_jefe = !!value
+      this.pendingJefeActionId = jefe.id
+
+      const ok = await this.persistJefes(this.currentJefesPayload(), 'Super jefe actualizado')
+      if (!ok) {
+        jefe.super_jefe = previous
+      }
     },
 
     async loadMesas () {

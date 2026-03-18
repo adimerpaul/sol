@@ -85,6 +85,7 @@ class SuperAdminMesasController extends Controller
                 'mesas.municipio_id',
                 'mesas.recinto_id',
                 'mesas.numero_mesa',
+                'mesas.habilitados',
                 'mesas.delegado_id',
                 'mesas.estado',
                 'mesas.asistencia_capacitacion',
@@ -136,6 +137,7 @@ class SuperAdminMesasController extends Controller
                     'recinto_nombre' => $m->recinto?->nombre,
 
                     'numero_mesa' => $m->numero_mesa,
+                    'habilitados' => (int) ($m->habilitados ?? 260),
                     'delegado_id' => $m->delegado_id,
                     'delegado' => $m->delegado ? [
                         'id' => $m->delegado->id,
@@ -190,6 +192,7 @@ class SuperAdminMesasController extends Controller
                 'recinto_id' => $m->recinto_id,
                 'recinto_nombre' => $m->recinto?->nombre,
                 'numero_mesa' => $m->numero_mesa,
+                'habilitados' => (int) ($m->habilitados ?? 260),
                 'delegado_id' => $m->delegado_id,
                 'delegado' => $m->delegado ? [
                     'id' => $m->delegado->id,
@@ -359,6 +362,7 @@ class SuperAdminMesasController extends Controller
                 'mesas.municipio_id',
                 'mesas.recinto_id',
                 'mesas.numero_mesa',
+                'mesas.habilitados',
                 'mesas.delegado_id',
                 'mesas.estado',
                 'mesas.asistencia_capacitacion',
@@ -409,6 +413,7 @@ class SuperAdminMesasController extends Controller
                 'mesas.municipio_id',
                 'mesas.recinto_id',
                 'mesas.numero_mesa',
+                'mesas.habilitados',
                 'mesas.delegado_id',
                 'mesas.estado',
                 'mesas.asistencia_capacitacion',

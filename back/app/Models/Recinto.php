@@ -49,7 +49,7 @@ class Recinto extends Model implements Auditable
             'recinto_jefe',
             'recinto_id',
             'jefe_id'
-        )->withTimestamps()->withTrashed();
+        )->withPivot('super_jefe')->withTimestamps()->withTrashed();
     }
 
 }

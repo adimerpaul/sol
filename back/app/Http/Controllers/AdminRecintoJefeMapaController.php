@@ -27,7 +27,14 @@ class AdminRecintoJefeMapaController extends Controller
                 ->where('departamento_id', 5)
                 ->get()
                 ->map(function ($r) {
-                    $jefes = collect($r->jefe ?? [])->values()->sortBy('name')->values();
+                    $jefes = collect($r->jefe ?? [])
+                        ->map(function ($jefe) {
+                            $jefe->super_jefe = (bool) ($jefe->pivot->super_jefe ?? false);
+                            return $jefe;
+                        })
+                        ->values()
+                        ->sortBy('name')
+                        ->values();
                     $r->setRelation('jefe', $jefes);
                     $total = (int) ($r->mesas_count ?? 0);
                     $asignadas = (int) ($r->mesas_asignadas_count ?? 0);
@@ -51,7 +58,14 @@ class AdminRecintoJefeMapaController extends Controller
                 ->whereHas('users', fn ($q) => $q->where('users.id', $user->id))
                 ->get()
                 ->map(function ($r) {
-                    $jefes = collect($r->jefe ?? [])->values()->sortBy('name')->values();
+                    $jefes = collect($r->jefe ?? [])
+                        ->map(function ($jefe) {
+                            $jefe->super_jefe = (bool) ($jefe->pivot->super_jefe ?? false);
+                            return $jefe;
+                        })
+                        ->values()
+                        ->sortBy('name')
+                        ->values();
                     $r->setRelation('jefe', $jefes);
                     $total = (int) ($r->mesas_count ?? 0);
                     $asignadas = (int) ($r->mesas_asignadas_count ?? 0);
@@ -97,11 +111,32 @@ class AdminRecintoJefeMapaController extends Controller
     public function asignar(Request $request, Recinto $recinto)
     {
         $data = $request->validate([
-            'jefe_ids' => 'present|array',
+            'jefes' => 'nullable|array',
+            'jefes.*.id' => 'required|integer|exists:users,id',
+            'jefes.*.super_jefe' => 'nullable|boolean',
+            'jefe_ids' => 'nullable|array',
             'jefe_ids.*' => 'integer|exists:users,id',
         ]);
 
-        $ids = collect($data['jefe_ids'] ?? [])->map(fn ($id) => (int) $id)->unique()->values();
+        $jefes = collect($data['jefes'] ?? [])
+            ->map(function ($item) {
+                return [
+                    'id' => (int) ($item['id'] ?? 0),
+                    'super_jefe' => (bool) ($item['super_jefe'] ?? false),
+                ];
+            })
+            ->filter(fn ($item) => $item['id'] > 0)
+            ->unique('id')
+            ->values();
+
+        if ($jefes->isEmpty() && array_key_exists('jefe_ids', $data)) {
+            $jefes = collect($data['jefe_ids'] ?? [])
+                ->map(fn ($id) => ['id' => (int) $id, 'super_jefe' => false])
+                ->unique('id')
+                ->values();
+        }
+
+        $ids = $jefes->pluck('id')->values();
 
         if ($ids->isNotEmpty()) {
             $validCount = User::query()
@@ -114,7 +149,13 @@ class AdminRecintoJefeMapaController extends Controller
             }
         }
 
-        $recinto->jefe()->sync($ids->all());
+        $payload = $jefes
+            ->mapWithKeys(fn ($item) => [
+                $item['id'] => ['super_jefe' => (bool) $item['super_jefe']],
+            ])
+            ->all();
+
+        $recinto->jefe()->sync($payload);
 
         return response()->json(['ok' => true]);
     }
