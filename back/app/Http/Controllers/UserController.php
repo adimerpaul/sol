@@ -79,6 +79,46 @@ class UserController extends Controller
         return $data;
     }
 
+    private function buildDelegadoJerarquiaPayload(User $user): ?array
+    {
+        if ((string) ($user->role ?? '') !== 'Delegado de Mesa') {
+            return null;
+        }
+
+        $jefes = collect($user->jefes ?? [])->map(function ($jefe) use ($user) {
+            $recintoPivot = collect($jefe->recintosComoJefe ?? [])
+                ->firstWhere('id', (int) $user->recinto_id);
+
+            $supervisores = collect($jefe->supervisores ?? [])
+                ->map(fn ($supervisor) => [
+                    'id' => $supervisor->id,
+                    'name' => $supervisor->name,
+                    'username' => $supervisor->username,
+                    'celular' => $supervisor->celular,
+                ])
+                ->values();
+
+            return [
+                'id' => $jefe->id,
+                'name' => $jefe->name,
+                'username' => $jefe->username,
+                'celular' => $jefe->celular,
+                'super_jefe' => (bool) ($recintoPivot?->pivot?->super_jefe ?? false),
+                'supervisores' => $supervisores,
+            ];
+        })->values();
+
+        $supervisores = $jefes
+            ->flatMap(fn ($jefe) => $jefe['supervisores'] ?? [])
+            ->unique('id')
+            ->values();
+
+        return [
+            'jefes' => $jefes,
+            'supervisores' => $supervisores,
+        ];
+    }
+
     function permissions()
     {
         return Permission::all();
@@ -265,7 +305,17 @@ class UserController extends Controller
         }
 
         return $q
-            ->with(['permissions:id,name', 'recinto:id,nombre', 'creator:id,name,username'])
+            ->with([
+                'permissions:id,name',
+                'recinto:id,nombre',
+                'creator:id,name,username',
+                'jefes' => fn ($qq) => $qq
+                    ->select('users.id', 'users.name', 'users.username', 'users.celular')
+                    ->with([
+                        'supervisores:id,name,username,celular',
+                        'recintosComoJefe:id,nombre',
+                    ]),
+            ])
             ->orderBy('id', 'desc')
             ->get()
             ->map(function ($u) {
@@ -276,6 +326,7 @@ class UserController extends Controller
                 $u->recinto_nombre = $u->recinto?->nombre;
                 $u->creator_name = $u->creator?->name;
                 $u->creator_username = $u->creator?->username;
+                $u->jerarquia = $this->buildDelegadoJerarquiaPayload($u);
 
                 return $u;
             });

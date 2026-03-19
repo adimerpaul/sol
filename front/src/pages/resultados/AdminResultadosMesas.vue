@@ -164,8 +164,7 @@
             <div class="col-12 col-sm-3">
               <q-btn-dropdown
                 color="teal"
-                icon="download"
-                label="Extraer / Imprimir"
+                label="Imprimir"
                 no-caps
                 class="full-width"
                 :loading="loadingAll || loadingPrint"
