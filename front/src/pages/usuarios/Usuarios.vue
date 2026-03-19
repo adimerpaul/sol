@@ -573,6 +573,18 @@ export default {
   },
 
   methods: {
+    buildRecintoLabel (recinto = {}) {
+      const ubicacion = [
+        recinto?.localidad?.nombre,
+        recinto?.municipio?.nombre,
+        recinto?.provincia?.nombre
+      ].filter(Boolean).join(' / ')
+
+      return ubicacion
+        ? `${recinto?.nombre || 'Recinto'} - ${ubicacion}`
+        : (recinto?.nombre || 'Recinto')
+    },
+
     filterUsers (rows, terms) {
       const needle = String(terms || '').toLowerCase().trim()
       if (!needle) return rows
@@ -652,7 +664,9 @@ export default {
       const exists = this.recintoOptions.some(opt => opt.value === recintoId)
       if (exists) return
 
-      const labelName = this.user?.recinto_nombre || this.user?.recinto?.nombre || `Recinto ${recintoId}`
+      const labelName = this.user?.recinto
+        ? this.buildRecintoLabel(this.user.recinto)
+        : (this.user?.recinto_nombre || `Recinto ${recintoId}`)
       this.recintoOptions = [
         ...this.recintoOptions,
         { label: labelName, value: recintoId }
@@ -672,7 +686,7 @@ export default {
           ? res.data
           : (Array.isArray(res?.data?.data) ? res.data.data : [])
         this.recintoOptions = rows.map(r => ({
-          label: r.nombre,
+          label: this.buildRecintoLabel(r),
           value: r.id
         }))
 

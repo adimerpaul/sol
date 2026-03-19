@@ -81,11 +81,22 @@ class RecintoController extends Controller
         $departamentoId = (int) $request->get('departamento_id', 5);
 
         $q = Recinto::query()
+            ->with([
+                'provincia:id,nombre',
+                'municipio:id,nombre',
+                'localidad:id,nombre',
+            ])
             ->where('departamento_id', $departamentoId)
             ->when($search !== '', function ($qq) use ($search) {
                 $qq->whereRaw('LOWER(nombre) LIKE ?', ['%' . mb_strtolower($search) . '%']);
             });
 
-        return $q->orderBy('nombre')->get(['id', 'nombre']);
+        return $q->orderBy('nombre')->get([
+            'id',
+            'nombre',
+            'provincia_id',
+            'municipio_id',
+            'localidad_id',
+        ]);
     }
 }
