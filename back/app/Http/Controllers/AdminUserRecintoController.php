@@ -9,12 +9,26 @@ use Illuminate\Http\Request;
 
 class AdminUserRecintoController extends Controller
 {
+    public function bootstrap()
+    {
+        return response()->json([
+            'users' => $this->buildUsersPayload(),
+            'recintos' => $this->buildRecintosOruroPayload(),
+            'no_asignados' => $this->buildRecintosNoAsignadosPayload(),
+        ]);
+    }
+
     /**
      * Lista usuarios con:
      * - recintos asignados
      * - TOTAL de mesas asignadas (sumatoria de mesas de sus recintos)
      */
     public function users()
+    {
+        return $this->buildUsersPayload();
+    }
+
+    private function buildUsersPayload()
     {
         return User::query()
             ->select('id','name','username','role','avatar','email')
@@ -39,6 +53,11 @@ class AdminUserRecintoController extends Controller
      * - conteo de mesas por recinto
      */
     public function recintosOruro()
+    {
+        return $this->buildRecintosOruroPayload();
+    }
+
+    private function buildRecintosOruroPayload()
     {
         return Recinto::query()
             ->with([
@@ -80,6 +99,11 @@ class AdminUserRecintoController extends Controller
      * Recintos NO asignados a ningún usuario (ORURO)
      */
     public function recintosNoAsignados()
+    {
+        return $this->buildRecintosNoAsignadosPayload();
+    }
+
+    private function buildRecintosNoAsignadosPayload()
     {
         return Recinto::query()
             ->whereHas('departamento', fn($d) =>

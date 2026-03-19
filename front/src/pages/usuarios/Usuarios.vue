@@ -191,10 +191,12 @@
             class="text-caption text-grey-8 q-mt-xs"
           >
             <div v-for="jefe in props.row.jerarquia.jefes" :key="`jefe-cel-${props.row.id}-${jefe.id}`">
-              Cel. jefe: {{ jefe.celular || 'Sin celular' }}
+              <span class="text-grey-7">{{ jefe.name || jefe.username || 'Jefe' }}:</span>
+              {{ jefe.celular || 'Sin celular' }}
             </div>
             <div v-for="supervisor in (props.row.jerarquia?.supervisores || [])" :key="`sup-cel-${props.row.id}-${supervisor.id}`">
-              Cel. supervisor: {{ supervisor.celular || 'Sin celular' }}
+              <span class="text-grey-7">{{ supervisor.name || supervisor.username || 'Supervisor' }}:</span>
+              {{ supervisor.celular || 'Sin celular' }}
             </div>
           </div>
         </q-td>
