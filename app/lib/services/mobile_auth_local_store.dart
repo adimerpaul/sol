@@ -144,6 +144,7 @@ class MobileAuthLocalStore {
         mesa_id INTEGER PRIMARY KEY,
         payload_json TEXT NOT NULL,
         fotos_json TEXT,
+        enviado_final INTEGER NOT NULL DEFAULT 0,
         sync_status TEXT NOT NULL DEFAULT 'LOCAL',
         last_error TEXT,
         updated_at TEXT NOT NULL
@@ -252,6 +253,7 @@ class MobileAuthLocalStore {
         mesa_id INTEGER PRIMARY KEY,
         payload_json TEXT NOT NULL,
         fotos_json TEXT,
+        enviado_final INTEGER NOT NULL DEFAULT 0,
         sync_status TEXT NOT NULL DEFAULT 'LOCAL',
         last_error TEXT,
         updated_at TEXT NOT NULL
@@ -263,6 +265,12 @@ class MobileAuthLocalStore {
     await _addColumnIfMissing(db, 'auth_supervisores', 'celular', 'TEXT');
     await _addColumnIfMissing(db, 'auth_mesas', 'recinto_id', 'INTEGER');
     await _addColumnIfMissing(db, 'votacion_draft', 'fotos_json', 'TEXT');
+    await _addColumnIfMissing(
+      db,
+      'votacion_draft',
+      'enviado_final',
+      'INTEGER NOT NULL DEFAULT 0',
+    );
     await _addColumnIfMissing(db, 'auth_partidos', 'icono_base64', 'TEXT');
     await _addColumnIfMissing(db, 'auth_partidos', 'color', 'TEXT');
     await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_gobernador', 'INTEGER NOT NULL DEFAULT 1');
@@ -294,6 +302,43 @@ class MobileAuthLocalStore {
       }
     }
     return false;
+  }
+
+  Future<void> _mergePreloadedDraft(
+    Transaction txn,
+    _PreloadedDraft draft,
+    String now,
+  ) async {
+    final existing = await txn.query(
+      'votacion_draft',
+      columns: ['sync_status', 'enviado_final'],
+      where: 'mesa_id = ?',
+      whereArgs: [draft.mesaId],
+      limit: 1,
+    );
+
+    if (existing.isNotEmpty) {
+      final row = existing.first;
+      final syncStatus = (row['sync_status'] as String?) ?? votacionSyncLocal;
+      final enviadoFinal = (row['enviado_final'] as int? ?? 0) == 1;
+      final keepExisting = syncStatus != votacionSyncSynced &&
+          !draft.enviadoFinal &&
+          !enviadoFinal;
+
+      if (keepExisting) {
+        return;
+      }
+    }
+
+    await txn.insert('votacion_draft', {
+      'mesa_id': draft.mesaId,
+      'payload_json': jsonEncode(draft.payload),
+      'fotos_json': jsonEncode(draft.fotos),
+      'enviado_final': draft.enviadoFinal ? 1 : 0,
+      'sync_status': draft.syncStatus,
+      'last_error': null,
+      'updated_at': now,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> saveLogin(MobileLoginResponse data) async {
@@ -404,18 +449,11 @@ class MobileAuthLocalStore {
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
 
-      for (final draft in preloadedDrafts) {
-        batch.insert('votacion_draft', {
-          'mesa_id': draft.mesaId,
-          'payload_json': jsonEncode(draft.payload),
-          'fotos_json': jsonEncode(draft.fotos),
-          'sync_status': draft.syncStatus,
-          'last_error': null,
-          'updated_at': now,
-        }, conflictAlgorithm: ConflictAlgorithm.ignore);
-      }
-
       await batch.commit(noResult: true);
+
+      for (final draft in preloadedDrafts) {
+        await _mergePreloadedDraft(txn, draft, now);
+      }
     });
   }
 
@@ -493,6 +531,7 @@ class MobileAuthLocalStore {
           mesaId: mesaId,
           payload: payload,
           fotos: fotos,
+          enviadoFinal: res.etapa2 == true,
           syncStatus: votacionSyncSynced,
         ),
       );
@@ -1042,13 +1081,17 @@ class MobileAuthLocalStore {
       'mesa_id': draft.mesaId,
       'payload_json': jsonEncode(payload),
       'fotos_json': jsonEncode(draft.fotos),
+      'enviado_final': draft.enviadoFinal ? 1 : 0,
       'sync_status': draft.syncStatus,
       'last_error': null,
       'updated_at': draft.updatedAt,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
 
     if (markMesaLocal) {
-      await updateMesaEstadoLocal(draft.mesaId, mesaEstadoLocal);
+      await updateMesaEstadoLocal(
+        draft.mesaId,
+        draft.enviadoFinal ? mesaEstadoRealizado : mesaEstadoLocal,
+      );
     }
   }
 
@@ -1104,7 +1147,7 @@ class MobileAuthLocalStore {
     }).toList();
     return VotacionDraft(
       mesaId: mesaId,
-      finalizar: payload['finalizar'] == true,
+      finalizar: payload['finalizar'] == true || (row['enviado_final'] as int? ?? 0) == 1,
       observacion: payload['observacion']?.toString(),
       observacionGobernador: payload['observacion_gobernador']?.toString(),
       observacionAsd: payload['observacion_asambleista_distrito']?.toString(),
@@ -1143,6 +1186,7 @@ class MobileAuthLocalStore {
           payload['lock_asambleista_poblacion'] == true,
       votos: votos,
       fotos: fotos,
+      enviadoFinal: (row['enviado_final'] as int? ?? 0) == 1,
       syncStatus: (row['sync_status'] as String?) ?? votacionSyncLocal,
       updatedAt: (row['updated_at'] as String?) ?? '',
     );
@@ -1171,6 +1215,7 @@ class MobileAuthLocalStore {
     await db.update(
       'votacion_draft',
       {
+        'enviado_final': finalizada ? 1 : 0,
         'sync_status': votacionSyncSynced,
         'last_error': null,
         'updated_at': DateTime.now().toIso8601String(),
@@ -1225,12 +1270,14 @@ class _PreloadedDraft {
     required this.mesaId,
     required this.payload,
     required this.fotos,
+    required this.enviadoFinal,
     required this.syncStatus,
   });
 
   final int mesaId;
   final Map<String, dynamic> payload;
   final Map<String, String?> fotos;
+  final bool enviadoFinal;
   final String syncStatus;
 }
 
