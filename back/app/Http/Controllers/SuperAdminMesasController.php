@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\SocketEmitter;
+use App\Models\Departamento;
 use App\Models\Mesa;
+use App\Models\Municipio;
 use App\Models\Partido;
+use App\Models\Provincia;
 use App\Models\ResultadoMesa;
 use App\Models\ResultadoMesaDetalle;
 use App\Models\User;
@@ -22,7 +25,22 @@ class SuperAdminMesasController extends Controller
      * GET /api/admin/mesas?recinto_id=&mesa_id=&asignado=&delegado_id=&estado=&con_resultado=
      * Devuelve máximo 250 registros (front hace paginación local con QPagination).
      */
+    public function bootstrap(Request $request)
+    {
+        return response()->json([
+            'geo' => $this->buildGeoOptionsPayload(),
+            'delegados' => $this->buildDelegadosOptionsPayload(),
+            'recintos' => $this->buildRecintosOptionsPayload($request),
+            'mesas' => $this->buildMesasIndexPayload($request),
+        ]);
+    }
+
     public function index(Request $request)
+    {
+        return response()->json($this->buildMesasIndexPayload($request));
+    }
+
+    private function buildMesasIndexPayload(Request $request): array
     {
         $departamentoId = $request->get('departamento_id', 5);
         $provinciaId  = $request->get('provincia_id');
@@ -165,7 +183,7 @@ class SuperAdminMesasController extends Controller
                 ];
             })->values();
 
-            return response()->json([
+            return [
                 'mode' => 'paginate',
                 'summary' => $summary,
                 'total' => $pag->total(),
@@ -173,7 +191,7 @@ class SuperAdminMesasController extends Controller
                 'per_page' => $pag->perPage(),
                 'last_page' => $pag->lastPage(),
                 'data' => $data,
-            ]);
+            ];
         }
 
         // ✅ modo “rápido” actual: solo 250
@@ -217,7 +235,7 @@ class SuperAdminMesasController extends Controller
             ];
         })->values();
 
-        return response()->json([
+        return [
             'mode' => 'cap',
             'summary' => $summary,
             'total' => $total,
@@ -225,12 +243,17 @@ class SuperAdminMesasController extends Controller
             'truncated' => $total > $this->MAX_ROWS,
             'max' => $this->MAX_ROWS,
             'data' => $data,
-        ]);
+        ];
     }
 
 
     // combos (recintos)
     public function recintosOptions(Request $request)
+    {
+        return $this->buildRecintosOptionsPayload($request);
+    }
+
+    private function buildRecintosOptionsPayload(Request $request)
     {
         $departamentoId = $request->get('departamento_id', 5);
         $provinciaId = $request->get('provincia_id');
@@ -445,11 +468,34 @@ class SuperAdminMesasController extends Controller
     // combos (delegados)
     public function delegadosOptions()
     {
+        return $this->buildDelegadosOptionsPayload();
+    }
+
+    private function buildDelegadosOptionsPayload()
+    {
         return User::query()
             ->select('id','name','username','role')
             ->where('role', 'Delegado de Mesa')
             ->orderBy('name')
             ->get();
+    }
+
+    private function buildGeoOptionsPayload(): array
+    {
+        return [
+            'departamentos' => Departamento::query()
+                ->select('id', 'pais_id', 'nombre')
+                ->orderBy('nombre')
+                ->get(),
+            'provincias' => Provincia::query()
+                ->select('id', 'departamento_id', 'nombre')
+                ->orderBy('nombre')
+                ->get(),
+            'municipios' => Municipio::query()
+                ->select('id', 'provincia_id', 'nombre')
+                ->orderBy('nombre')
+                ->get(),
+        ];
     }
 
     // PUT /api/admin/mesas/{mesa}/delegado  body: { delegado_id, estado? }

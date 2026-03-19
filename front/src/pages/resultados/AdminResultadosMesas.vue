@@ -274,9 +274,12 @@
                   {{ r.delegado.username }}
                 </div>
                 <div class="text-caption text-grey-7">
+                  <strong>CI:</strong>
+                  {{ r.delegado.ci }}
+                </div>
+                <div class="text-caption text-grey-7">
                   <strong>Celular:</strong>
                   {{ r.delegado.celular || 'Sin celular' }}
-<!--                  <pre>{{r.delegado}}</pre>-->
                 </div>
                 <div class="q-mt-xs">
                   <q-checkbox
@@ -1076,8 +1079,7 @@ export default {
   },
 
   async mounted () {
-    await this.loadOptions()
-    this.refresh()
+    await this.bootstrapPageData()
     this.connectSocket()
   },
 
@@ -1095,6 +1097,16 @@ export default {
   },
 
   methods: {
+    applyMesasResponse (res) {
+      this.allRows = res?.data || []
+      this.totalReal = res?.total || this.allRows.length
+      this.summary = res?.summary || this.summary
+      this.backendTotal = res?.total || 0
+      this.backendLast = res?.last_page || 1
+      this.truncated = false
+      this.maxCap = this.rowsPerPage === 0 ? 250 : this.rowsPerPage
+    },
+
     connectSocket () {
       const socketUrl = import.meta.env.VITE_API_SOCKET
       const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
@@ -1173,23 +1185,52 @@ export default {
       if (!this.showAll) this.refresh()
     },
 
-    async loadOptions () {
-      const [geo, delegados] = await Promise.all([
-        this.$axios.get('geo/options').then(r => r.data),
-        this.$axios.get('admin/mesas/options/delegados').then(r => r.data)
-      ])
+    async bootstrapPageData () {
+      this.loading = true
+      try {
+        this.showAll = false
+        const perPage = this.rowsPerPage === 0 ? 250 : this.rowsPerPage
+        const data = await this.$axios.get('admin/mesas/bootstrap', {
+          params: {
+            departamento_id: this.filters.departamento_id || undefined,
+            provincia_id: this.filters.provincia_id || undefined,
+            municipio_id: this.filters.municipio_id || undefined,
+            recinto_id: this.filters.recinto_id || undefined,
+            mesa_id: this.filters.mesa_id || undefined,
+            asignado: this.filters.asignado,
+            delegado_id: this.filters.delegado_id || undefined,
+            estado: this.filters.estado || undefined,
+            con_resultado: this.filters.con_resultado,
+            all: 1,
+            per_page: perPage,
+            page: this.page
+          }
+        }).then(r => r.data)
 
-      this.geoOptions = {
-        departamentos: Array.isArray(geo?.departamentos) ? geo.departamentos : [],
-        provincias: Array.isArray(geo?.provincias) ? geo.provincias : [],
-        municipios: Array.isArray(geo?.municipios) ? geo.municipios : []
+        this.geoOptions = {
+          departamentos: Array.isArray(data?.geo?.departamentos) ? data.geo.departamentos : [],
+          provincias: Array.isArray(data?.geo?.provincias) ? data.geo.provincias : [],
+          municipios: Array.isArray(data?.geo?.municipios) ? data.geo.municipios : []
+        }
+        this.delegadosOpt = Array.isArray(data?.delegados) ? data.delegados : []
+        this.recintosBase = (Array.isArray(data?.recintos) ? data.recintos : []).map(r => ({
+          ...r,
+          value: r.id,
+          label: this.buildRecintoLabel(r)
+        }))
+        this.recintosOpt = this.recintosBase
+        this.buildMunicipiosFullOptions()
+
+        const base = this.buildDelegadosOptions()
+        this.delegadosOptFiltered = base
+        this.delegadosAsignarOptFiltered = base
+
+        this.applyMesasResponse(data?.mesas || {})
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo cargar la pantalla')
+      } finally {
+        this.loading = false
       }
-      this.delegadosOpt = delegados
-      this.buildMunicipiosFullOptions()
-      await this.loadRecintosOptions()
-      const base = this.buildDelegadosOptions()
-      this.delegadosOptFiltered = base
-      this.delegadosAsignarOptFiltered = base
     },
 
     async loadRecintosOptions () {
@@ -1540,14 +1581,7 @@ export default {
         }
 
         const res = await this.$axios.get('admin/mesas', { params }).then(r => r.data)
-
-        this.allRows = res.data || []
-        this.totalReal = res.total || this.allRows.length
-        this.summary = res.summary || this.summary
-        this.backendTotal = res.total || 0
-        this.backendLast = res.last_page || 1
-        this.truncated = false
-        this.maxCap = this.rowsPerPage === 0 ? 250 : this.rowsPerPage
+        this.applyMesasResponse(res)
       } finally {
         this.loading = false
       }
@@ -1592,7 +1626,7 @@ export default {
       const f =  this.fotos[key]
       if (f) return URL.createObjectURL(f)
       if (this.fotosToClear[key]) return null
-      
+
       const serverUrl = this.fotosServer[`${key}_url`]
       return this.getImageUrl(serverUrl)
     },
