@@ -30,6 +30,7 @@ class VotacionDraft {
     required this.lockAsp,
     required this.votos,
     required this.fotos,
+    required this.enviadoFinal,
     required this.syncStatus,
     required this.updatedAt,
   });
@@ -66,6 +67,7 @@ class VotacionDraft {
 
   final List<VotoPartidoItem> votos;
   final Map<String, String?> fotos;
+  final bool enviadoFinal;
   final String syncStatus;
   final String updatedAt;
 }

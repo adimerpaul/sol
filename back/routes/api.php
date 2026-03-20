@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::apiResource('partidos', PartidoController::class);
 
     Route::get('admin/users-recintos', [AdminUserRecintoController::class, 'users']);
+    Route::get('admin/users-recintos/bootstrap', [AdminUserRecintoController::class, 'bootstrap']);
     Route::get('admin/recintos-oruro', [AdminUserRecintoController::class, 'recintosOruro']);
     Route::get('admin/recintos-oruro-city', [RecintoController::class, 'oruroCity']);
     Route::get('admin/recintos-no-asignados', [AdminUserRecintoController::class, 'recintosNoAsignados']);
@@ -105,6 +106,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'resultado']);
     Route::put('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'guardarResultado']);
     Route::get('admin/mesas/options/mesas', [SuperAdminMesasController::class, 'mesasOptions']);
+    Route::get('admin/mesas/bootstrap', [SuperAdminMesasController::class, 'bootstrap']);
     Route::get('admin/mesas', [SuperAdminMesasController::class, 'index']);
     Route::get('admin/mesas/options/recintos', [SuperAdminMesasController::class, 'recintosOptions']);
     Route::get('admin/mesas/options/mesas', [SuperAdminMesasController::class, 'mesasOptions']); // ✅ NUEVO

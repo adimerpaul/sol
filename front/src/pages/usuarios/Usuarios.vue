@@ -153,18 +153,52 @@
 
       <template v-slot:body-cell-created_by="props">
         <q-td :props="props">
-          {{ [props.row.nombres, props.row.apellido_paterno, props.row.apellido_materno].filter(Boolean).join(' ') || '-' }}
-          <q-chip
-            v-if="props.row.creator_name"
-            dense
-            outline
-            color="primary"
-            size="12px"
-            class="creator-chip"
+          <div class="text-weight-medium">
+            {{ [props.row.nombres, props.row.apellido_paterno, props.row.apellido_materno].filter(Boolean).join(' ') || '-' }}
+          </div>
+          <div
+            v-if="props.row.role === 'Delegado de Mesa' && (props.row.jerarquia?.jefes || []).length"
+            class="text-caption text-grey-8 q-mt-xs"
           >
-            {{ props.row.creator_name }}
-          </q-chip>
-          <q-badge v-else outline color="grey-6">Sin registro</q-badge>
+            <div v-for="jefe in props.row.jerarquia.jefes" :key="`jefe-${props.row.id}-${jefe.id}`">
+              Jefe: {{ jefe.name || jefe.username || '-' }} · {{ jefe.super_jefe ? 'Superjefe' : 'Subjefe' }}
+            </div>
+            <div v-if="(props.row.jerarquia?.supervisores || []).length">
+              Supervisor: {{ (props.row.jerarquia.supervisores || []).map(s => s.name || s.username || '-').join(', ') }}
+            </div>
+          </div>
+          <div class="q-mt-xs">
+            <q-chip
+              v-if="props.row.creator_name"
+              dense
+              outline
+              color="primary"
+              size="12px"
+              class="creator-chip"
+            >
+              {{ props.row.creator_name }}
+            </q-chip>
+            <q-badge v-else outline color="grey-6">Sin registro</q-badge>
+          </div>
+        </q-td>
+      </template>
+
+      <template v-slot:body-cell-celular="props">
+        <q-td :props="props">
+          <div class="text-weight-medium">{{ props.row.celular || 'Sin celular' }}</div>
+          <div
+            v-if="props.row.role === 'Delegado de Mesa' && (props.row.jerarquia?.jefes || []).length"
+            class="text-caption text-grey-8 q-mt-xs"
+          >
+            <div v-for="jefe in props.row.jerarquia.jefes" :key="`jefe-cel-${props.row.id}-${jefe.id}`">
+              <span class="text-grey-7">{{ jefe.name || jefe.username || 'Jefe' }}:</span>
+              {{ jefe.celular || 'Sin celular' }}
+            </div>
+            <div v-for="supervisor in (props.row.jerarquia?.supervisores || [])" :key="`sup-cel-${props.row.id}-${supervisor.id}`">
+              <span class="text-grey-7">{{ supervisor.name || supervisor.username || 'Supervisor' }}:</span>
+              {{ supervisor.celular || 'Sin celular' }}
+            </div>
+          </div>
         </q-td>
       </template>
 
@@ -515,8 +549,8 @@ export default {
           style: 'width: 180px; white-space: normal;'
         },
         // { name: 'full_name', label: 'Nombre completo', align: 'left', field: row => [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' '), style: 'width: 240px; white-space: normal;' },
-        { name: 'numero_mesa', label: 'Numero mesa', align: 'left', field: 'numero_mesa' },
         { name: 'celular', label: 'Celular', align: 'left', field: 'celular' },
+        { name: 'numero_mesa', label: 'Numero mesa', align: 'left', field: 'numero_mesa' },
         { name: 'fecha_nacimiento', label: 'Nacimiento', align: 'left', field: 'fecha_nacimiento' },
         { name: 'bloque', label: 'Bloque', align: 'left', field: 'bloque' },
         { name: 'recinto_nombre', label: 'Recinto', align: 'left', field: row => row.recinto_nombre || row.recinto?.nombre || '-' },
@@ -573,6 +607,18 @@ export default {
   },
 
   methods: {
+    buildRecintoLabel (recinto = {}) {
+      const ubicacion = [
+        recinto?.localidad?.nombre,
+        recinto?.municipio?.nombre,
+        recinto?.provincia?.nombre
+      ].filter(Boolean).join(' / ')
+
+      return ubicacion
+        ? `${recinto?.nombre || 'Recinto'} - ${ubicacion}`
+        : (recinto?.nombre || 'Recinto')
+    },
+
     filterUsers (rows, terms) {
       const needle = String(terms || '').toLowerCase().trim()
       if (!needle) return rows
@@ -595,6 +641,8 @@ export default {
           row.bloque,
           row.recinto_nombre,
           row.recinto?.nombre,
+          ...(row.jerarquia?.jefes || []).flatMap(j => [j.name, j.username, j.celular, j.super_jefe ? 'superjefe' : 'subjefe']),
+          ...(row.jerarquia?.supervisores || []).flatMap(s => [s.name, s.username, s.celular]),
           row.role,
           row.creator_name
         ]
@@ -652,7 +700,9 @@ export default {
       const exists = this.recintoOptions.some(opt => opt.value === recintoId)
       if (exists) return
 
-      const labelName = this.user?.recinto_nombre || this.user?.recinto?.nombre || `Recinto ${recintoId}`
+      const labelName = this.user?.recinto
+        ? this.buildRecintoLabel(this.user.recinto)
+        : (this.user?.recinto_nombre || `Recinto ${recintoId}`)
       this.recintoOptions = [
         ...this.recintoOptions,
         { label: labelName, value: recintoId }
@@ -672,7 +722,7 @@ export default {
           ? res.data
           : (Array.isArray(res?.data?.data) ? res.data.data : [])
         this.recintoOptions = rows.map(r => ({
-          label: r.nombre,
+          label: this.buildRecintoLabel(r),
           value: r.id
         }))
 

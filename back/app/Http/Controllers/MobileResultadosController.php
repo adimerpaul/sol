@@ -353,6 +353,7 @@ class MobileResultadosController extends Controller
             'mesa_id' => $mesa->id,
             'resultado' => $resultado,
             'partidos' => $partidos,
+            'bloqueada_mobile' => $this->mesaYaFinalizadaParaMovil($mesa, $resultado),
         ]);
     }
 
@@ -361,6 +362,16 @@ class MobileResultadosController extends Controller
         $user = $request->user();
         if ((int) $mesa->delegado_id !== (int) $user->id) {
             return response()->json(['message' => 'Mesa no asignada al usuario'], 403);
+        }
+
+        $resultadoExistente = ResultadoMesa::query()
+            ->where('mesa_id', $mesa->id)
+            ->first();
+
+        if ($this->mesaYaFinalizadaParaMovil($mesa, $resultadoExistente)) {
+            return response()->json([
+                'message' => 'Esta mesa ya llenó y envió sus datos. No se puede volver a modificar desde la app.',
+            ], 422);
         }
 
         $data = $request->validate([
@@ -583,6 +594,19 @@ class MobileResultadosController extends Controller
             }
         }
         return true;
+    }
+
+    private function mesaYaFinalizadaParaMovil(Mesa $mesa, ?ResultadoMesa $resultado): bool
+    {
+        if (!$resultado) {
+            return false;
+        }
+
+        if ((bool) $resultado->etapa_2) {
+            return true;
+        }
+
+        return strtoupper((string) ($mesa->estado ?? '')) === 'FINALIZADA';
     }
 
     private function partidosPorMesa(?Mesa $mesa)

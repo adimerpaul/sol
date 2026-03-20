@@ -151,8 +151,8 @@
           <crud-simple
             title="Mesas"
             endpoint="mesas"
-            :columns="['ID', 'Recinto', 'Mesa']"
-            :fields="['id', 'recinto.nombre', 'numero_mesa']"
+            :columns="['ID', 'Recinto', 'Mesa', 'Habilitados']"
+            :fields="['id', 'recinto.nombre', 'numero_mesa', 'habilitados']"
             :filters="mesas.filters"
             :selects="mesaSelects"
             @update:filters="(v) => (mesas.filters = v)"

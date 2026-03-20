@@ -343,13 +343,12 @@ export default {
     async loadAll () {
       this.loading = true
       try {
-        const [uRes, rRes] = await Promise.all([
-          this.$axios.get('admin/users-recintos'),
-          this.$axios.get('admin/recintos-oruro')
-        ])
+        const res = await this.$axios.get('admin/users-recintos/bootstrap')
+        const data = res?.data || {}
 
-        this.users = Array.isArray(uRes.data) ? uRes.data : []
-        this.recintos = Array.isArray(rRes.data) ? rRes.data : []
+        this.users = Array.isArray(data.users) ? data.users : []
+        this.recintos = Array.isArray(data.recintos) ? data.recintos : []
+        this.noAsignados = Array.isArray(data.no_asignados) ? data.no_asignados : []
 
         this.recintosOptionsAll = this.recintos.map(r => ({
           value: r.id,
@@ -421,16 +420,7 @@ export default {
     },
 
     async openNoAsignados () {
-      this.loadingNoAsignados = true
-      try {
-        const r = await this.$axios.get('admin/recintos-no-asignados')
-        this.noAsignados = Array.isArray(r.data) ? r.data : []
-        this.noAsignadosDialog = true
-      } catch (e) {
-        this.$alert?.error(e.response?.data?.message || 'No se pudo cargar recintos no asignados')
-      } finally {
-        this.loadingNoAsignados = false
-      }
+      this.noAsignadosDialog = true
     }
   }
 }

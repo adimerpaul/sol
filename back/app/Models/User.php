@@ -127,7 +127,7 @@ class User extends Authenticatable implements Auditable
             'recinto_jefe',
             'jefe_id',
             'recinto_id'
-        );
+        )->withPivot('super_jefe');
     }
 
     public function recinto()

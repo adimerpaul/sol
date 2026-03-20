@@ -182,6 +182,41 @@
     <q-inner-loading :showing="loading">
       <q-spinner />
     </q-inner-loading>
+
+    <q-dialog v-model="mesaDialog" persistent>
+      <q-card style="min-width: 420px; width: 92vw; max-width: 520px;">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1 text-weight-bold">
+            {{ mesaDialogMode === 'edit' ? `Editar ${title}` : `Nuevo ${title}` }}
+          </div>
+          <q-space />
+          <q-btn flat round dense icon="close" @click="closeMesaDialog" />
+        </q-card-section>
+
+        <q-card-section class="q-gutter-md">
+          <q-input
+            v-model="mesaForm.numero_mesa"
+            dense
+            outlined
+            label="Mesa"
+            autofocus
+          />
+          <q-input
+            v-model.number="mesaForm.habilitados"
+            dense
+            outlined
+            type="number"
+            min="0"
+            label="Habilitados"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" no-caps @click="closeMesaDialog" />
+          <q-btn color="primary" label="Guardar" no-caps @click="submitMesaDialog" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-card>
 </template>
 
@@ -223,7 +258,14 @@ export default {
       },
 
       localFilters: {},
-      filteredSelectOptions: {}
+      filteredSelectOptions: {},
+      mesaDialog: false,
+      mesaDialogMode: 'create',
+      mesaRowId: null,
+      mesaForm: {
+        numero_mesa: '',
+        habilitados: 260
+      }
     }
   },
 
@@ -376,6 +418,11 @@ export default {
         }
       }
 
+      if (this.endpoint === 'mesas') {
+        this.openMesaDialog()
+        return
+      }
+
       this.$q.dialog({
         title: `Nuevo ${this.title}`.trim(),
         prompt: { model: '', label: 'Nombre', isValid: v => !!String(v || '').trim() },
@@ -393,6 +440,10 @@ export default {
     },
 
     edit (row) {
+      if (this.endpoint === 'mesas') {
+        this.openMesaDialog(row)
+        return
+      }
       const current = row?.nombre ?? row?.numero_mesa ?? ''
       const label = row?.numero_mesa !== undefined ? 'Número de mesa' : 'Nombre'
 
@@ -436,6 +487,73 @@ export default {
 
     emitRowAction (action, row) {
       this.$emit('row-action', { action, row })
+    },
+
+    openMesaDialog (row = null) {
+      this.mesaDialogMode = row?.id ? 'edit' : 'create'
+      this.mesaRowId = row?.id ?? null
+      this.mesaForm = {
+        numero_mesa: String(row?.numero_mesa ?? ''),
+        habilitados: Number.isFinite(Number(row?.habilitados)) ? Number(row.habilitados) : 260
+      }
+      this.mesaDialog = true
+    },
+
+    closeMesaDialog () {
+      this.mesaDialog = false
+      this.mesaRowId = null
+      this.mesaForm = {
+        numero_mesa: '',
+        habilitados: 260
+      }
+    },
+
+    async submitMesaDialog () {
+      const numeroMesa = String(this.mesaForm.numero_mesa || '').trim()
+      const habilitados = Number(this.mesaForm.habilitados)
+
+      if (!numeroMesa) {
+        this.$q.notify({
+          type: 'warning',
+          message: 'Ingrese la mesa'
+        })
+        return
+      }
+
+      if (!Number.isInteger(habilitados) || habilitados < 0) {
+        this.$q.notify({
+          type: 'warning',
+          message: 'Ingrese una cantidad válida de habilitados'
+        })
+        return
+      }
+
+      try {
+        if (this.mesaDialogMode === 'edit' && this.mesaRowId) {
+          await this.$axios.put(`${this.endpoint}/${this.mesaRowId}`, {
+            numero_mesa: numeroMesa,
+            habilitados
+          })
+        } else {
+          await this.$axios.post(this.endpoint, {
+            nombre: numeroMesa,
+            habilitados,
+            ...(this.localFilters || {})
+          })
+        }
+
+        this.$q.notify({
+          type: 'positive',
+          message: this.mesaDialogMode === 'edit' ? 'Actualizado' : 'Creado'
+        })
+        this.closeMesaDialog()
+        this.load()
+      } catch (e) {
+        this.$q.notify({
+          type: 'negative',
+          message: e?.response?.data?.message || `No se pudo ${this.mesaDialogMode === 'edit' ? 'actualizar' : 'crear'}`
+        })
+      }
     }
   }
 }

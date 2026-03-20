@@ -104,8 +104,8 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     {'slot': 'foto6', 'label': 'Acta electoral - Gobernador'},
   ];
   static const List<Map<String, String>> _fotoAsdConfig = [
-    {'slot': 'foto7', 'label': 'Hoja trabajo - Asam. Distrito'},
-    {'slot': 'foto8', 'label': 'Acta electoral - Asam. Distrito'},
+    {'slot': 'foto7', 'label': 'Hoja trabajo - Asam. Territorio'},
+    {'slot': 'foto8', 'label': 'Acta electoral - Asam. Territorio'},
   ];
   static const List<Map<String, String>> _fotoAspConfig = [
     {'slot': 'foto9', 'label': 'Hoja trabajo - Asam. Poblacion'},
@@ -400,7 +400,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       case _VotacionTab.gobernador:
         return 'Gobernador';
       case _VotacionTab.asambleistaDistrito:
-        return 'Asambleista por Distrito';
+        return 'Asambleista por Territorio';
       case _VotacionTab.asambleistaPoblacion:
         return 'Asambleista por Poblacion';
     }
@@ -574,12 +574,16 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       }
     }
 
+    var bloqueadaRemota = false;
     try {
       final remote = await _service.loadMesa(mesaId);
       final partidos = ((remote['partidos'] as List?) ?? const [])
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
+      bloqueadaRemota =
+          remote['bloqueada_mobile'] == true ||
+          ((remote['resultado'] as Map?)?['etapa_2'] == true);
       if (partidos.isNotEmpty) {
         _ensureControllers(partidos);
         _partidos = partidos;
@@ -595,7 +599,8 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       _tabLocks[_VotacionTab.gobernador] = local.lockGobernador;
       _tabLocks[_VotacionTab.asambleistaDistrito] = local.lockAsd;
       _tabLocks[_VotacionTab.asambleistaPoblacion] = local.lockAsp;
-      _datosBloqueados = _mesaEsFinalizada || local.finalizar;
+      _datosBloqueados =
+          _mesaEsFinalizada || bloqueadaRemota || local.finalizar || local.enviadoFinal;
       if (_datosBloqueados) {
         for (final t in _tabLocks.keys) {
           _tabLocks[t] = true;
@@ -821,6 +826,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       lockAsp: _tabLocks[_VotacionTab.asambleistaPoblacion] == true,
       votos: votos,
       fotos: Map<String, String?>.from(_localFotos),
+      enviadoFinal: finalizar,
       syncStatus: syncStatus,
       updatedAt: DateTime.now().toIso8601String(),
     );
@@ -1122,7 +1128,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           ),
         ] else if (_activeTab == _VotacionTab.asambleistaDistrito) ...[
           _buildCategoryCard(
-            title: '4) Asambleista por Distrito',
+            title: '4) Asambleista por Territorio',
             tab: _VotacionTab.asambleistaDistrito,
             partidos: _partidosAsd,
             voteMap: _asdCtrl,
@@ -1134,7 +1140,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             editable: _tabEditable(_VotacionTab.asambleistaDistrito),
           ),
           _buildFotosCard(
-            title: 'Fotos - Asambleista por Distrito',
+            title: 'Fotos - Asambleista por Territorio',
             config: _fotoAsdConfig,
             editable: _tabEditable(_VotacionTab.asambleistaDistrito),
           ),
@@ -1252,7 +1258,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           const SizedBox(width: 8),
           _tabButton(
             tab: _VotacionTab.asambleistaDistrito,
-            label: 'Asam. Distrito',
+            label: 'Asam. Territorio',
             done: _tabBloqueada(_VotacionTab.asambleistaDistrito),
           ),
           const SizedBox(width: 8),

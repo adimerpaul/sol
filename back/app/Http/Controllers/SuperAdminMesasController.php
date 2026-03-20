@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\SocketEmitter;
+use App\Models\Departamento;
 use App\Models\Mesa;
+use App\Models\Municipio;
 use App\Models\Partido;
+use App\Models\Provincia;
 use App\Models\ResultadoMesa;
 use App\Models\ResultadoMesaDetalle;
 use App\Models\User;
@@ -22,7 +25,22 @@ class SuperAdminMesasController extends Controller
      * GET /api/admin/mesas?recinto_id=&mesa_id=&asignado=&delegado_id=&estado=&con_resultado=
      * Devuelve máximo 250 registros (front hace paginación local con QPagination).
      */
+    public function bootstrap(Request $request)
+    {
+        return response()->json([
+            'geo' => $this->buildGeoOptionsPayload(),
+            'delegados' => $this->buildDelegadosOptionsPayload(),
+            'recintos' => $this->buildRecintosOptionsPayload($request),
+            'mesas' => $this->buildMesasIndexPayload($request),
+        ]);
+    }
+
     public function index(Request $request)
+    {
+        return response()->json($this->buildMesasIndexPayload($request));
+    }
+
+    private function buildMesasIndexPayload(Request $request): array
     {
         $departamentoId = $request->get('departamento_id', 5);
         $provinciaId  = $request->get('provincia_id');
@@ -85,6 +103,7 @@ class SuperAdminMesasController extends Controller
                 'mesas.municipio_id',
                 'mesas.recinto_id',
                 'mesas.numero_mesa',
+                'mesas.habilitados',
                 'mesas.delegado_id',
                 'mesas.estado',
                 'mesas.asistencia_capacitacion',
@@ -94,7 +113,7 @@ class SuperAdminMesasController extends Controller
                 'departamento:id,nombre',
                 'provincia:id,nombre',
                 'municipio:id,nombre',
-                'delegado:id,name,username,celular',
+                'delegado:id,name,username,celular,ci',
                 'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos'
             ])
             ->whereHas('recinto', $scopeRecinto)
@@ -136,12 +155,14 @@ class SuperAdminMesasController extends Controller
                     'recinto_nombre' => $m->recinto?->nombre,
 
                     'numero_mesa' => $m->numero_mesa,
+                    'habilitados' => (int) ($m->habilitados ?? 260),
                     'delegado_id' => $m->delegado_id,
                     'delegado' => $m->delegado ? [
                         'id' => $m->delegado->id,
                         'name' => $m->delegado->name,
                         'username' => $m->delegado->username,
                         'celular' => $m->delegado->celular,
+                        'ci' => $m->delegado->ci,
                     ] : null,
 
                     'estado' => $m->estado,
@@ -163,7 +184,7 @@ class SuperAdminMesasController extends Controller
                 ];
             })->values();
 
-            return response()->json([
+            return [
                 'mode' => 'paginate',
                 'summary' => $summary,
                 'total' => $pag->total(),
@@ -171,7 +192,7 @@ class SuperAdminMesasController extends Controller
                 'per_page' => $pag->perPage(),
                 'last_page' => $pag->lastPage(),
                 'data' => $data,
-            ]);
+            ];
         }
 
         // ✅ modo “rápido” actual: solo 250
@@ -190,13 +211,15 @@ class SuperAdminMesasController extends Controller
                 'recinto_id' => $m->recinto_id,
                 'recinto_nombre' => $m->recinto?->nombre,
                 'numero_mesa' => $m->numero_mesa,
+                'habilitados' => (int) ($m->habilitados ?? 260),
                 'delegado_id' => $m->delegado_id,
-                'delegado' => $m->delegado ? [
-                    'id' => $m->delegado->id,
-                    'name' => $m->delegado->name,
-                    'username' => $m->delegado->username,
-                    'celular' => $m->delegado->celular,
-                ] : null,
+                    'delegado' => $m->delegado ? [
+                        'id' => $m->delegado->id,
+                        'name' => $m->delegado->name,
+                        'username' => $m->delegado->username,
+                        'celular' => $m->delegado->celular,
+                        'ci' => $m->delegado->ci,
+                    ] : null,
                 'estado' => $m->estado,
                 'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
                 'tiene_resultado' => (bool) $m->resultado,
@@ -214,7 +237,7 @@ class SuperAdminMesasController extends Controller
             ];
         })->values();
 
-        return response()->json([
+        return [
             'mode' => 'cap',
             'summary' => $summary,
             'total' => $total,
@@ -222,12 +245,17 @@ class SuperAdminMesasController extends Controller
             'truncated' => $total > $this->MAX_ROWS,
             'max' => $this->MAX_ROWS,
             'data' => $data,
-        ]);
+        ];
     }
 
 
     // combos (recintos)
     public function recintosOptions(Request $request)
+    {
+        return $this->buildRecintosOptionsPayload($request);
+    }
+
+    private function buildRecintosOptionsPayload(Request $request)
     {
         $departamentoId = $request->get('departamento_id', 5);
         $provinciaId = $request->get('provincia_id');
@@ -359,6 +387,7 @@ class SuperAdminMesasController extends Controller
                 'mesas.municipio_id',
                 'mesas.recinto_id',
                 'mesas.numero_mesa',
+                'mesas.habilitados',
                 'mesas.delegado_id',
                 'mesas.estado',
                 'mesas.asistencia_capacitacion',
@@ -367,7 +396,7 @@ class SuperAdminMesasController extends Controller
                 'recinto:id,nombre',
                 'provincia:id,nombre',
                 'municipio:id,nombre',
-                'delegado:id,name,username,celular',
+                'delegado:id,name,username,celular,ci',
                 'resultado:id,mesa_id',
             ])
             ->whereHas('recinto', $scopeRecinto)
@@ -409,6 +438,7 @@ class SuperAdminMesasController extends Controller
                 'mesas.municipio_id',
                 'mesas.recinto_id',
                 'mesas.numero_mesa',
+                'mesas.habilitados',
                 'mesas.delegado_id',
                 'mesas.estado',
                 'mesas.asistencia_capacitacion',
@@ -417,7 +447,7 @@ class SuperAdminMesasController extends Controller
                 'recinto:id,nombre',
                 'provincia:id,nombre',
                 'municipio:id,nombre',
-                'delegado:id,name,username,celular',
+                'delegado:id,name,username,celular,ci',
                 'resultado:id,mesa_id',
             ])
             ->whereHas('recinto', $scopeRecinto);
@@ -440,11 +470,34 @@ class SuperAdminMesasController extends Controller
     // combos (delegados)
     public function delegadosOptions()
     {
+        return $this->buildDelegadosOptionsPayload();
+    }
+
+    private function buildDelegadosOptionsPayload()
+    {
         return User::query()
-            ->select('id','name','username','role')
+            ->select('id','name','username','role','ci')
             ->where('role', 'Delegado de Mesa')
             ->orderBy('name')
             ->get();
+    }
+
+    private function buildGeoOptionsPayload(): array
+    {
+        return [
+            'departamentos' => Departamento::query()
+                ->select('id', 'pais_id', 'nombre')
+                ->orderBy('nombre')
+                ->get(),
+            'provincias' => Provincia::query()
+                ->select('id', 'departamento_id', 'nombre')
+                ->orderBy('nombre')
+                ->get(),
+            'municipios' => Municipio::query()
+                ->select('id', 'provincia_id', 'nombre')
+                ->orderBy('nombre')
+                ->get(),
+        ];
     }
 
     // PUT /api/admin/mesas/{mesa}/delegado  body: { delegado_id, estado? }
@@ -501,7 +554,7 @@ class SuperAdminMesasController extends Controller
 
         $mesa->load([
             'recinto:id,nombre',
-            'delegado:id,name,username,celular',
+            'delegado:id,name,username,celular,ci',
             'provincia:id,nombre',
             'municipio:id,nombre',
         ]);
@@ -518,6 +571,7 @@ class SuperAdminMesasController extends Controller
                 'name' => $mesa->delegado->name,
                 'username' => $mesa->delegado->username,
                 'celular' => $mesa->delegado->celular,
+                'ci' => $mesa->delegado->ci,
             ] : null,
         ];
 
