@@ -71,6 +71,12 @@
           <div class="col-12 col-md-auto">
             <q-btn flat color="grey-7" no-caps label="Limpiar" @click="clearFilters" />
           </div>
+          <div class="col-12 col-md-auto">
+            <q-btn color="primary" icon="bar_chart" no-caps label="Ver Gráficos" @click="openChartViewer" />
+          </div>
+          <div class="col-12 col-md-auto">
+            <q-btn color="secondary" icon="map" no-caps label="Ver Mapa" @click="openMapViewer" />
+          </div>
         </div>
       </q-card-section>
 
@@ -114,11 +120,187 @@
         <q-spinner />
       </q-inner-loading>
     </q-card>
+
+    <!-- Modal Visor de Gráficos Moderno -->
+    <q-dialog v-model="chartViewerOpen" maximized transition-show="slide-up" transition-hide="slide-down">
+      <q-card class="bg-grey-1 text-dark flex flex-center column">
+        <q-toolbar class="bg-primary text-white full-width absolute-top">
+          <q-toolbar-title class="text-weight-bold">Visor de Gráficos</q-toolbar-title>
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-toolbar>
+
+        <q-card-section class="q-pt-sm q-mt-xl full-width wrap justify-center row q-gutter-sm">
+          <div class="col-12">
+            <q-tabs
+              v-model="viewerCategory"
+              dense
+              class="text-grey-8"
+              active-color="primary"
+              indicator-color="primary"
+              align="justify"
+              narrow-indicator
+            >
+              <q-tab v-for="cat in chartCards" :key="cat.key" :name="cat.key" :label="cat.label" />
+            </q-tabs>
+          </div>
+          
+          <div class="col-12">
+             <q-tabs
+              v-model="viewerChartType"
+              dense
+              class="text-grey-8"
+              active-color="secondary"
+              indicator-color="secondary"
+              align="center"
+              narrow-indicator
+            >
+              <q-tab name="pie" icon="pie_chart" label="Torta" />
+              <q-tab name="bar" icon="bar_chart" label="Histograma" />
+            </q-tabs>
+          </div>
+
+          <div class="col-12 col-md-11 q-mt-sm">
+             <q-card flat bordered class="q-pa-md chart-modern">
+                <apexchart
+                  v-if="viewerChartType === 'pie'"
+                  type="pie"
+                  height="100%"
+                  class="responsive-chart"
+                  :options="activeChartCard ? pieOptionsModern(activeChartCard) : {}"
+                  :series="activeChartCard ? activeChartCard.series : []"
+                />
+                <apexchart
+                  v-if="viewerChartType === 'bar'"
+                  type="bar"
+                  height="100%"
+                  class="responsive-chart"
+                  :options="activeChartCard ? barOptionsModern(activeChartCard) : {}"
+                  :series="activeChartCard ? [{ name: activeChartCard.label, data: activeChartCard.series }] : []"
+                />
+             </q-card>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Modal Visor de MAPA -->
+    <q-dialog v-model="mapViewerOpen" maximized transition-show="slide-up" transition-hide="slide-down">
+      <q-card class="bg-grey-1 text-dark">
+        <q-toolbar class="bg-secondary text-white full-width absolute-top">
+          <q-toolbar-title class="text-weight-bold">Visor de Mapa Ganadores</q-toolbar-title>
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-toolbar>
+
+        <q-card-section class="q-pt-sm q-mt-xl full-width">
+          <div class="row q-col-gutter-sm">
+            <div class="col-12">
+              <q-tabs
+                v-model="viewerCategory"
+                dense
+                class="text-grey-8"
+                active-color="secondary"
+                indicator-color="secondary"
+                align="justify"
+                narrow-indicator
+              >
+                <q-tab v-for="cat in chartCards" :key="'map-'+cat.key" :name="cat.key" :label="cat.label" />
+              </q-tabs>
+            </div>
+            <div class="col-12">
+              <q-card flat bordered class="q-pa-none overflow-hidden" style="height: calc(100vh - 180px)">
+                <l-map
+                  ref="mapRef"
+                  :zoom="zoom"
+                  :center="center"
+                  :use-global-leaflet="false"
+                  :options="{ attributionControl: false }"
+                >
+                  <l-control-layers position="topright" />
+                  <l-tile-layer
+                    layer-type="base"
+                    name="Mapa Claro"
+                    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                    attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors &copy; <a href='https://carto.com/attributions'>CARTO</a>"
+                    :max-zoom="20"
+                    :visible="true"
+                  />
+                  <l-tile-layer
+                    layer-type="base"
+                    name="Google Calle"
+                    url="https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}"
+                    attribution="Map data &copy; Google"
+                    :max-zoom="21"
+                    :visible="false"
+                  />
+                  <l-tile-layer
+                    layer-type="base"
+                    name="Google Híbrido"
+                    url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+                    attribution="Map data &copy; Google"
+                    :max-zoom="21"
+                    :visible="false"
+                  />
+
+                  <template v-for="r in mapData" :key="r.id">
+                    <l-marker
+                      v-if="r.winners[viewerCategory] && r.winners[viewerCategory].partido_id"
+                      :lat-lng="[r.lat, r.lng]"
+                    >
+                      <l-icon
+                        :icon-anchor="[10, 10]"
+                        :popup-anchor="[0, -10]"
+                        class-name="modern-marker-container"
+                      >
+                        <div 
+                          class="modern-marker" 
+                          :style="{ 
+                            backgroundColor: r.winners[viewerCategory].color,
+                            boxShadow: `0 0 12px ${r.winners[viewerCategory].color}`
+                          }"
+                        >
+                          <div class="inner-dot"></div>
+                        </div>
+                      </l-icon>
+                      <l-popup>
+                        <div class="text-weight-bold text-primary">{{ r.nombre }}</div>
+                        <q-separator q-my-xs />
+                        <div class="row items-center no-wrap">
+                          <q-badge :style="{backgroundColor: r.winners[viewerCategory].color}" class="q-mr-xs">Winner</q-badge>
+                          <span class="text-weight-bold">{{ r.winners[viewerCategory].votos }} votos</span>
+                        </div>
+                      </l-popup>
+                    </l-marker>
+                  </template>
+
+                </l-map>
+              </q-card>
+            </div>
+          </div>
+        </q-card-section>
+        <q-inner-loading :showing="loadingMap">
+          <q-spinner color="secondary" size="4em" />
+        </q-inner-loading>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
 <script>
 import { io } from 'socket.io-client'
+import { LMap, LTileLayer, LMarker, LIcon, LPopup, LControlLayers } from '@vue-leaflet/vue-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+
+// Fix for default marker icons
+import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIconUrl   from 'leaflet/dist/images/marker-icon.png'
+import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2xUrl,
+  iconUrl: markerIconUrl,
+  shadowUrl: markerShadowUrl
+})
 
 const FALLBACK_COLORS = [
   '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#e53935',
@@ -134,6 +316,14 @@ const CATEGORY_DEFS = [
 
 export default {
   name: 'IndexPage',
+  components: {
+    LMap,
+    LTileLayer,
+    LMarker,
+    LIcon,
+    LPopup,
+    LControlLayers
+  },
 
   data () {
     return {
@@ -164,7 +354,17 @@ export default {
         localidades: []
       },
       socket: null,
-      socketRefreshTimer: null
+      socketRefreshTimer: null,
+      chartViewerOpen: false,
+      viewerCategory: 'alcalde',
+      viewerChartType: 'pie',
+
+      // Map Data
+      mapViewerOpen: false,
+      mapData: [],
+      loadingMap: false,
+      zoom: 12,
+      center: [-17.9647, -67.1060]
     }
   },
 
@@ -198,6 +398,9 @@ export default {
           total: Number(this?.categorias?.[def.key]?.total || 0)
         }
       })
+    },
+    activeChartCard () {
+      return this.chartCards.find(c => c.key === this.viewerCategory)
     }
   },
 
@@ -249,6 +452,7 @@ export default {
       if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
       this.socketRefreshTimer = setTimeout(() => {
         this.loadGraficos()
+        if (this.mapViewerOpen) this.loadMapData()
       }, 400)
     },
     onProvinciaChange () {
@@ -327,6 +531,80 @@ export default {
         legend: { show: false }
       }
     },
+    pieOptionsModern (card) {
+      let opts = JSON.parse(JSON.stringify(this.pieOptions(card)))
+      opts.legend.fontSize = '14px' // slightly smaller for base
+      opts.legend.width = 250
+      opts.dataLabels.style.fontSize = '14px'
+
+      // Make responsive
+      opts.responsive = [{
+        breakpoint: 768, // Mobile and small tablets
+        options: {
+          legend: {
+            position: 'bottom',
+            fontSize: '12px',
+            width: '100%'
+          },
+          dataLabels: {
+            style: { fontSize: '12px' }
+          }
+        }
+      }]
+
+      return opts
+    },
+    barOptionsModern (card) {
+      let opts = JSON.parse(JSON.stringify(this.barOptions(card)))
+      opts.xaxis.labels.style.fontSize = '12px'
+      opts.dataLabels.style.fontSize = '14px'
+
+      // Make responsive
+      opts.responsive = [{
+        breakpoint: 768,
+        options: {
+          xaxis: {
+            labels: {
+              style: { fontSize: '10px', fontWeight: 500 }
+            }
+          },
+          dataLabels: {
+            style: { fontSize: '11px' }
+          }
+        }
+      }]
+
+      return opts
+    },
+    openChartViewer () {
+      this.chartViewerOpen = true
+      if (this.chartCards && this.chartCards.length > 0) {
+        this.viewerCategory = this.chartCards[0].key
+      }
+    },
+    openMapViewer () {
+      this.mapViewerOpen = true
+      this.loadMapData()
+    },
+    async loadMapData () {
+      this.loadingMap = true
+      try {
+        const params = {
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined
+        }
+        const res = await this.$axios.get('dashboard/mapa', { params })
+        this.mapData = res.data || []
+      } catch (e) {
+        this.$q.notify({
+          type: 'negative',
+          message: 'No se pudo cargar datos del mapa'
+        })
+      } finally {
+        this.loadingMap = false
+      }
+    },
     async loadGraficos () {
       this.loading = true
       try {
@@ -386,5 +664,70 @@ export default {
 .chart-modern {
   border-radius: 10px;
   background: #fff;
+}
+
+.responsive-chart {
+  min-height: 400px;
+  height: 70vh !important;
+}
+
+@media (min-width: 1024px) {
+  .responsive-chart {
+    height: 75vh !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .responsive-chart {
+    min-height: 350px;
+    height: 60vh !important;
+  }
+}
+
+/* Modern Markers */
+.modern-marker-container {
+  background: transparent !important;
+  border: none !important;
+}
+
+.modern-marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  animation: pulse 2s infinite ease-in-out;
+  cursor: pointer;
+}
+
+.modern-marker:hover {
+  transform: scale(1.3);
+  z-index: 1000 !important;
+}
+
+.inner-dot {
+  width: 6px;
+  height: 6px;
+  background-color: white;
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
 </style>

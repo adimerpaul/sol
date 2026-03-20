@@ -173,4 +173,99 @@ class GraficosController extends Controller
             'generated_at' => now()->toIso8601String(),
         ]);
     }
+
+    public function mapa(Request $request)
+    {
+        $departamentoId = 5;
+        $provinciaId = $request->input('provincia_id');
+        $municipioId = $request->input('municipio_id');
+        $localidadId = $request->input('localidad_id');
+
+        $scope = [
+            'departamento_id' => $departamentoId,
+            'provincia_id' => $provinciaId ? (int) $provinciaId : null,
+            'municipio_id' => $municipioId ? (int) $municipioId : null,
+            'localidad_id' => $localidadId ? (int) $localidadId : null,
+        ];
+
+        // Obtener votos agrupados por recinto y partido para cada categoría
+        $votosPorRecinto = DB::table('resultado_mesa_detalles as d')
+            ->join('resultados_mesa as r', 'r.id', '=', 'd.resultado_mesa_id')
+            ->join('mesas as m', 'm.id', '=', 'r.mesa_id')
+            ->join('recintos as rec', 'rec.id', '=', 'm.recinto_id')
+            ->whereNull('d.deleted_at')
+            ->whereNull('r.deleted_at')
+            ->whereNull('m.deleted_at')
+            ->whereNull('rec.deleted_at')
+            ->where('m.departamento_id', $scope['departamento_id'])
+            ->when($scope['provincia_id'], fn($q) => $q->where('m.provincia_id', $scope['provincia_id']))
+            ->when($scope['municipio_id'], fn($q) => $q->where('m.municipio_id', $scope['municipio_id']))
+            ->when($scope['localidad_id'], fn($q) => $q->where('m.localidad_id', $scope['localidad_id']))
+            ->selectRaw("
+                m.recinto_id,
+                d.partido_id,
+                SUM(d.votos_alcalde) as votos_alcalde,
+                SUM(d.votos_concejal) as votos_concejal,
+                SUM(d.votos_gobernador) as votos_gobernador,
+                SUM(d.votos_asambleista_distrito) as votos_asambleista_distrito,
+                SUM(d.votos_asambleista_poblacion) as votos_asambleista_poblacion
+            ")
+            ->groupBy('m.recinto_id', 'd.partido_id')
+            ->get();
+
+        // Obtener info de recintos (coordenadas)
+        $recintos = DB::table('recintos')
+            ->where('departamento_id', $scope['departamento_id'])
+            ->when($scope['provincia_id'], fn($q) => $q->where('provincia_id', $scope['provincia_id']))
+            ->when($scope['municipio_id'], fn($q) => $q->where('municipio_id', $scope['municipio_id']))
+            ->when($scope['localidad_id'], fn($q) => $q->where('localidad_id', $scope['localidad_id']))
+            ->whereNotNull('latitud')
+            ->whereNotNull('longitud')
+            ->select('id', 'nombre', 'latitud', 'longitud')
+            ->get();
+
+        // Obtener colores de partidos
+        $partidos = DB::table('partidos')->pluck('color', 'id');
+
+        $resultado = $recintos->map(function($recinto) use ($votosPorRecinto, $partidos) {
+            $votos = $votosPorRecinto->where('recinto_id', $recinto->id);
+            
+            $categorias = [
+                'alcalde' => 'votos_alcalde',
+                'concejal' => 'votos_concejal',
+                'gobernador' => 'votos_gobernador',
+                'asambleista_distrito' => 'votos_asambleista_distrito',
+                'asambleista_poblacion' => 'votos_asambleista_poblacion'
+            ];
+
+            $res = [
+                'id' => $recinto->id,
+                'nombre' => $recinto->nombre,
+                'lat' => (float)$recinto->latitud,
+                'lng' => (float)$recinto->longitud,
+                'winners' => []
+            ];
+
+            foreach ($categorias as $key => $field) {
+                $winner = $votos->sortByDesc($field)->first();
+                if ($winner && $winner->$field > 0) {
+                    $res['winners'][$key] = [
+                        'partido_id' => $winner->partido_id,
+                        'color' => $partidos[$winner->partido_id] ?? '#CCCCCC',
+                        'votos' => (int)$winner->$field
+                    ];
+                } else {
+                    $res['winners'][$key] = [
+                        'partido_id' => null,
+                        'color' => '#CCCCCC',
+                        'votos' => 0
+                    ];
+                }
+            }
+
+            return $res;
+        });
+
+        return response()->json($resultado);
+    }
 }

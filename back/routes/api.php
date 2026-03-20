@@ -18,6 +18,7 @@ use App\Http\Controllers\GraficosController;
 use App\Http\Controllers\AdminUserJerarquiaController;
 use App\Http\Controllers\AdminRecintoJefeMapaController;
 use App\Http\Controllers\SuperAdminMesasController;
+use App\Http\Controllers\ReportesController;
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
 //})->middleware('auth:sanctum');
@@ -79,6 +80,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 
     Route::middleware('auth:sanctum')->get('/dashboard/elecciones/resumen', [EleccionesDashboardController::class, 'resumen']);
     Route::middleware('auth:sanctum')->get('/dashboard/graficos', [GraficosController::class, 'index']);
+    Route::middleware('auth:sanctum')->get('/dashboard/mapa', [GraficosController::class, 'mapa']);
 
     Route::get('admin/jerarquia/supervisores', [AdminUserJerarquiaController::class, 'supervisores']);
     Route::get('admin/jerarquia/jefes', [AdminUserJerarquiaController::class, 'jefes']);
@@ -113,6 +115,18 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('admin/mesas/{mesa}/asistencia-capacitacion', [SuperAdminMesasController::class, 'asistenciaCapacitacion']);
     Route::get('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'resultado']);
     Route::put('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'guardarResultado']);
+
+    // ─── Reportes ─────────────────────────────────────────────────────────────
+    Route::get('reportes/delegados-asignados', [ReportesController::class, 'delegadosAsignados']);
+    Route::get('reportes/jefes-asignados', [ReportesController::class, 'jefesAsignados']);
+    Route::get('reportes/delegados-libres', [ReportesController::class, 'delegadosLibres']);
+    Route::get('reportes/jefes-libres', [ReportesController::class, 'jefesLibres']);
+    Route::get('reportes/recintos-sin-jefe', [ReportesController::class, 'recintosSinJefe']);
+    Route::get('reportes/export/delegados-asignados', [ReportesController::class, 'exportDelegadosAsignados']);
+    Route::get('reportes/export/jefes-asignados', [ReportesController::class, 'exportJefesAsignados']);
+    Route::get('reportes/export/delegados-libres', [ReportesController::class, 'exportDelegadosLibres']);
+    Route::get('reportes/export/jefes-libres', [ReportesController::class, 'exportJefesLibres']);
+    Route::get('reportes/export/recintos-sin-jefe', [ReportesController::class, 'exportRecintosSinJefe']);
 
 });
 Route::prefix('mobile')->group(function () {
