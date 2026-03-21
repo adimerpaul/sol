@@ -36,11 +36,8 @@ class _MyAppState extends State<MyApp> {
   Future<void> _requestPermissions() async {
     await Permission.location.request();
     // await Permission.notification.request();
-    // pedir fotos y videos
-    // await Permission.photos.request();
     if (Platform.isAndroid) {
       await Permission.camera.request();
-      // await Permission.storage.request();
     }
   }
 

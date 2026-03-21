@@ -65,6 +65,14 @@
             <q-badge color="negative" rounded>{{ recintos.length }}</q-badge>
           </div>
         </q-tab>
+
+        <q-tab name="mesas_libres" class="rounded-tab">
+          <div class="row items-center no-wrap q-gutter-xs">
+            <q-icon name="table_restaurant" />
+            <span>Mesas libres</span>
+            <q-badge color="brown" rounded>{{ mesasLibres.length }}</q-badge>
+          </div>
+        </q-tab>
       </q-tabs>
 
       <q-separator />
@@ -147,6 +155,20 @@
           </PanelReporte>
         </q-tab-panel>
 
+        <q-tab-panel name="mesas_libres" class="q-pa-none">
+          <PanelReporte
+            titulo="Mesas libres"
+            icono="table_restaurant"
+            color="brown"
+            :loading="loading"
+            :loading-export="loadingExport.mesas_libres"
+            @export="exportar('mesas_libres')"
+          >
+            <q-table flat dense :rows="mesasLibres" :columns="colsMesasLibres"
+              row-key="mesa_key" :pagination="pagination" no-data-label="Sin datos" rows-per-page-label="Filas" />
+          </PanelReporte>
+        </q-tab-panel>
+
       </q-tab-panels>
     </q-card>
 
@@ -203,6 +225,7 @@ const loadingExport = ref({
   del_libres:    false,
   jef_libres:    false,
   rec_sin_jefe:  false,
+  mesas_libres:  false,
 })
 
 const delegadosAsig = ref([])
@@ -210,6 +233,7 @@ const jefesAsig     = ref([])
 const delegadosLib  = ref([])
 const jefesLib      = ref([])
 const recintos      = ref([])
+const mesasLibres   = ref([])
 
 const pagination = { rowsPerPage: 15 }
 
@@ -265,22 +289,31 @@ const colsRecintos = [
   { name: 'recinto',     label: 'Recinto', field: 'recinto',     align: 'left',   sortable: true },
 ]
 
+const colsMesasLibres = [
+  { name: 'nro_recinto', label: 'Nro',     field: 'nro_recinto', align: 'center', sortable: true },
+  { name: 'recinto',     label: 'Recinto', field: 'recinto',     align: 'left',   sortable: true },
+  { name: 'numero_mesa', label: 'Mesa',    field: 'numero_mesa', align: 'center', sortable: true },
+  { name: 'estado',      label: 'Estado',  field: 'estado',      align: 'center', sortable: true },
+]
+
 // ── Carga ─────────────────────────────────────────────────────────────────────
 async function cargar () {
   loading.value = true
   try {
-    const [r1, r2, r3, r4, r5] = await Promise.all([
+    const [r1, r2, r3, r4, r5, r6] = await Promise.all([
       proxy.$axios.get('/reportes/delegados-asignados'),
       proxy.$axios.get('/reportes/jefes-asignados'),
       proxy.$axios.get('/reportes/delegados-libres'),
       proxy.$axios.get('/reportes/jefes-libres'),
       proxy.$axios.get('/reportes/recintos-sin-jefe'),
+      proxy.$axios.get('/reportes/mesas-libres'),
     ])
     delegadosAsig.value = r1.data
     jefesAsig.value     = r2.data
     delegadosLib.value  = r3.data
     jefesLib.value      = r4.data
     recintos.value      = r5.data
+    mesasLibres.value   = r6.data
   } catch {
     proxy.$alert.error('Error al cargar los reportes.')
   } finally {
@@ -295,6 +328,7 @@ const exportEndpoints = {
   del_libres:    '/reportes/export/delegados-libres',
   jef_libres:    '/reportes/export/jefes-libres',
   rec_sin_jefe:  '/reportes/export/recintos-sin-jefe',
+  mesas_libres:  '/reportes/export/mesas-libres',
 }
 const exportFilenames = {
   del_asignados: 'delegados_asignados.csv',
@@ -302,6 +336,7 @@ const exportFilenames = {
   del_libres:    'delegados_libres.csv',
   jef_libres:    'jefes_libres.csv',
   rec_sin_jefe:  'recintos_sin_jefe.csv',
+  mesas_libres:  'mesas_libres.csv',
 }
 
 async function exportar (tipo) {

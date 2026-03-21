@@ -10,9 +10,9 @@ import 'package:path_provider/path_provider.dart';
 import '../../addons/snackbar_helper.dart';
 import '../../models/mobile_login_response.dart';
 import '../../models/votacion_model.dart';
+import '../../services/document_scan_helper.dart';
 import '../../services/mobile_auth_local_store.dart';
 import '../../services/mobile_votacion_service.dart';
-import '../../services/document_scan_helper.dart';
 import '../image_enhance_screen.dart';
 
 class AlcaldeConcejalPage extends StatefulWidget {
@@ -31,9 +31,6 @@ enum _VotacionTab {
 }
 
 class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
-  static const int _targetTotalPorCategoria = 250;
-  static const int _maxTotalPermitidoPorCategoria = 260;
-
   final MobileAuthLocalStore _localStore = MobileAuthLocalStore.instance;
   final MobileVotacionService _service = MobileVotacionService();
   final ImagePicker _picker = ImagePicker();
@@ -367,6 +364,10 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return null;
   }
 
+  int get _targetTotalPorCategoria => _mesaActual?.habilitados ?? 260;
+
+  int get _maxTotalPermitidoPorCategoria => _targetTotalPorCategoria;
+
   String _estadoMesaLabel(MobileMesa? mesa) {
     final estadoApi = (mesa?.estado ?? '').toUpperCase().trim();
     if (estadoApi.isNotEmpty) return estadoApi;
@@ -452,7 +453,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     final maxAllowed = (_maxTotalPermitidoPorCategoria - otherValues).clamp(
       0,
       _maxTotalPermitidoPorCategoria,
-    ) as int;
+    );
     if (current <= maxAllowed) {
       _onDataChanged();
       return;
@@ -955,6 +956,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
               idOriginal: m.idOriginal,
               recintoId: m.recintoId,
               numeroMesa: m.numeroMesa,
+              habilitados: m.habilitados,
               estado: d.finalizar ? 'FINALIZADA' : 'EN_PROCESO',
               estadoLocal: d.finalizar ? 'REALIZADO' : 'PENDIENTE',
               recintoNombre: m.recintoNombre,
@@ -1557,9 +1559,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             const SizedBox(height: 6),
             Text(
               'Total ${sum + _ival(blancosCtrl) + _ival(nulosCtrl) + (showPnu ? _ival(papeletasNoUtilizadasCtrl) : 0)}/$_targetTotalPorCategoria',
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: ok ? Colors.green : Colors.red,
                 fontWeight: FontWeight.w700,
+                fontSize: 18,
               ),
             ),
           ],

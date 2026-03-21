@@ -179,6 +179,7 @@ class MobileMesa {
     required this.idOriginal,
     required this.recintoId,
     required this.numeroMesa,
+    required this.habilitados,
     required this.estado,
     required this.estadoLocal,
     required this.recintoNombre,
@@ -195,6 +196,7 @@ class MobileMesa {
   final int? idOriginal;
   final int? recintoId;
   final int? numeroMesa;
+  final int habilitados;
   final String? estado;
   final String? estadoLocal;
   final String? recintoNombre;
@@ -218,6 +220,7 @@ class MobileMesa {
       idOriginal: _asInt(json['id_original']),
       recintoId: _asInt(json['recinto_id']),
       numeroMesa: _asInt(json['numero_mesa']),
+      habilitados: _asInt(json['habilitados']) ?? 260,
       estado: json['estado']?.toString(),
       estadoLocal: json['estado_local']?.toString(),
       recintoNombre: recinto['nombre']?.toString(),

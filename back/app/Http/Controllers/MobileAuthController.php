@@ -161,6 +161,7 @@ class MobileAuthController extends Controller
             ->get()
             ->map(function (Mesa $mesa) {
                 $arr = $mesa->toArray();
+                $arr['habilitados'] = (int) ($mesa->habilitados ?? 260);
                 $r = $mesa->resultado;
 
                 if ($r) {

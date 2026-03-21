@@ -254,6 +254,10 @@
                     <q-item-section avatar><q-icon name="how_to_vote" /></q-item-section>
                     <q-item-section><q-item-label>Registrar resultado</q-item-label></q-item-section>
                   </q-item>
+                  <q-item clickable v-close-popup :disable="!hasPresenceData(r)" @click="openPresencia(r)">
+                    <q-item-section avatar><q-icon name="place" /></q-item-section>
+                    <q-item-section><q-item-label>Ver presencia delegado</q-item-label></q-item-section>
+                  </q-item>
                 </q-list>
               </q-btn-dropdown>
             </td>
@@ -326,6 +330,18 @@
                 <q-chip v-if="r.hora_apertura_mesa" dense size="11px" color="indigo" text-color="white">
                   {{ r.hora_apertura_mesa }}
                 </q-chip>
+              </div>
+              <div v-if="hasPresenceData(r)" class="q-mt-xs">
+                <q-btn
+                  flat
+                  dense
+                  no-caps
+                  size="sm"
+                  color="primary"
+                  icon="location_on"
+                  label="Ver presencia"
+                  @click="openPresencia(r)"
+                />
               </div>
             </td>
 
@@ -759,6 +775,80 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="dlgPresencia">
+      <q-card style="width: 460px; max-width: 95vw;">
+        <q-card-section class="row items-center">
+          <div class="text-weight-bold">Presencia del delegado</div>
+          <q-space />
+          <q-btn icon="close" flat round dense @click="dlgPresencia=false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <div class="text-caption text-grey-7 q-mb-md">
+            {{ presenceRow?.recinto_nombre }} · Mesa {{ presenceRow?.numero_mesa }}
+          </div>
+
+          <q-list dense bordered separator>
+            <q-item>
+              <q-item-section avatar><q-icon name="person" color="primary" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Delegado</q-item-label>
+                <q-item-label caption>{{ presenceRow?.delegado?.name || 'Sin delegado' }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section avatar><q-icon name="schedule" color="primary" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Hora registrada</q-item-label>
+                <q-item-label caption>{{ fmtPresenceAt(presenceRow?.delegado_presente_at) }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section avatar><q-icon name="my_location" color="primary" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Latitud</q-item-label>
+                <q-item-label caption>{{ presenceRow?.delegado_latitud || 'Sin dato' }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section avatar><q-icon name="explore" color="primary" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Longitud</q-item-label>
+                <q-item-label caption>{{ presenceRow?.delegado_longitud || 'Sin dato' }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-card v-if="presenceMapUrl(presenceRow)" flat bordered class="q-mt-md">
+            <q-card-section class="q-pb-none">
+              <div class="text-weight-medium">Ubicación registrada</div>
+              <div class="text-caption text-grey-7">
+                Puede cambiar la capa del mapa desde el selector en la esquina superior derecha.
+              </div>
+            </q-card-section>
+            <q-card-section>
+              <PresenceLeafletMap
+                :latitud="presenceRow?.delegado_latitud"
+                :longitud="presenceRow?.delegado_longitud"
+              />
+            </q-card-section>
+          </q-card>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn color="grey-7" flat label="Cerrar" no-caps @click="dlgPresencia=false" />
+          <q-btn
+            v-if="presenceMapUrl(presenceRow)"
+            color="primary"
+            icon="map"
+            label="Abrir mapa"
+            no-caps
+            @click="openPresenceMap"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="dlgFotoPreview" maximized>
       <q-card class="bg-black">
         <q-card-section class="row items-center q-pb-none">
@@ -786,10 +876,12 @@
 </template>
 
 <script>
+import PresenceLeafletMap from 'components/PresenceLeafletMap.vue'
 import { io } from 'socket.io-client'
 
 export default {
   name: 'AdminResultadosMesas',
+  components: { PresenceLeafletMap },
   data () {
     return {
       loadingAll: false,
@@ -874,6 +966,8 @@ export default {
       // resultado
       dlgResultado: false,
       resMesa: null,
+      dlgPresencia: false,
+      presenceRow: null,
       partidos: [],
       votosMap: {},
       voteTypes: [
@@ -1584,6 +1678,38 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+
+    hasPresenceData (row) {
+      return !!(row?.aviso_antes || row?.delegado_latitud || row?.delegado_longitud || row?.delegado_presente_at)
+    },
+
+    openPresencia (row) {
+      this.presenceRow = row
+      this.dlgPresencia = true
+    },
+
+    fmtPresenceAt (value) {
+      if (!value) return 'Sin horario registrado'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return value
+      return new Intl.DateTimeFormat('es-BO', {
+        dateStyle: 'short',
+        timeStyle: 'medium'
+      }).format(date)
+    },
+
+    presenceMapUrl (row) {
+      const lat = row?.delegado_latitud
+      const lng = row?.delegado_longitud
+      if (lat == null || lng == null || lat === '' || lng === '') return null
+      return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`
+    },
+
+    openPresenceMap () {
+      const url = this.presenceMapUrl(this.presenceRow)
+      if (!url) return
+      window.open(url, '_blank', 'noopener,noreferrer')
     },
 
     openAsignar (row) {

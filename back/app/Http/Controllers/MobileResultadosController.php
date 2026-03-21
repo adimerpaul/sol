@@ -8,6 +8,7 @@ use App\Models\ResultadoMesa;
 use App\Models\ResultadoMesaDetalle;
 use App\Services\SocketEmitter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -131,6 +132,9 @@ class MobileResultadosController extends Controller
             'field' => 'required|string|in:aviso_antes,aviso_manana,aviso_mediodia,aviso_tarde',
             'value' => 'required|boolean',
             'hora_apertura_mesa' => 'nullable|string|max:5',
+            'latitud' => 'nullable|numeric',
+            'longitud' => 'nullable|numeric',
+            'presente_at' => 'nullable|date',
         ]);
 
         if (($data['field'] ?? null) === 'aviso_manana' && (bool) ($data['value'] ?? false)) {
@@ -179,6 +183,22 @@ class MobileResultadosController extends Controller
                 $rm->registrado_por = $user->id;
                 $rm->save();
 
+                if (($data['field'] ?? null) === 'aviso_antes' && (bool) ($data['value'] ?? false)) {
+                    if (array_key_exists('latitud', $data)) {
+                        $mesa->delegado_latitud = isset($data['latitud'])
+                            ? (string) $data['latitud']
+                            : null;
+                    }
+                    if (array_key_exists('longitud', $data)) {
+                        $mesa->delegado_longitud = isset($data['longitud'])
+                            ? (string) $data['longitud']
+                            : null;
+                    }
+                    $mesa->delegado_presente_at = !empty($data['presente_at'])
+                        ? Carbon::parse($data['presente_at'])
+                        : now();
+                }
+
                 if (
                     (bool) $rm->aviso_antes ||
                     (bool) $rm->aviso_manana ||
@@ -218,6 +238,9 @@ class MobileResultadosController extends Controller
             'field_label' => $labels[$field] ?? $field,
             'value' => (bool) $data['value'],
             'hora_apertura_mesa' => $data['hora_apertura_mesa'] ?? null,
+            'latitud' => $data['latitud'] ?? null,
+            'longitud' => $data['longitud'] ?? null,
+            'presente_at' => $data['presente_at'] ?? null,
             'updated_mesas' => $mesas->count(),
             'user_id' => $user->id ?? null,
             'user_name' => $user->name ?? null,
@@ -229,6 +252,9 @@ class MobileResultadosController extends Controller
             'field' => $data['field'],
             'value' => (bool) $data['value'],
             'hora_apertura_mesa' => $data['hora_apertura_mesa'] ?? null,
+            'latitud' => $data['latitud'] ?? null,
+            'longitud' => $data['longitud'] ?? null,
+            'presente_at' => $data['presente_at'] ?? null,
             'updated_mesas' => $mesas->count(),
         ]);
     }

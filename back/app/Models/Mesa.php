@@ -13,7 +13,13 @@ class Mesa extends Model implements Auditable
 
     protected $fillable = [
         'recinto_id','localidad_id','municipio_id','provincia_id','departamento_id','pais_id',
-        'numero_mesa','habilitados','delegado_id','estado','asistencia_capacitacion'
+        'numero_mesa','habilitados','delegado_id','estado','asistencia_capacitacion',
+        'delegado_latitud','delegado_longitud','delegado_presente_at'
+    ];
+
+    protected $casts = [
+        'asistencia_capacitacion' => 'boolean',
+        'delegado_presente_at' => 'datetime',
     ];
     public function departamento() { return $this->belongsTo(Departamento::class); }
     public function provincia()   { return $this->belongsTo(Provincia::class); }

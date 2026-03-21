@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../services/manual_pdf_service.dart';
 import '../viewmodels/login_view_model.dart';
 
 class LoginView extends StatefulWidget {
@@ -38,6 +40,37 @@ class _LoginViewState extends State<LoginView> {
     return '$yyyy-$mm-$dd';
   }
 
+  Future<void> _openManual({
+    required String assetPath,
+    required String fileName,
+    required String successLabel,
+  }) async {
+    try {
+      await ManualPdfService.saveAndOpenManual(
+        assetPath: assetPath,
+        fileName: fileName,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$successLabel guardado en Documentos/Jacha')),
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'No se pudo abrir el manual'),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo abrir el manual'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,8 +79,8 @@ class _LoginViewState extends State<LoginView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A2A66), Color(0xFF0E3A8A), Color(0xFFE9EEF8)],
-            stops: [0.0, 0.45, 1.0],
+            colors: [Color(0xFF7A0012), Color(0xFFC5162E), Color(0xFFFFE2E5)],
+            stops: [0.0, 0.42, 1.0],
           ),
         ),
         child: SafeArea(
@@ -59,171 +92,202 @@ class _LoginViewState extends State<LoginView> {
                 builder: (context, _) {
                   return ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 430),
-                    child: Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
                           children: [
-                            Center(
-                              child: Container(
-                                width: 92,
-                                height: 92,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(22),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x1A000000),
-                                      blurRadius: 14,
-                                      offset: Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                padding: const EdgeInsets.all(12),
-                                child: Image.asset(
-                                  'assets/images/logo.png',
-                                  fit: BoxFit.contain,
+                            Expanded(
+                              child: _ManualButton(
+                                title: 'Manual de la\nApp Jacha',
+                                onTap: () => _openManual(
+                                  assetPath: 'assets/aplicacion.pdf',
+                                  fileName: 'manual_app_jacha.pdf',
+                                  successLabel: 'Manual de la App Jacha',
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Bienvenido',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF0B1F4A),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _ManualButton(
+                                title: 'Manual de\nProceso del Voto',
+                                onTap: () => _openManual(
+                                  assetPath: 'assets/proceso voto.pdf',
+                                  fileName: 'manual_proceso_del_voto.pdf',
+                                  successLabel: 'Manual de Proceso del Voto',
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Inicia sesion para continuar',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF5A6680),
-                              ),
-                            ),
-                            const SizedBox(height: 22),
-                            TextField(
-                              controller: _ciController,
-                              decoration: _inputDecoration(
-                                label: 'CI',
-                                icon: Icons.badge_outlined,
-                                hint: 'Ingresa tu carnet',
-                              ),
-                              keyboardType: TextInputType.text,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildFechaNacimientoSelectors(),
-                            const SizedBox(height: 16),
-                            FilledButton(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFFF53333),
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              onPressed: _vm.isLoading
-                                  ? null
-                                  : () async {
-                                      final ci = _ciController.text.trim();
-                                      final fecha = _fechaNacimiento;
-                                      if (ci.isEmpty || fecha == null) {
-                                        ScaffoldMessenger.of(
-                                          this.context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Completa CI y fecha de nacimiento',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                      await _vm.login(
-                                        ci: ci,
-                                        fechaNacimiento: fecha,
-                                      );
-                                      if (!mounted) return;
-                                      if (_vm.result != null) {
-                                        Navigator.pushReplacementNamed(
-                                          this.context,
-                                          '/menu',
-                                        );
-                                      }
-                                    },
-                              child: _vm.isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Ingresar',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                            ),
-                            if (_vm.error != null) ...[
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFEBEE),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFFEF9A9A),
-                                  ),
-                                ),
-                                child: Text(
-                                  _vm.error!,
-                                  style: const TextStyle(
-                                    color: Color(0xFFB71C1C),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            if (_vm.isOfflineSession) ...[
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF8E1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFFFFE082),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Sesion cargada desde SQLite (modo offline)',
-                                  style: TextStyle(
-                                    color: Color(0xFF8D6E00),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 14),
+                        Card(
+                          elevation: 10,
+                          shadowColor: const Color(0x40220000),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Center(
+                                  child: Container(
+                                    width: 92,
+                                    height: 92,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(22),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Color(0x1A000000),
+                                          blurRadius: 14,
+                                          offset: Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    padding: const EdgeInsets.all(12),
+                                    child: Image.asset(
+                                      'assets/images/logo.png',
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Bienvenido',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF0B1F4A),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Inicia sesion para continuar',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF5A6680),
+                                  ),
+                                ),
+                                const SizedBox(height: 22),
+                                TextField(
+                                  controller: _ciController,
+                                  decoration: _inputDecoration(
+                                    label: 'CI',
+                                    icon: Icons.badge_outlined,
+                                    hint: 'Ingresa tu carnet',
+                                  ),
+                                  keyboardType: TextInputType.text,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildFechaNacimientoSelectors(),
+                                const SizedBox(height: 16),
+                                FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF53333),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  onPressed: _vm.isLoading
+                                      ? null
+                                      : () async {
+                                          final ci = _ciController.text.trim();
+                                          final fecha = _fechaNacimiento;
+                                          if (ci.isEmpty || fecha == null) {
+                                            ScaffoldMessenger.of(
+                                              this.context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Completa CI y fecha de nacimiento',
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                          await _vm.login(
+                                            ci: ci,
+                                            fechaNacimiento: fecha,
+                                          );
+                                          if (!mounted) return;
+                                          if (_vm.result != null) {
+                                            Navigator.pushReplacementNamed(
+                                              this.context,
+                                              '/menu',
+                                            );
+                                          }
+                                        },
+                                  child: _vm.isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Ingresar',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                ),
+                                if (_vm.error != null) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFEBEE),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFFEF9A9A),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _vm.error!,
+                                      style: const TextStyle(
+                                        color: Color(0xFFB71C1C),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (_vm.isOfflineSession) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFF8E1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFFFFE082),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Sesion cargada desde SQLite (modo offline)',
+                                      style: TextStyle(
+                                        color: Color(0xFF8D6E00),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -349,6 +413,43 @@ class _LoginViewState extends State<LoginView> {
           ],
         );
       },
+    );
+  }
+}
+
+class _ManualButton extends StatelessWidget {
+  const _ManualButton({
+    required this.title,
+    required this.onTap,
+  });
+
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 4,
+      shadowColor: const Color(0x33000000),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF181818),
+              height: 1.2,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

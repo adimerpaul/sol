@@ -53,12 +53,23 @@ class MobileAsistenciaService {
     required String field,
     required bool value,
     String? horaAperturaMesa,
+    double? latitud,
+    double? longitud,
+    String? presenteAt,
   }) async {
     final token = await _localStore.readAuthToken();
     if (token == null || token.isEmpty) {
       throw StateError('Sin token');
     }
     final uri = Uri.parse(_buildUrl('asistencia/update'));
+    final payload = <String, dynamic>{
+      'field': field,
+      'value': value,
+      'hora_apertura_mesa': horaAperturaMesa,
+      'latitud': latitud,
+      'longitud': longitud,
+      'presente_at': presenteAt,
+    }..removeWhere((_, value) => value == null);
     final res = await _client
         .post(
           uri,
@@ -67,11 +78,7 @@ class MobileAsistenciaService {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
-          body: jsonEncode({
-            'field': field,
-            'value': value,
-            if (horaAperturaMesa != null) 'hora_apertura_mesa': horaAperturaMesa,
-          }),
+          body: jsonEncode(payload),
         )
         .timeout(const Duration(seconds: 8));
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -93,6 +100,9 @@ class MobileAsistenciaService {
       final field = item['field']?.toString() ?? '';
       final value = item['value'] == true;
       final horaAperturaMesa = item['hora_apertura_mesa']?.toString();
+      final latitud = item['latitud'] as double?;
+      final longitud = item['longitud'] as double?;
+      final presenteAt = item['presente_at']?.toString();
       if (field.isEmpty) continue;
       try {
         await sendAsistenciaToggle(
@@ -101,6 +111,9 @@ class MobileAsistenciaService {
           horaAperturaMesa: horaAperturaMesa?.isEmpty == true
               ? null
               : horaAperturaMesa,
+          latitud: latitud,
+          longitud: longitud,
+          presenteAt: presenteAt?.isEmpty == true ? null : presenteAt,
         );
         await _localStore.dequeueAsistenciaField(field);
         ok++;

@@ -124,11 +124,13 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('reportes/delegados-libres', [ReportesController::class, 'delegadosLibres']);
     Route::get('reportes/jefes-libres', [ReportesController::class, 'jefesLibres']);
     Route::get('reportes/recintos-sin-jefe', [ReportesController::class, 'recintosSinJefe']);
+    Route::get('reportes/mesas-libres', [ReportesController::class, 'mesasLibres']);
     Route::get('reportes/export/delegados-asignados', [ReportesController::class, 'exportDelegadosAsignados']);
     Route::get('reportes/export/jefes-asignados', [ReportesController::class, 'exportJefesAsignados']);
     Route::get('reportes/export/delegados-libres', [ReportesController::class, 'exportDelegadosLibres']);
     Route::get('reportes/export/jefes-libres', [ReportesController::class, 'exportJefesLibres']);
     Route::get('reportes/export/recintos-sin-jefe', [ReportesController::class, 'exportRecintosSinJefe']);
+    Route::get('reportes/export/mesas-libres', [ReportesController::class, 'exportMesasLibres']);
 
 });
 Route::prefix('mobile')->group(function () {

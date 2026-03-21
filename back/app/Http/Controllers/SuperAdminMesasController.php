@@ -107,6 +107,9 @@ class SuperAdminMesasController extends Controller
                 'mesas.delegado_id',
                 'mesas.estado',
                 'mesas.asistencia_capacitacion',
+                'mesas.delegado_latitud',
+                'mesas.delegado_longitud',
+                'mesas.delegado_presente_at',
             ])
             ->with([
                 'recinto:id,nombre',
@@ -167,6 +170,9 @@ class SuperAdminMesasController extends Controller
 
                     'estado' => $m->estado,
                     'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
+                    'delegado_latitud' => $m->delegado_latitud !== null ? (string) $m->delegado_latitud : null,
+                    'delegado_longitud' => $m->delegado_longitud !== null ? (string) $m->delegado_longitud : null,
+                    'delegado_presente_at' => $m->delegado_presente_at?->toIso8601String(),
 
                     'tiene_resultado' => (bool) $m->resultado,
                     'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
@@ -222,6 +228,9 @@ class SuperAdminMesasController extends Controller
                     ] : null,
                 'estado' => $m->estado,
                 'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
+                'delegado_latitud' => $m->delegado_latitud !== null ? (string) $m->delegado_latitud : null,
+                'delegado_longitud' => $m->delegado_longitud !== null ? (string) $m->delegado_longitud : null,
+                'delegado_presente_at' => $m->delegado_presente_at?->toIso8601String(),
                 'tiene_resultado' => (bool) $m->resultado,
                 'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
                 'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
@@ -391,6 +400,9 @@ class SuperAdminMesasController extends Controller
                 'mesas.delegado_id',
                 'mesas.estado',
                 'mesas.asistencia_capacitacion',
+                'mesas.delegado_latitud',
+                'mesas.delegado_longitud',
+                'mesas.delegado_presente_at',
             ])
             ->with([
                 'recinto:id,nombre',
@@ -514,6 +526,12 @@ class SuperAdminMesasController extends Controller
                 return response()->json(['message' => 'El usuario no es Delegado de Mesa'], 422);
             }
 
+            if ((int) $mesa->delegado_id !== (int) $data['delegado_id']) {
+                $mesa->delegado_latitud = null;
+                $mesa->delegado_longitud = null;
+                $mesa->delegado_presente_at = null;
+            }
+
             $mesa->delegado_id = $data['delegado_id'];
             $mesa->estado = $data['estado'] ?? 'ASIGNADA';
             $mesa->save();
@@ -523,6 +541,9 @@ class SuperAdminMesasController extends Controller
 
         $mesa->delegado_id = null;
         $mesa->estado = 'PENDIENTE';
+        $mesa->delegado_latitud = null;
+        $mesa->delegado_longitud = null;
+        $mesa->delegado_presente_at = null;
         $mesa->save();
 
         return response()->json(['message' => 'Mesa liberada']);

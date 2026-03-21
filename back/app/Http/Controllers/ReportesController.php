@@ -150,6 +150,26 @@ class ReportesController extends Controller
         return response()->json($rows);
     }
 
+    public function mesasLibres()
+    {
+        $rows = DB::select("
+            SELECT
+                DENSE_RANK() OVER (ORDER BY r.nombre ASC) AS nro_recinto,
+                CONCAT(r.id, '-', m.numero_mesa) AS mesa_key,
+                r.nombre AS recinto,
+                m.numero_mesa AS numero_mesa,
+                'MESA LIBRE' AS estado
+            FROM mesas m
+            INNER JOIN recintos r ON m.recinto_id = r.id
+            LEFT JOIN users u ON m.delegado_id = u.id
+            WHERE m.delegado_id IS NULL
+              AND r.municipio_id = ?
+            ORDER BY r.nombre ASC, m.numero_mesa ASC
+        ", [$this->MUNICIPIO_ID]);
+
+        return response()->json($rows);
+    }
+
     // ─── Exports ──────────────────────────────────────────────────────────────
     public function exportDelegadosAsignados()
     {
@@ -210,6 +230,16 @@ class ReportesController extends Controller
     }
 
     // ─── Helper ───────────────────────────────────────────────────────────────
+    public function exportMesasLibres()
+    {
+        $rows = json_decode(json_encode($this->mesasLibres()->getData()), true);
+        return $this->streamCsv($rows, 'mesas_libres.csv', [
+            'Nro Recinto','Recinto','Número de Mesa','Estado'
+        ], [
+            'nro_recinto','recinto','numero_mesa','estado'
+        ]);
+    }
+
     private function streamCsv(array $rows, string $filename, array $headers, array $keys)
     {
         $callback = function () use ($rows, $headers, $keys) {

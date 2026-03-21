@@ -106,6 +106,7 @@ class MobileAuthLocalStore {
         id_original INTEGER,
         recinto_id INTEGER,
         numero_mesa INTEGER,
+        habilitados INTEGER NOT NULL DEFAULT 260,
         estado_api TEXT,
         estado_local TEXT NOT NULL,
         recinto_nombre TEXT,
@@ -136,6 +137,9 @@ class MobileAuthLocalStore {
         field TEXT PRIMARY KEY,
         value INTEGER NOT NULL,
         hora_apertura_mesa TEXT,
+        latitud REAL,
+        longitud REAL,
+        presente_at TEXT,
         updated_at TEXT NOT NULL
       )
     ''');
@@ -215,6 +219,7 @@ class MobileAuthLocalStore {
         id_original INTEGER,
         recinto_id INTEGER,
         numero_mesa INTEGER,
+        habilitados INTEGER NOT NULL DEFAULT 260,
         estado_api TEXT,
         estado_local TEXT NOT NULL,
         recinto_nombre TEXT,
@@ -245,6 +250,9 @@ class MobileAuthLocalStore {
         field TEXT PRIMARY KEY,
         value INTEGER NOT NULL,
         hora_apertura_mesa TEXT,
+        latitud REAL,
+        longitud REAL,
+        presente_at TEXT,
         updated_at TEXT NOT NULL
       )
     ''');
@@ -264,6 +272,12 @@ class MobileAuthLocalStore {
     await _addColumnIfMissing(db, 'auth_jefes', 'celular', 'TEXT');
     await _addColumnIfMissing(db, 'auth_supervisores', 'celular', 'TEXT');
     await _addColumnIfMissing(db, 'auth_mesas', 'recinto_id', 'INTEGER');
+    await _addColumnIfMissing(
+      db,
+      'auth_mesas',
+      'habilitados',
+      'INTEGER NOT NULL DEFAULT 260',
+    );
     await _addColumnIfMissing(db, 'votacion_draft', 'fotos_json', 'TEXT');
     await _addColumnIfMissing(
       db,
@@ -280,6 +294,9 @@ class MobileAuthLocalStore {
     await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_alcalde', 'INTEGER NOT NULL DEFAULT 1');
     await _addColumnIfMissing(db, 'asistencia_state', 'hora_apertura_mesa', 'TEXT');
     await _addColumnIfMissing(db, 'asistencia_queue', 'hora_apertura_mesa', 'TEXT');
+    await _addColumnIfMissing(db, 'asistencia_queue', 'latitud', 'REAL');
+    await _addColumnIfMissing(db, 'asistencia_queue', 'longitud', 'REAL');
+    await _addColumnIfMissing(db, 'asistencia_queue', 'presente_at', 'TEXT');
   }
 
   Future<void> _addColumnIfMissing(
@@ -414,6 +431,7 @@ class MobileAuthLocalStore {
           'id_original': mesa.idOriginal,
           'recinto_id': mesa.recintoId,
           'numero_mesa': mesa.numeroMesa,
+          'habilitados': mesa.habilitados,
           'estado_api': mesa.estado,
           'estado_local': mesa.estadoLocal ??
               _estadoLocalInicial(
@@ -631,6 +649,7 @@ class MobileAuthLocalStore {
             idOriginal: row['id_original'] as int?,
             recintoId: row['recinto_id'] as int?,
             numeroMesa: row['numero_mesa'] as int?,
+            habilitados: row['habilitados'] as int? ?? 260,
             estado: row['estado_api'] as String?,
             estadoLocal: row['estado_local'] as String?,
             recintoNombre: row['recinto_nombre'] as String?,
@@ -935,12 +954,18 @@ class MobileAuthLocalStore {
     String field,
     bool value, {
     String? horaAperturaMesa,
+    double? latitud,
+    double? longitud,
+    String? presenteAt,
   }) async {
     final db = await database;
     await db.insert('asistencia_queue', {
       'field': field,
       'value': value ? 1 : 0,
       'hora_apertura_mesa': horaAperturaMesa,
+      'latitud': latitud,
+      'longitud': longitud,
+      'presente_at': presenteAt,
       'updated_at': DateTime.now().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
@@ -959,6 +984,9 @@ class MobileAuthLocalStore {
             'field': r['field'],
             'value': (r['value'] as int? ?? 0) == 1,
             'hora_apertura_mesa': r['hora_apertura_mesa'],
+            'latitud': (r['latitud'] as num?)?.toDouble(),
+            'longitud': (r['longitud'] as num?)?.toDouble(),
+            'presente_at': r['presente_at'],
           },
         )
         .toList();
@@ -980,6 +1008,7 @@ class MobileAuthLocalStore {
             idOriginal: row['id_original'] as int?,
             recintoId: row['recinto_id'] as int?,
             numeroMesa: row['numero_mesa'] as int?,
+            habilitados: row['habilitados'] as int? ?? 260,
             estado: row['estado_api'] as String?,
             estadoLocal: row['estado_local'] as String?,
             recintoNombre: row['recinto_nombre'] as String?,

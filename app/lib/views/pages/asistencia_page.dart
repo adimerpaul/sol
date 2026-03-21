@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../addons/snackbar_helper.dart';
 import '../../services/mobile_asistencia_service.dart';
@@ -21,6 +22,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
 
   bool _loading = true;
   bool _syncing = false;
+  bool _resolvingLocation = false;
   bool _hasPending = false;
 
   bool _avisoAntes = false;
@@ -123,6 +125,27 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     final ok = await _confirmIrreversible();
     if (ok != true) return;
 
+    double? latitud;
+    double? longitud;
+    String? presenteAt;
+    if (field == 'aviso_antes') {
+      try {
+        setState(() => _resolvingLocation = true);
+        final position = await _resolveQuickPosition();
+        latitud = position.latitude;
+        longitud = position.longitude;
+        presenteAt = DateTime.now().toIso8601String();
+      } catch (e) {
+        if (!mounted) return;
+        showError(context, e.toString().replaceFirst('Exception: ', ''));
+        return;
+      } finally {
+        if (mounted) {
+          setState(() => _resolvingLocation = false);
+        }
+      }
+    }
+
     _lockedFields.add(field);
     _setLocalField(field, value);
 
@@ -140,6 +163,9 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       field,
       value,
       horaAperturaMesa: horaForRequest,
+      latitud: latitud,
+      longitud: longitud,
+      presenteAt: presenteAt,
     );
     setState(() => _hasPending = true);
 
@@ -148,6 +174,9 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         field: field,
         value: value,
         horaAperturaMesa: horaForRequest,
+        latitud: latitud,
+        longitud: longitud,
+        presenteAt: presenteAt,
       );
       await _localStore.dequeueAsistenciaField(field);
       _hasPending = await _localStore.hasAsistenciaPendiente();
@@ -169,6 +198,29 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       if (!mounted) return;
       showError(context, 'Sin conexion. Quedo pendiente para sincronizar.');
     }
+  }
+
+  Future<Position> _resolveQuickPosition() async {
+    final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!enabled) {
+      throw Exception('Active la ubicacion del telefono para registrar su mesa.');
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      throw Exception('No se otorgo permiso de ubicacion.');
+    }
+
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+        timeLimit: Duration(seconds: 8),
+      ),
+    );
   }
 
   Future<bool?> _confirmIrreversible() {
@@ -311,31 +363,119 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
           ),
         ),
         const SizedBox(height: 8),
-        _buildToggleTile(
-          label: 'Estoy presente en mi mesa',
-          field: 'aviso_antes',
-          value: _avisoAntes,
+        _buildSectionCard(
+          title: 'En la mañana',
+          pillColor: const Color(0xFF1E7A33),
+          borderColor: const Color(0xFF62E59B),
+          children: [
+            _buildToggleTile(
+              label: 'Estoy presente en mi mesa',
+              field: 'aviso_antes',
+              value: _avisoAntes,
+              subtitle: _resolvingLocation
+                  ? 'Espere, obteniendo latitud y longitud...'
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            _buildToggleTile(
+              label: 'Abri la mesa',
+              field: 'aviso_manana',
+              value: _avisoManana,
+            ),
+            if (_avisoManana && _horaAperturaMesa != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F1F9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 18, color: Color(0xFF4E4A57)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Hora de apertura: $_horaAperturaMesa',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
-        _buildToggleTile(
-          label: 'Abri la mesa',
-          field: 'aviso_manana',
-          value: _avisoManana,
+        const SizedBox(height: 14),
+        _buildSectionCard(
+          title: 'En la tarde-noche',
+          pillColor: const Color(0xFFC62828),
+          borderColor: const Color(0xFFFF7B7B),
+          children: [
+            _buildToggleTile(
+              label: 'Tengo el acta de la alcaldia en mi poder',
+              field: 'aviso_mediodia',
+              value: _avisoMediodia,
+            ),
+            const SizedBox(height: 8),
+            _buildToggleTile(
+              label: 'Tengo el acta de la gobernacion en mi poder',
+              field: 'aviso_tarde',
+              value: _avisoTarde,
+            ),
+          ],
         ),
-        if (_avisoManana && _horaAperturaMesa != null)
-          ListTile(
-            dense: true,
-            leading: const Icon(Icons.access_time),
-            title: Text('Hora de apertura: $_horaAperturaMesa'),
+      ],
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required Color pillColor,
+    required Color borderColor,
+    required List<Widget> children,
+  }) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 18),
+          padding: const EdgeInsets.fromLTRB(12, 22, 12, 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F2FA),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor, width: 2),
           ),
-        _buildToggleTile(
-          label: 'Tengo el acta de la alcaldia en mi poder',
-          field: 'aviso_mediodia',
-          value: _avisoMediodia,
+          child: Column(children: children),
         ),
-        _buildToggleTile(
-          label: 'Tengo el acta de la gobernacion en mi poder',
-          field: 'aviso_tarde',
-          value: _avisoTarde,
+        Positioned(
+          top: 0,
+          left: 18,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: pillColor,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x22000000),
+                  blurRadius: 8,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -345,13 +485,57 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     required String label,
     required String field,
     required bool value,
+    String? subtitle,
   }) {
     final locked = _isLocked(field);
-    return SwitchListTile.adaptive(
-      title: Text(label),
-      subtitle: locked ? const Text('Bloqueado') : null,
-      value: value,
-      onChanged: locked ? null : (v) => _toggleUpdate(field: field, value: v),
+    final enabled = !(locked || _resolvingLocation);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                    color: enabled ? const Color(0xFF3D3643) : const Color(0xFFB7ACBC),
+                  ),
+                ),
+                if (locked || subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    locked ? 'Bloqueado' : subtitle!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: locked ? const Color(0xFF8F8595) : const Color(0xFF7F7485),
+                      fontWeight: locked ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Transform.scale(
+            scale: 1.05,
+            child: Switch.adaptive(
+              value: value,
+              onChanged: enabled
+                  ? (v) => _toggleUpdate(field: field, value: v)
+                  : null,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
