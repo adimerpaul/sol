@@ -260,6 +260,24 @@
 
         <q-item
           dense
+          to="/control-ia-mesas"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.CONTROL_IA_MESAS) || canProfileRole()"
+        >
+          <q-item-section avatar>
+            <q-icon name="auto_awesome" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Control IA Mesas</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          dense
           to="/reportes"
           exact
           clickable
@@ -336,7 +354,8 @@ const PERM = {
   ASIGNAR_RECINTOS: 'Asignar Recintos',
   JERARQUIA_USUARIOS: 'Jerarquia Usuarios',
   MAPA_ASIGNAR_JEFES: 'Mapa Asignar Jefes',
-  SUPERADMIN_MESAS: 'SuperAdmin Mesas'
+  SUPERADMIN_MESAS: 'SuperAdmin Mesas',
+  CONTROL_IA_MESAS: 'Control IA Mesas'
 }
 
 const leftDrawerOpen = ref(false)

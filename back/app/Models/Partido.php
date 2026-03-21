@@ -27,4 +27,9 @@ class Partido extends Model implements Auditable
         'created_at',
         'updated_at'
     ];
+
+    public function aiControlDetalles()
+    {
+        return $this->hasMany(MesaAiControlDetalle::class);
+    }
 }

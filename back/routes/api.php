@@ -17,6 +17,7 @@ use App\Http\Controllers\EleccionesDashboardController;
 use App\Http\Controllers\GraficosController;
 use App\Http\Controllers\AdminUserJerarquiaController;
 use App\Http\Controllers\AdminRecintoJefeMapaController;
+use App\Http\Controllers\MesaAiControlController;
 use App\Http\Controllers\SuperAdminMesasController;
 use App\Http\Controllers\ReportesController;
 //Route::get('/user', function (Request $request) {
@@ -117,6 +118,11 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('admin/mesas/{mesa}/asistencia-capacitacion', [SuperAdminMesasController::class, 'asistenciaCapacitacion']);
     Route::get('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'resultado']);
     Route::put('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'guardarResultado']);
+
+    Route::get('admin/ia-control/bootstrap', [MesaAiControlController::class, 'bootstrap']);
+    Route::get('admin/ia-control/mesas-options', [MesaAiControlController::class, 'mesasOptions']);
+    Route::post('admin/ia-control/process', [MesaAiControlController::class, 'process']);
+    Route::post('admin/ia-control/{control}/confirm', [MesaAiControlController::class, 'confirm']);
 
     // ─── Reportes ─────────────────────────────────────────────────────────────
     Route::get('reportes/delegados-asignados', [ReportesController::class, 'delegadosAsignados']);

@@ -40,4 +40,9 @@ return [
         'timeout' => env('SOCKET_IO_TIMEOUT', 2),
     ],
 
+    'gemini_ai_control' => [
+        'url' => env('GEMINI_AI_URL'),
+        'key' => env('GEMINI_AI_KEY'),
+    ],
+
 ];
