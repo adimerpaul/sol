@@ -444,6 +444,7 @@ export default {
         confirmadores: [],
         ganadores: []
       },
+      audioContext: null,
       socket: null,
       socketRefreshTimer: null
     }
@@ -514,6 +515,9 @@ export default {
   beforeUnmount () {
     const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
     if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
+    if (this.audioContext?.state !== 'closed') {
+      this.audioContext?.close?.()
+    }
     if (this.socket) {
       this.socket.off(socketEvent)
       this.socket.disconnect()
@@ -634,12 +638,48 @@ export default {
     },
     pieOptions (card) { return { chart: { toolbar: { show: true } }, labels: card.labels, colors: card.colors, legend: { position: 'right', fontSize: '11px', width: 130 }, dataLabels: { enabled: true, formatter: (val, opts) => `${opts?.w?.globals?.labels?.[opts.seriesIndex] || ''} ${Number(val || 0).toFixed(1)}%`, style: { fontSize: '10px', fontWeight: 700 } } } },
     barOptions (card) { return { chart: { toolbar: { show: true } }, colors: card.colors, plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '58%', distributed: true } }, xaxis: { categories: card.labels, labels: { style: { fontSize: '11px', fontWeight: 600 } } }, dataLabels: { enabled: true, style: { fontSize: '12px', fontWeight: 700 } }, legend: { show: false } } },
+    playVoteSound () {
+      if (typeof window === 'undefined') return
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (!AudioCtx) return
+
+      if (!this.audioContext) {
+        this.audioContext = new AudioCtx()
+      }
+
+      if (this.audioContext.state === 'suspended') {
+        this.audioContext.resume().catch(() => {})
+      }
+
+      const now = this.audioContext.currentTime
+      const playBeep = (startAt, fromFreq, toFreq, peakGain, duration) => {
+        const oscillator = this.audioContext.createOscillator()
+        const gainNode = this.audioContext.createGain()
+
+        oscillator.type = 'sine'
+        oscillator.frequency.setValueAtTime(fromFreq, startAt)
+        oscillator.frequency.exponentialRampToValueAtTime(toFreq, startAt + duration * 0.7)
+
+        gainNode.gain.setValueAtTime(0.0001, startAt)
+        gainNode.gain.exponentialRampToValueAtTime(peakGain, startAt + 0.02)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + duration)
+
+        oscillator.connect(gainNode)
+        gainNode.connect(this.audioContext.destination)
+        oscillator.start(startAt)
+        oscillator.stop(startAt + duration)
+      }
+
+      playBeep(now, 880, 1320, 0.14, 0.24)
+      playBeep(now + 0.16, 1040, 1560, 0.11, 0.2)
+    },
     connectSocket () {
       const socketUrl = import.meta.env.VITE_API_SOCKET
       const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
       if (!socketUrl) return
       this.socket = io(socketUrl, { transports: ['websocket', 'polling'], reconnection: true })
       this.socket.on(socketEvent, () => {
+        this.playVoteSound()
         if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
         this.socketRefreshTimer = setTimeout(() => this.loadDashboard(), 400)
       })
