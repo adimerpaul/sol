@@ -252,6 +252,10 @@
                     <q-item-section avatar><q-icon name="supervisor_account" /></q-item-section>
                     <q-item-section><q-item-label>Recintos por supervisor</q-item-label></q-item-section>
                   </q-item>
+                  <q-item clickable v-close-popup @click="openRecintoPrintDialog">
+                    <q-item-section avatar><q-icon name="store" /></q-item-section>
+                    <q-item-section><q-item-label>Jerarquía por recinto</q-item-label></q-item-section>
+                  </q-item>
                 </q-list>
               </q-btn-dropdown>
             </div>
@@ -991,11 +995,90 @@
             label="Supervisor"
             @filter="filterSupervisores"
           />
+
+          <q-list v-if="supervisorPrintPreview" dense bordered separator class="q-mt-md">
+            <q-item>
+              <q-item-section>
+                <q-item-label class="text-weight-medium">{{ supervisorPrintPreview.supervisor?.name }}</q-item-label>
+                <q-item-label caption>
+                  {{ supervisorPrintPreview.supervisor?.username || '-' }} · {{ supervisorPrintPreview.supervisor?.celular || 'Sin celular' }}
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-for="(row, index) in (supervisorPrintPreview.rows || [])" :key="`sup-prev-${index}`">
+              <q-item-section>
+                <q-item-label>{{ row.jefe_nombre }}</q-item-label>
+                <q-item-label caption>{{ row.jefe_username || '-' }} · {{ row.jefe_celular || 'Sin celular' }}</q-item-label>
+                <q-item-label caption>{{ (row.recintos || []).join(' · ') || 'Sin recintos' }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn flat color="grey-7" label="Cancelar" no-caps @click="dlgSupervisorPrint = false" />
+          <q-btn flat color="primary" label="Buscar" no-caps :disable="!supervisorPrintId" @click="previewRecintosPorSupervisor" />
           <q-btn color="primary" label="Generar PDF" no-caps :disable="!supervisorPrintId" @click="printRecintosPorSupervisor" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="dlgRecintoPrint" persistent>
+      <q-card style="width: 560px; max-width: 95vw;">
+        <q-card-section class="row items-center">
+          <div class="text-weight-bold">Jerarquía por recinto</div>
+          <q-space />
+          <q-btn icon="close" flat round dense @click="dlgRecintoPrint = false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <q-select
+            v-model="recintoPrintId"
+            :options="recintosOpt"
+            option-label="label"
+            option-value="value"
+            emit-value
+            map-options
+            use-input
+            input-debounce="200"
+            dense
+            outlined
+            clearable
+            label="Recinto"
+            @filter="filterRecintos"
+          />
+
+          <q-list v-if="recintoPrintPreview" dense bordered separator class="q-mt-md">
+            <q-item>
+              <q-item-section>
+                <q-item-label class="text-weight-medium">{{ recintoPrintPreview.recinto?.nombre }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section>
+                <q-item-label>Supervisores</q-item-label>
+                <q-item-label caption>{{ (recintoPrintPreview.supervisores || []).map(x => x.name).join(' · ') || 'Sin supervisores' }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section>
+                <q-item-label>Jefes de recinto</q-item-label>
+                <q-item-label caption>{{ (recintoPrintPreview.jefes || []).map(x => x.name).join(' · ') || 'Sin jefes' }}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-for="(row, index) in (recintoPrintPreview.delegados || [])" :key="`rec-prev-${index}`">
+              <q-item-section>
+                <q-item-label>Mesa {{ row.mesa_numero }} · {{ row.name }}</q-item-label>
+                <q-item-label caption>{{ row.username || '-' }} · {{ row.celular || 'Sin celular' }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat color="grey-7" label="Cancelar" no-caps @click="dlgRecintoPrint = false" />
+          <q-btn flat color="primary" label="Buscar" no-caps :disable="!recintoPrintId" @click="previewJerarquiaPorRecinto" />
+          <q-btn color="primary" label="Generar PDF" no-caps :disable="!recintoPrintId" @click="printJerarquiaPorRecinto" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -1111,6 +1194,10 @@ export default {
       presenceRow: null,
       dlgSupervisorPrint: false,
       supervisorPrintId: null,
+      supervisorPrintPreview: null,
+      dlgRecintoPrint: false,
+      recintoPrintId: null,
+      recintoPrintPreview: null,
       partidos: [],
       votosMap: {},
       voteTypes: [
@@ -1899,7 +1986,22 @@ export default {
 
     openSupervisorPrintDialog () {
       this.supervisorPrintId = this.filters.supervisor_id || null
+      this.supervisorPrintPreview = null
       this.dlgSupervisorPrint = true
+    },
+
+    async previewRecintosPorSupervisor () {
+      if (!this.supervisorPrintId) return
+      try {
+        this.supervisorPrintPreview = await this.$axios.get(
+          'admin/mesas-preview/recintos-por-supervisor',
+          {
+            params: { supervisor_id: this.supervisorPrintId }
+          }
+        ).then(r => r.data)
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo buscar el supervisor')
+      }
     },
 
     async printRecintosPorSupervisor () {
@@ -1910,6 +2012,36 @@ export default {
         'recintos_por_supervisor.pdf'
       )
       this.dlgSupervisorPrint = false
+    },
+
+    openRecintoPrintDialog () {
+      this.recintoPrintId = this.filters.recinto_id || null
+      this.recintoPrintPreview = null
+      this.dlgRecintoPrint = true
+    },
+
+    async previewJerarquiaPorRecinto () {
+      if (!this.recintoPrintId) return
+      try {
+        this.recintoPrintPreview = await this.$axios.get(
+          'admin/mesas-preview/jerarquia-por-recinto',
+          {
+            params: { recinto_id: this.recintoPrintId }
+          }
+        ).then(r => r.data)
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo buscar el recinto')
+      }
+    },
+
+    async printJerarquiaPorRecinto () {
+      if (!this.recintoPrintId) return
+      await this.openPdfBlob(
+        'admin/mesas-print/jerarquia-por-recinto',
+        { recinto_id: this.recintoPrintId },
+        'jerarquia_por_recinto.pdf'
+      )
+      this.dlgRecintoPrint = false
     },
 
     async fetchAll () {

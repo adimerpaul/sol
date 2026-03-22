@@ -497,10 +497,48 @@ class SuperAdminMesasController extends Controller
         @ignore_user_abort(true);
 
         $actor = $request->user();
-        $supervisorId = (int) $request->get('supervisor_id');
+        $payload = $this->buildSupervisorRecintosPayload((int) $request->get('supervisor_id'));
 
+        $pdf = Pdf::loadView('pdf.recintos_por_supervisor', [
+            'title' => 'Recintos por supervisor',
+            'supervisor' => $payload['supervisor'],
+            'rows' => $payload['rows'],
+            'generatedAt' => now()->format('d/m/Y H:i:s'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('recintos_por_supervisor.pdf');
+    }
+
+    public function previewRecintosPorSupervisor(Request $request)
+    {
+        return response()->json($this->buildSupervisorRecintosPayload((int) $request->get('supervisor_id')));
+    }
+
+    public function previewJerarquiaPorRecinto(Request $request)
+    {
+        return response()->json($this->buildJerarquiaRecintoPayload((int) $request->get('recinto_id')));
+    }
+
+    public function printJerarquiaPorRecinto(Request $request)
+    {
+        $actor = $request->user();
+        $payload = $this->buildJerarquiaRecintoPayload((int) $request->get('recinto_id'));
+
+        $pdf = Pdf::loadView('pdf.jerarquia_por_recinto', [
+            'title' => 'Jerarquia por recinto',
+            'payload' => $payload,
+            'generatedAt' => now()->format('d/m/Y H:i:s'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('jerarquia_por_recinto.pdf');
+    }
+
+    private function buildSupervisorRecintosPayload(int $supervisorId): array
+    {
         if (!$supervisorId) {
-            return response()->json(['message' => 'Supervisor requerido'], 422);
+            abort(422, 'Supervisor requerido');
         }
 
         $supervisor = User::query()
@@ -509,7 +547,7 @@ class SuperAdminMesasController extends Controller
             ->find($supervisorId);
 
         if (!$supervisor) {
-            return response()->json(['message' => 'Supervisor no encontrado'], 404);
+            abort(404, 'Supervisor no encontrado');
         }
 
         $rows = $supervisor->jefesAsignados
@@ -530,19 +568,75 @@ class SuperAdminMesasController extends Controller
             })
             ->values();
 
-        $pdf = Pdf::loadView('pdf.recintos_por_supervisor', [
-            'title' => 'Recintos por supervisor',
+        return [
             'supervisor' => [
                 'name' => $supervisor->name,
                 'username' => $supervisor->username,
                 'celular' => $supervisor->celular ?: 'Sin celular',
             ],
             'rows' => $rows,
-            'generatedAt' => now()->format('d/m/Y H:i:s'),
-            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
-        ])->setPaper('a4', 'portrait');
+        ];
+    }
 
-        return $pdf->stream('recintos_por_supervisor.pdf');
+    private function buildJerarquiaRecintoPayload(int $recintoId): array
+    {
+        if (!$recintoId) {
+            abort(422, 'Recinto requerido');
+        }
+
+        $recinto = \App\Models\Recinto::query()
+            ->with([
+                'jefe:id,name,username,celular',
+                'jefe.supervisores:id,name,username,celular',
+                'mesas:id,recinto_id,numero_mesa,delegado_id',
+                'mesas.delegado:id,name,username,celular',
+            ])
+            ->find($recintoId);
+
+        if (!$recinto) {
+            abort(404, 'Recinto no encontrado');
+        }
+
+        $supervisores = collect($recinto->jefe ?? [])
+            ->flatMap(fn ($jefe) => $jefe->supervisores ?? [])
+            ->unique('id')
+            ->sortBy('name')
+            ->map(fn ($sup) => [
+                'name' => $sup->name,
+                'username' => $sup->username,
+                'celular' => $sup->celular ?: 'Sin celular',
+            ])
+            ->values();
+
+        $jefes = collect($recinto->jefe ?? [])
+            ->sortBy('name')
+            ->map(fn ($jefe) => [
+                'name' => $jefe->name,
+                'username' => $jefe->username,
+                'celular' => $jefe->celular ?: 'Sin celular',
+            ])
+            ->values();
+
+        $delegados = collect($recinto->mesas ?? [])
+            ->filter(fn ($mesa) => !empty($mesa->delegado))
+            ->sortBy('numero_mesa')
+            ->map(fn ($mesa) => [
+                'mesa_numero' => $mesa->numero_mesa,
+                'name' => $mesa->delegado->name,
+                'username' => $mesa->delegado->username,
+                'celular' => $mesa->delegado->celular ?: 'Sin celular',
+            ])
+            ->values();
+
+        return [
+            'recinto' => [
+                'id' => $recinto->id,
+                'nombre' => $recinto->nombre,
+            ],
+            'supervisores' => $supervisores,
+            'jefes' => $jefes,
+            'delegados' => $delegados,
+        ];
     }
 
     public function exportEnMesaCsv(Request $request)
