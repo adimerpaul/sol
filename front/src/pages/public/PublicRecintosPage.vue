@@ -8,6 +8,15 @@
               <div class="text-h6 text-weight-bold">Mapa de Recintos</div>
               <div class="text-caption text-grey-7">{{ rows.length }} recintos públicos</div>
             </div>
+            <q-space />
+            <q-btn
+              color="primary"
+              icon="my_location"
+              label="Dónde estoy"
+              no-caps
+              :loading="locating"
+              @click="locateMe"
+            />
           </q-card-section>
 
           <q-separator />
@@ -37,8 +46,30 @@
                   <div class="text-weight-bold">{{ row.nombre }}</div>
                   <div>Mesas: {{ row.mesas_count }}</div>
                   <div>Jefe: {{ row.jefesText }}</div>
+                  <q-btn
+                    class="q-mt-sm"
+                    color="primary"
+                    icon="directions"
+                    label="Ir ahí"
+                    no-caps
+                    dense
+                    @click="goToRecinto(row)"
+                  />
                 </l-popup>
               </l-marker>
+
+              <l-circle-marker
+                v-if="myLocation"
+                :lat-lng="[myLocation.lat, myLocation.lng]"
+                :radius="10"
+                :color="'#dc2626'"
+                :fill-color="'#ef4444'"
+                :fill-opacity="0.9"
+              >
+                <l-popup>
+                  <div class="text-weight-bold">Mi ubicación</div>
+                </l-popup>
+              </l-circle-marker>
             </l-map>
           </q-card-section>
         </q-card>
@@ -57,6 +88,28 @@
             <q-inner-loading :showing="loading">
               <q-spinner color="primary" size="36px" />
             </q-inner-loading>
+
+            <q-card
+              v-if="selectedRecinto"
+              flat
+              bordered
+              class="q-mb-sm bg-blue-1"
+            >
+              <q-card-section class="q-pa-sm">
+                <div class="text-weight-bold">{{ selectedRecinto.nombre }}</div>
+                <div class="text-caption text-grey-8">Jefe: {{ selectedRecinto.jefesText }}</div>
+                <div class="text-caption text-grey-8">Mesas: {{ selectedRecinto.mesas_count }}</div>
+                <q-btn
+                  class="q-mt-sm"
+                  color="primary"
+                  icon="directions"
+                  label="Ir ahí"
+                  no-caps
+                  dense
+                  @click="goToRecinto(selectedRecinto)"
+                />
+              </q-card-section>
+            </q-card>
 
             <div v-if="!loading && !rows.length" class="text-grey-7 q-pa-md text-center">
               No hay recintos públicos disponibles.
@@ -87,7 +140,7 @@
 </template>
 
 <script>
-import { LMap, LMarker, LPopup, LTileLayer } from '@vue-leaflet/vue-leaflet'
+import { LCircleMarker, LMap, LMarker, LPopup, LTileLayer } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
@@ -103,12 +156,14 @@ L.Icon.Default.mergeOptions({
 
 export default {
   name: 'PublicRecintosPage',
-  components: { LMap, LMarker, LPopup, LTileLayer },
+  components: { LCircleMarker, LMap, LMarker, LPopup, LTileLayer },
   data () {
     return {
       loading: false,
+      locating: false,
       rows: [],
       selectedRecinto: null,
+      myLocation: null,
       center: [-17.9667, -67.1167],
       zoom: 13
     }
@@ -155,6 +210,43 @@ export default {
       const leaflet = this.$refs.mapRef?.leafletObject
       if (!leaflet) return
       leaflet.flyTo([row.latitud, row.longitud], Math.max(this.zoom, 16))
+    },
+    locateMe () {
+      if (!navigator.geolocation) {
+        this.$q.notify({
+          color: 'negative',
+          message: 'Tu navegador no soporta geolocalización'
+        })
+        return
+      }
+
+      this.locating = true
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          this.myLocation = {
+            lat: Number(coords.latitude),
+            lng: Number(coords.longitude)
+          }
+          const leaflet = this.$refs.mapRef?.leafletObject
+          if (leaflet) {
+            leaflet.flyTo([this.myLocation.lat, this.myLocation.lng], 16)
+          }
+          this.locating = false
+        },
+        () => {
+          this.locating = false
+          this.$q.notify({
+            color: 'negative',
+            message: 'No se pudo obtener tu ubicación'
+          })
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      )
+    },
+    goToRecinto (row) {
+      if (!row) return
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${row.latitud},${row.longitud}`)}`
+      window.open(url, '_blank', 'noopener,noreferrer')
     }
   }
 }
