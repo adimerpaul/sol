@@ -57,10 +57,15 @@
         </l-popup>
       </l-marker>
 
-      <l-marker v-if="hasRecintoLatLng" :lat-lng="[recintoLat, recintoLng]">
-        <l-icon :icon-anchor="[12, 24]" :popup-anchor="[0, -20]" class-name="recinto-marker-container">
-          <div class="recinto-marker"></div>
-        </l-icon>
+      <l-circle-marker
+        v-if="hasRecintoLatLng"
+        :lat-lng="[recintoLat, recintoLng]"
+        :radius="10"
+        color="#1d4ed8"
+        :weight="3"
+        fill-color="#60a5fa"
+        :fill-opacity="0.92"
+      >
         <l-popup>
           <div>
             Recinto<br>
@@ -68,14 +73,14 @@
             Lng: {{ recintoLng.toFixed(7) }}
           </div>
         </l-popup>
-      </l-marker>
+      </l-circle-marker>
     </l-map>
   </div>
 </template>
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { LControlLayers, LMap, LMarker, LPopup, LTileLayer } from '@vue-leaflet/vue-leaflet'
+import { LCircleMarker, LControlLayers, LMap, LMarker, LPopup, LTileLayer } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 
@@ -101,11 +106,34 @@ const props = defineProps({
 const mapRef = ref(null)
 const zoom = ref(props.zoomInit)
 
-const lat = computed(() => Number(props.latitud))
-const lng = computed(() => Number(props.longitud))
+function normalizeCoords(rawLat, rawLng) {
+  let lat = Number(rawLat)
+  let lng = Number(rawLng)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { lat, lng }
+  }
+
+  // En este proyecto las coordenadas válidas están en Bolivia.
+  // Algunos registros llegan invertidos (lat=-67, lng=-17); aquí se corrigen.
+  const looksSwapped =
+    lat <= -40 && lat >= -90 &&
+    lng <= 0 && lng >= -35
+
+  if (looksSwapped) {
+    return { lat: lng, lng: lat }
+  }
+
+  return { lat, lng }
+}
+
+const normalizedDelegado = computed(() => normalizeCoords(props.latitud, props.longitud))
+const lat = computed(() => normalizedDelegado.value.lat)
+const lng = computed(() => normalizedDelegado.value.lng)
 const hasLatLng = computed(() => Number.isFinite(lat.value) && Number.isFinite(lng.value))
-const recintoLat = computed(() => Number(props.recintoLatitud))
-const recintoLng = computed(() => Number(props.recintoLongitud))
+const normalizedRecinto = computed(() => normalizeCoords(props.recintoLatitud, props.recintoLongitud))
+const recintoLat = computed(() => normalizedRecinto.value.lat)
+const recintoLng = computed(() => normalizedRecinto.value.lng)
 const hasRecintoLatLng = computed(() => Number.isFinite(recintoLat.value) && Number.isFinite(recintoLng.value))
 const mapCenter = computed(() => {
   if (hasLatLng.value) return [lat.value, lng.value]
@@ -138,19 +166,5 @@ watch(
 <style scoped>
 .presence-map-wrapper {
   width: 100%;
-}
-
-.recinto-marker-container {
-  background: transparent !important;
-  border: none !important;
-}
-
-.recinto-marker {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background: #1e3a8a;
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 10px rgba(30, 58, 138, 0.5);
 }
 </style>

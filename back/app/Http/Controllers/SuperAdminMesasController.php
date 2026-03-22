@@ -119,7 +119,7 @@ class SuperAdminMesasController extends Controller
                 'mesas.delegado_presente_at',
             ])
             ->with([
-                'recinto:id,nombre',
+                'recinto:id,nombre,latitud,longitud',
                 'departamento:id,nombre',
                 'provincia:id,nombre',
                 'municipio:id,nombre',

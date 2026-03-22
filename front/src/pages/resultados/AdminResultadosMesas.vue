@@ -1814,11 +1814,32 @@ export default {
       return r * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
     },
 
+    normalizeBoliviaCoords (latValue, lngValue) {
+      let lat = Number(latValue)
+      let lng = Number(lngValue)
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return { lat, lng }
+      }
+
+      const looksSwapped =
+        lat <= -40 && lat >= -90 &&
+        lng <= 0 && lng >= -35
+
+      if (looksSwapped) {
+        return { lat: lng, lng: lat }
+      }
+
+      return { lat, lng }
+    },
+
     fmtDistanceToRecinto (row) {
-      const lat1 = Number(row?.delegado_latitud)
-      const lng1 = Number(row?.delegado_longitud)
-      const lat2 = Number(row?.recinto_latitud)
-      const lng2 = Number(row?.recinto_longitud)
+      const delegado = this.normalizeBoliviaCoords(row?.delegado_latitud, row?.delegado_longitud)
+      const recinto = this.normalizeBoliviaCoords(row?.recinto_latitud, row?.recinto_longitud)
+      const lat1 = delegado.lat
+      const lng1 = delegado.lng
+      const lat2 = recinto.lat
+      const lng2 = recinto.lng
       if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) {
         return 'Sin coordenadas suficientes'
       }
