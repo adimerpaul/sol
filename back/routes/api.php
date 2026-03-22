@@ -83,6 +83,12 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 
     Route::middleware('auth:sanctum')->get('/dashboard/elecciones/resumen', [EleccionesDashboardController::class, 'resumen']);
     Route::middleware('auth:sanctum')->get('/dashboard/bootstrap', [GraficosController::class, 'bootstrap']);
+    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/dashboard', [GraficosController::class, 'bootstrapDashboard']);
+    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/permmapa', [GraficosController::class, 'bootstrapPermMapa']);
+    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/permesa', [GraficosController::class, 'bootstrapPerMesa']);
+    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/ambos', [GraficosController::class, 'bootstrapAmbos']);
+    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/tortas', [GraficosController::class, 'bootstrapTortas']);
+    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/histograma', [GraficosController::class, 'bootstrapHistograma']);
     Route::middleware('auth:sanctum')->get('/dashboard/graficos', [GraficosController::class, 'index']);
     Route::middleware('auth:sanctum')->get('/dashboard/mapa', [GraficosController::class, 'mapa']);
 

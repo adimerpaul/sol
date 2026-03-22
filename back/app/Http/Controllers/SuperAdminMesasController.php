@@ -5,12 +5,8 @@ namespace App\Http\Controllers;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
 use App\Services\SocketEmitter;
-use App\Models\Departamento;
-use App\Models\Localidad;
 use App\Models\Mesa;
-use App\Models\Municipio;
 use App\Models\Partido;
-use App\Models\Provincia;
 use App\Models\ResultadoMesa;
 use App\Models\ResultadoMesaDetalle;
 use App\Models\User;
@@ -23,10 +19,6 @@ class SuperAdminMesasController extends Controller
     // límite duro
     private int $MAX_ROWS = 250;
     private int $PRINT_TIMEOUT_SECONDS = 600;
-    private int $ORURO_PROVINCIA_ID = 57;
-    private int $ORURO_MUNICIPIO_ID = 191;
-    private int $ORURO_LOCALIDAD_ID = 1988;
-
     /**
      * GET /api/admin/mesas?recinto_id=&mesa_id=&asignado=&delegado_id=&estado=&con_resultado=
      * Devuelve máximo 250 registros (front hace paginación local con QPagination).
@@ -34,11 +26,6 @@ class SuperAdminMesasController extends Controller
     public function bootstrap(Request $request)
     {
         return response()->json([
-            'geo' => $this->buildGeoOptionsPayload(),
-            'delegados' => $this->buildDelegadosOptionsPayload(),
-            'jefes_recinto' => $this->buildJefesRecintoOptionsPayload(),
-            'supervisores' => $this->buildSupervisoresOptionsPayload(),
-            'recintos' => $this->buildRecintosOptionsPayload($request),
             'mesas' => $this->buildMesasIndexPayload($request),
         ]);
     }
@@ -1188,28 +1175,6 @@ class SuperAdminMesasController extends Controller
             ->where('role', 'Supervisor')
             ->orderBy('name')
             ->get();
-    }
-
-    private function buildGeoOptionsPayload(): array
-    {
-        return [
-            'departamentos' => Departamento::query()
-                ->select('id', 'pais_id', 'nombre')
-                ->orderBy('nombre')
-                ->get(),
-            'provincias' => Provincia::query()
-                ->select('id', 'departamento_id', 'nombre')
-                ->orderBy('nombre')
-                ->get(),
-            'municipios' => Municipio::query()
-                ->select('id', 'provincia_id', 'nombre')
-                ->orderBy('nombre')
-                ->get(),
-            'localidades' => Localidad::query()
-                ->select('id', 'municipio_id', 'nombre')
-                ->orderBy('nombre')
-                ->get(),
-        ];
     }
 
     // PUT /api/admin/mesas/{mesa}/delegado  body: { delegado_id, estado? }

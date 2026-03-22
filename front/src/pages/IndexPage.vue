@@ -17,32 +17,6 @@
 
       <q-separator />
 
-      <q-card-section class="q-pb-none">
-        <div class="row q-col-gutter-sm items-center">
-          <div class="col-12 col-md-3">
-            <q-select v-model="filters.provincia_id" :options="provinciaOptions" emit-value map-options option-label="label" option-value="value" dense outlined clearable label="Provincia" @update:model-value="onProvinciaChange" />
-          </div>
-          <div class="col-12 col-md-3">
-            <q-select v-model="filters.municipio_id" :options="municipioOptions" emit-value map-options option-label="label" option-value="value" dense outlined clearable label="Municipio" :disable="!filters.provincia_id" @update:model-value="onMunicipioChange" />
-          </div>
-          <div class="col-12 col-md-2">
-            <q-select v-model="filters.localidad_id" :options="localidadOptions" emit-value map-options option-label="label" option-value="value" dense outlined clearable label="Localidad" :disable="!filters.municipio_id" @update:model-value="loadDashboard" />
-          </div>
-          <div class="col-12 col-md-3">
-            <q-select v-model="filters.delegado_id" :options="delegadoOptions" emit-value map-options option-label="label" option-value="value" dense outlined clearable label="Delegado de mesa" @update:model-value="loadDashboard" />
-          </div>
-          <div class="col-12 col-md-auto">
-            <q-btn flat color="grey-7" no-caps label="Limpiar" @click="clearFilters" />
-          </div>
-          <div v-if="enableDialogViewers" class="col-12 col-md-auto">
-            <q-btn color="secondary" icon="map" no-caps label="Ver Mapa" @click="openMapViewer" />
-          </div>
-          <div v-if="enableDialogViewers" class="col-12 col-md-auto">
-            <q-btn color="dark" icon="view_module" no-caps label="Ver Mesas" @click="openMesasViewer" />
-          </div>
-        </div>
-      </q-card-section>
-
       <q-card-section v-if="isChartRoute" class="q-pa-md">
         <template v-if="chartsViewMode === 'both'">
           <div v-for="card in chartCards" :key="card.key" class="category-block q-mb-md">
@@ -640,8 +614,6 @@ export default {
       categorias: {},
       categoryRankings: { alcalde: [], concejal: [], gobernador: [], asambleista_distrito: [], asambleista_poblacion: [] },
       mesas: { total: 0, con_resultado: 0, faltantes: 0 },
-      filters: { provincia_id: 57, municipio_id: 191, localidad_id: 1988, delegado_id: null },
-      geoOptions: { provincias: [], municipios: [], localidades: [], delegados: [] },
       mapViewerOpen: false,
       mesasViewerOpen: false,
       viewerCategory: 'alcalde',
@@ -691,10 +663,6 @@ export default {
     enableDialogViewers () {
       return false
     },
-    provinciaOptions () { return (this.geoOptions.provincias || []).map(p => ({ label: p.nombre, value: p.id })) },
-    municipioOptions () { return (this.geoOptions.municipios || []).map(m => ({ label: m.nombre, value: m.id })) },
-    localidadOptions () { return (this.geoOptions.localidades || []).map(l => ({ label: l.nombre, value: l.id })) },
-    delegadoOptions () { return (this.geoOptions.delegados || []).map(d => ({ label: `${d.name || '-'} (${d.username || '-'})`, value: d.id })) },
     chartCards () {
       return CATEGORY_DEFS.map(def => {
         const ranking = Array.isArray(this.categoryRankings[def.key]) ? this.categoryRankings[def.key] : []
@@ -761,15 +729,11 @@ export default {
   },
   beforeUnmount () {
     this.isAlive = false
-    const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
     if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
     if (this.audioContext?.state !== 'closed') {
       this.audioContext?.close?.()
     }
-    if (this.socket) {
-      this.socket.off(socketEvent)
-      this.socket.disconnect()
-    }
+    this.disconnectSocket()
   },
   methods: {
     syncDashboardMode () {
@@ -777,10 +741,15 @@ export default {
       this.mapViewerOpen = false
       this.mesasViewerOpen = false
     },
-    dashboardParams () { return { provincia_id: this.filters.provincia_id || undefined, municipio_id: this.filters.municipio_id || undefined, localidad_id: this.filters.localidad_id || undefined, delegado_id: this.filters.delegado_id || undefined } },
-    onProvinciaChange () { this.filters.municipio_id = null; this.filters.localidad_id = null; this.loadDashboard() },
-    onMunicipioChange () { this.filters.localidad_id = null; this.loadDashboard() },
-    clearFilters () { this.filters = { provincia_id: 57, municipio_id: 191, localidad_id: 1988, delegado_id: null }; this.loadDashboard() },
+    dashboardEndpoint () {
+      if (this.dashboardMode === 'mapa') return 'dashboard/bootstrap/permmapa'
+      if (this.dashboardMode === 'mesas') return 'dashboard/bootstrap/permesa'
+      if (this.dashboardMode === 'pie') return 'dashboard/bootstrap/tortas'
+      if (this.dashboardMode === 'bar') return 'dashboard/bootstrap/histograma'
+      if (this.dashboardMode === 'both') return 'dashboard/bootstrap/ambos'
+      return 'dashboard/bootstrap/dashboard'
+    },
+    dashboardParams () { return {} },
     openMapViewer () { this.mapViewerOpen = true; if (!this.selectedMapRecinto && this.mapData.length) this.selectedMapRecinto = this.mapData[0] },
     openMesasViewer () { this.mesasViewerOpen = true },
     selectMapRecinto (recinto) { this.selectedMapRecinto = recinto },
@@ -947,6 +916,29 @@ export default {
         legend: { show: false }
       }
     },
+    applySummaryPayload (data) {
+      this.votosValidosTotal = Number(data?.votos_validos_total || 0)
+      this.categorias = data?.categorias || {}
+      this.categoryRankings = {
+        alcalde: Array.isArray(data?.categorias?.alcalde?.ranking) ? data.categorias.alcalde.ranking : [],
+        concejal: Array.isArray(data?.categorias?.concejal?.ranking) ? data.categorias.concejal.ranking : [],
+        gobernador: Array.isArray(data?.categorias?.gobernador?.ranking) ? data.categorias.gobernador.ranking : [],
+        asambleista_distrito: Array.isArray(data?.categorias?.asambleista_distrito?.ranking) ? data.categorias.asambleista_distrito.ranking : [],
+        asambleista_poblacion: Array.isArray(data?.categorias?.asambleista_poblacion?.ranking) ? data.categorias.asambleista_poblacion.ranking : []
+      }
+      this.mesas = {
+        total: Number(data?.mesas?.total || 0),
+        con_resultado: Number(data?.mesas?.con_resultado || 0),
+        faltantes: Number(data?.mesas?.faltantes || 0)
+      }
+    },
+    applyMapPayload (data) {
+      this.mapData = Array.isArray(data?.mapa) ? data.mapa : []
+      this.selectedMapRecinto = this.selectedMapRecinto?.id
+        ? (this.mapData.find(x => x.id === this.selectedMapRecinto.id) || this.mapData[0] || null)
+        : (this.mapData[0] || null)
+      this.resetMonitorOptionFilters()
+    },
     playVoteSound () {
       if (typeof window === 'undefined') return
       const AudioCtx = window.AudioContext || window.webkitAudioContext
@@ -983,10 +975,18 @@ export default {
       playBeep(now + 0.18, 740, 1180, 0.22, 0.28, 'square')
       playBeep(now + 0.42, 820, 1320, 0.18, 0.22, 'triangle')
     },
+    disconnectSocket () {
+      const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
+      if (!this.socket) return
+      this.socket.off(socketEvent)
+      this.socket.disconnect()
+      this.socket = null
+    },
     connectSocket () {
       const socketUrl = import.meta.env.VITE_API_SOCKET
       const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
       if (!socketUrl) return
+      this.disconnectSocket()
       this.socket = io(socketUrl, { transports: ['websocket', 'polling'], reconnection: true })
       this.socket.on(socketEvent, () => {
         if (!this.isAlive) return
@@ -1000,27 +1000,12 @@ export default {
       this.loading = true
       this.loadingMap = true
       try {
-        const { data } = await this.$axios.get('dashboard/bootstrap', { params: this.dashboardParams() })
+        const { data } = await this.$axios.get(this.dashboardEndpoint(), { params: this.dashboardParams() })
         if (!this.isAlive || requestId !== this.dashboardRequestId) return
-        this.votosValidosTotal = Number(data?.votos_validos_total || 0)
-        this.categorias = data?.categorias || {}
-        this.categoryRankings = {
-          alcalde: Array.isArray(data?.categorias?.alcalde?.ranking) ? data.categorias.alcalde.ranking : [],
-          concejal: Array.isArray(data?.categorias?.concejal?.ranking) ? data.categorias.concejal.ranking : [],
-          gobernador: Array.isArray(data?.categorias?.gobernador?.ranking) ? data.categorias.gobernador.ranking : [],
-          asambleista_distrito: Array.isArray(data?.categorias?.asambleista_distrito?.ranking) ? data.categorias.asambleista_distrito.ranking : [],
-          asambleista_poblacion: Array.isArray(data?.categorias?.asambleista_poblacion?.ranking) ? data.categorias.asambleista_poblacion.ranking : []
+        this.applySummaryPayload(data)
+        if (Array.isArray(data?.mapa)) {
+          this.applyMapPayload(data)
         }
-        this.mesas = { total: Number(data?.mesas?.total || 0), con_resultado: Number(data?.mesas?.con_resultado || 0), faltantes: Number(data?.mesas?.faltantes || 0) }
-        this.geoOptions = {
-          provincias: Array.isArray(data?.options?.provincias) ? data.options.provincias : [],
-          municipios: Array.isArray(data?.options?.municipios) ? data.options.municipios : [],
-          localidades: Array.isArray(data?.options?.localidades) ? data.options.localidades : [],
-          delegados: Array.isArray(data?.options?.delegados) ? data.options.delegados : []
-        }
-        this.mapData = Array.isArray(data?.mapa) ? data.mapa : []
-        this.selectedMapRecinto = this.selectedMapRecinto?.id ? (this.mapData.find(x => x.id === this.selectedMapRecinto.id) || this.mapData[0] || null) : (this.mapData[0] || null)
-        this.resetMonitorOptionFilters()
       } catch (e) {
         if (!this.isAlive || requestId !== this.dashboardRequestId) return
         this.$q.notify({ type: 'negative', message: e?.response?.data?.message || 'No se pudo cargar dashboard' })
@@ -1033,8 +1018,11 @@ export default {
   }
   ,
   watch: {
-    '$route.fullPath' () {
+    async '$route.fullPath' () {
       this.syncDashboardMode()
+      this.disconnectSocket()
+      await this.loadDashboard()
+      this.connectSocket()
     }
   }
 }

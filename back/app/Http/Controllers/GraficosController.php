@@ -2,13 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Localidad;
 use App\Models\Mesa;
-use App\Models\Municipio;
-use App\Models\Provincia;
 use App\Models\Recinto;
 use App\Models\ResultadoMesa;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -16,10 +12,6 @@ use Illuminate\Support\Facades\Storage;
 class GraficosController extends Controller
 {
     private const JACHA_PARTIDO_ID = 15;
-    private const ORURO_PROVINCIA_ID = 57;
-    private const ORURO_MUNICIPIO_ID = 191;
-    private const ORURO_LOCALIDAD_ID = 1988;
-
     private const CATEGORY_FIELDS = [
         'alcalde' => 'votos_alcalde',
         'concejal' => 'votos_concejal',
@@ -32,10 +24,10 @@ class GraficosController extends Controller
     {
         return [
             'departamento_id' => 5,
-            'provincia_id' => $request->input('provincia_id') ? (int) $request->input('provincia_id') : self::ORURO_PROVINCIA_ID,
-            'municipio_id' => $request->input('municipio_id') ? (int) $request->input('municipio_id') : self::ORURO_MUNICIPIO_ID,
-            'localidad_id' => $request->input('localidad_id') ? (int) $request->input('localidad_id') : self::ORURO_LOCALIDAD_ID,
-            'delegado_id' => $request->input('delegado_id') ? (int) $request->input('delegado_id') : null,
+            'provincia_id' => null,
+            'municipio_id' => null,
+            'localidad_id' => null,
+            'delegado_id' => null,
         ];
     }
 
@@ -196,52 +188,6 @@ class GraficosController extends Controller
                 || (int) ($detalle->votos_concejal ?? 0) > 0
                 || (int) ($detalle->votos_alcalde ?? 0) > 0;
         });
-    }
-
-    private function buildOptionsPayload(array $scope): array
-    {
-        $provincias = Provincia::query()
-            ->select('id', 'nombre')
-            ->where('departamento_id', $scope['departamento_id'])
-            ->orderBy('nombre')
-            ->get();
-
-        $municipios = Municipio::query()
-            ->select('id', 'nombre', 'provincia_id')
-            ->whereHas('provincia', function ($q) use ($scope) {
-                $q->where('departamento_id', $scope['departamento_id']);
-            })
-            ->when($scope['provincia_id'], fn ($q) => $q->where('provincia_id', $scope['provincia_id']))
-            ->orderBy('nombre')
-            ->get();
-
-        $localidades = Localidad::query()
-            ->select('id', 'nombre', 'municipio_id')
-            ->whereHas('municipio.provincia', function ($q) use ($scope) {
-                $q->where('departamento_id', $scope['departamento_id']);
-            })
-            ->when($scope['municipio_id'], fn ($q) => $q->where('municipio_id', $scope['municipio_id']))
-            ->orderBy('nombre')
-            ->get();
-
-        $delegados = User::query()
-            ->select('users.id', 'users.name', 'users.username')
-            ->where('users.role', 'Delegado de Mesa')
-            ->whereHas('recinto', function ($q) use ($scope) {
-                $q->where('departamento_id', $scope['departamento_id'])
-                    ->when($scope['provincia_id'], fn ($qq) => $qq->where('provincia_id', $scope['provincia_id']))
-                    ->when($scope['municipio_id'], fn ($qq) => $qq->where('municipio_id', $scope['municipio_id']))
-                    ->when($scope['localidad_id'], fn ($qq) => $qq->where('localidad_id', $scope['localidad_id']));
-            })
-            ->orderBy('users.name')
-            ->get();
-
-        return [
-            'provincias' => $provincias,
-            'municipios' => $municipios,
-            'localidades' => $localidades,
-            'delegados' => $delegados,
-        ];
     }
 
     private function buildPhotoUrls($resultado): array
@@ -519,11 +465,65 @@ class GraficosController extends Controller
 
         return response()->json([
             ...$summary,
-            'options' => $this->buildOptionsPayload($scope),
             'mapa' => $this->buildMapPayload($scope),
             'scope' => $scope,
             'generated_at' => now()->toIso8601String(),
         ]);
+    }
+
+    private function buildSummaryResponse(array $scope): array
+    {
+        return [
+            ...$this->buildSummaryPayload($scope),
+            'scope' => $scope,
+            'generated_at' => now()->toIso8601String(),
+        ];
+    }
+
+    private function buildMapResponse(array $scope): array
+    {
+        return [
+            ...$this->buildSummaryPayload($scope),
+            'mapa' => $this->buildMapPayload($scope),
+            'scope' => $scope,
+            'generated_at' => now()->toIso8601String(),
+        ];
+    }
+
+    public function bootstrapDashboard(Request $request)
+    {
+        $scope = $this->buildScope($request);
+        return response()->json($this->buildSummaryResponse($scope));
+    }
+
+    public function bootstrapPermMapa(Request $request)
+    {
+        $scope = $this->buildScope($request);
+        return response()->json($this->buildMapResponse($scope));
+    }
+
+    public function bootstrapPerMesa(Request $request)
+    {
+        $scope = $this->buildScope($request);
+        return response()->json($this->buildMapResponse($scope));
+    }
+
+    public function bootstrapAmbos(Request $request)
+    {
+        $scope = $this->buildScope($request);
+        return response()->json($this->buildSummaryResponse($scope));
+    }
+
+    public function bootstrapTortas(Request $request)
+    {
+        $scope = $this->buildScope($request);
+        return response()->json($this->buildSummaryResponse($scope));
+    }
+
+    public function bootstrapHistograma(Request $request)
+    {
+        $scope = $this->buildScope($request);
+        return response()->json($this->buildSummaryResponse($scope));
     }
 
     public function index(Request $request)
