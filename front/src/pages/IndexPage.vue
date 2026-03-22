@@ -239,6 +239,9 @@
                       <div class="col">
                         <div class="text-caption text-grey-7">{{ card.tieneResultado ? 'Ganador' : 'Estado' }}</div>
                         <div class="text-weight-bold" :style="{ color: card.ganadorColor || '#111827' }">{{ card.ganador }}</div>
+                        <div v-if="card.tieneResultado && card.ganadorCategoria" class="text-caption text-grey-7">
+                          {{ card.ganadorCategoria }}
+                        </div>
                       </div>
                       <q-chip dense square :style="{ backgroundColor: card.ganadorColor || '#111827', color: '#fff' }">{{ card.tieneResultado ? card.ganadorVotos : '-' }}</q-chip>
                     </div>
@@ -266,6 +269,7 @@
                   </q-item-section>
                   <q-item-section>
                     <q-item-label class="text-weight-medium">Mesa {{ item.numero }} · {{ item.ganador }}</q-item-label>
+                    <q-item-label caption v-if="item.ganadorCategoria">{{ item.ganadorCategoria }}</q-item-label>
                     <q-item-label caption>{{ item.recinto }}</q-item-label>
                     <q-item-label caption>{{ item.hora }} · {{ item.confirmador }}</q-item-label>
                   </q-item-section>
@@ -554,6 +558,9 @@
                           <div class="text-weight-bold" :style="{ color: card.ganadorColor || '#111827' }">
                             {{ card.ganador }}
                           </div>
+                          <div v-if="card.tieneResultado && card.ganadorCategoria" class="text-caption text-grey-7">
+                            {{ card.ganadorCategoria }}
+                          </div>
                         </div>
                         <q-chip dense square :style="{ backgroundColor: card.ganadorColor || '#111827', color: '#fff' }">
                           {{ card.tieneResultado ? card.ganadorVotos : '-' }}
@@ -587,6 +594,7 @@
                     </q-item-section>
                     <q-item-section>
                       <q-item-label class="text-weight-medium">Mesa {{ item.numero }} · {{ item.ganador }}</q-item-label>
+                      <q-item-label caption v-if="item.ganadorCategoria">{{ item.ganadorCategoria }}</q-item-label>
                       <q-item-label caption>{{ item.recinto }}</q-item-label>
                       <q-item-label caption>{{ item.hora }} · {{ item.confirmador }}</q-item-label>
                     </q-item-section>
@@ -815,6 +823,7 @@ export default {
         hora: resultado.updated_at ? this.formatDateTime(resultado.updated_at) : 'Sin registro',
         isoHora: resultado.updated_at || null,
         ganador: ganador?.sigla || ganador?.nombre || (mesa.tiene_resultado ? 'Sin ganador' : 'Pendiente'),
+        ganadorCategoria: ganador?.label || null,
         ganadorColor: ganador?.color || (mesa.tiene_resultado ? '#2563eb' : '#dc2626'),
         ganadorIcono: ganador?.icono || null,
         ganadorVotos: Number(ganador?.votos || 0)
