@@ -5,15 +5,27 @@ namespace App\Http\Controllers;
 use App\Models\Mesa;
 use App\Models\Recinto;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class AdminRecintoJefeMapaController extends Controller
 {
-    private function visibleRecintosQuery(User $user)
+    private const ORURO_PROVINCIA_ID = 57;
+    private const ORURO_MUNICIPIO_ID = 191;
+    private const ORURO_LOCALIDAD_ID = 1988;
+
+    private function visibleRecintosQuery(User $user, ?Request $request = null)
     {
+        $provinciaId = $request?->get('provincia_id');
+        $municipioId = $request?->get('municipio_id');
+        $localidadId = $request?->get('localidad_id');
+
         $query = Recinto::query()
             ->with([
                 'jefe:id,name,username,celular',
+                'provincia:id,nombre',
+                'municipio:id,nombre',
+                'localidad:id,nombre',
                 'mesas:id,recinto_id,numero_mesa,delegado_id,estado',
                 'mesas.delegado:id,name,username',
             ])
@@ -23,6 +35,31 @@ class AdminRecintoJefeMapaController extends Controller
                     $qq->whereNotNull('delegado_id');
                 }
             ]);
+
+        if ($user->role === 'Administrador') {
+            return $query->where('pais_id', 1)
+                ->where('departamento_id', 5)
+                ->when($provinciaId, fn ($qq) => $qq->where('provincia_id', $provinciaId))
+                ->when($municipioId, fn ($qq) => $qq->where('municipio_id', $municipioId))
+                ->when($localidadId, fn ($qq) => $qq->where('localidad_id', $localidadId))
+                ->orderBy('nombre');
+        }
+
+        if ($user->role === 'Supervisor') {
+            return $query
+                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id))
+                ->when($provinciaId, fn ($qq) => $qq->where('provincia_id', $provinciaId))
+                ->when($municipioId, fn ($qq) => $qq->where('municipio_id', $municipioId))
+                ->when($localidadId, fn ($qq) => $qq->where('localidad_id', $localidadId))
+                ->orderBy('nombre');
+        }
+
+        return null;
+    }
+
+    private function visibleRecintosBaseQuery(User $user)
+    {
+        $query = Recinto::query();
 
         if ($user->role === 'Administrador') {
             return $query
@@ -36,6 +73,74 @@ class AdminRecintoJefeMapaController extends Controller
         }
 
         return null;
+    }
+
+    private function buildGeoOptionsPayload(User $user): array
+    {
+        $base = $this->visibleRecintosBaseQuery($user);
+        if (!$base) {
+            return [
+                'provincias' => [],
+                'municipios' => [],
+                'localidades' => [],
+                'defaults' => [
+                    'provincia_id' => self::ORURO_PROVINCIA_ID,
+                    'municipio_id' => self::ORURO_MUNICIPIO_ID,
+                    'localidad_id' => self::ORURO_LOCALIDAD_ID,
+                ],
+            ];
+        }
+
+        $rows = (clone $base)
+            ->with([
+                'provincia:id,nombre',
+                'municipio:id,nombre,provincia_id',
+                'localidad:id,nombre,municipio_id',
+            ])
+            ->get(['id', 'provincia_id', 'municipio_id', 'localidad_id']);
+
+        $provincias = $rows
+            ->filter(fn ($recinto) => $recinto->provincia)
+            ->map(fn ($recinto) => [
+                'id' => $recinto->provincia->id,
+                'nombre' => $recinto->provincia->nombre,
+            ])
+            ->unique('id')
+            ->sortBy('nombre')
+            ->values();
+
+        $municipios = $rows
+            ->filter(fn ($recinto) => $recinto->municipio)
+            ->map(fn ($recinto) => [
+                'id' => $recinto->municipio->id,
+                'nombre' => $recinto->municipio->nombre,
+                'provincia_id' => $recinto->municipio->provincia_id,
+            ])
+            ->unique('id')
+            ->sortBy('nombre')
+            ->values();
+
+        $localidades = $rows
+            ->filter(fn ($recinto) => $recinto->localidad)
+            ->map(fn ($recinto) => [
+                'id' => $recinto->localidad->id,
+                'nombre' => $recinto->localidad->nombre,
+                'municipio_id' => $recinto->localidad->municipio_id,
+            ])
+            ->unique('id')
+            ->sortBy('nombre')
+            ->values();
+
+        return [
+            'provincias' => $provincias,
+            'municipios' => $municipios,
+            'localidades' => $localidades,
+            'defaults' => [
+                'provincia_id' => self::ORURO_PROVINCIA_ID,
+                'municipio_id' => self::ORURO_MUNICIPIO_ID,
+                'localidad_id' => self::ORURO_LOCALIDAD_ID,
+            ],
+        ];
     }
 
     private function mapRecintoPayload(Recinto $r): Recinto
@@ -77,6 +182,9 @@ class AdminRecintoJefeMapaController extends Controller
         $r->mesas_asignadas = $asignadas;
         $r->delegados_ok = $delegadosOk;
         $r->mesas_faltan = max(0, $total - $asignadas);
+        $r->provincia_nombre = $r->provincia?->nombre;
+        $r->municipio_nombre = $r->municipio?->nombre;
+        $r->localidad_nombre = $r->localidad?->nombre;
 
         return $r;
     }
@@ -112,13 +220,14 @@ class AdminRecintoJefeMapaController extends Controller
     public function bootstrap(Request $request)
     {
         $user = $request->user();
-        $recintosQuery = $this->visibleRecintosQuery($user);
+        $recintosQuery = $this->visibleRecintosQuery($user, $request);
 
         if (!$recintosQuery) {
             return response()->json([], 403);
         }
 
         return response()->json([
+            'geo' => $this->buildGeoOptionsPayload($user),
             'recintos' => $recintosQuery
                 ->get()
                 ->map(fn ($recinto) => $this->mapRecintoPayload($recinto))
@@ -134,7 +243,7 @@ class AdminRecintoJefeMapaController extends Controller
     public function recintos(Request $request)
     {
         $user = $request->user();
-        $query = $this->visibleRecintosQuery($user);
+        $query = $this->visibleRecintosQuery($user, $request);
         if (!$query) {
             return response()->json([], 403);
         }
@@ -211,5 +320,94 @@ class AdminRecintoJefeMapaController extends Controller
         $recinto->jefe()->sync($payload);
 
         return response()->json(['ok' => true]);
+    }
+
+    public function printMesasSinDelegado(Request $request)
+    {
+        $user = $request->user();
+        $query = $this->visibleRecintosQuery($user, $request);
+        if (!$query) {
+            return response()->json([], 403);
+        }
+
+        $rows = $query
+            ->get()
+            ->flatMap(function (Recinto $recinto) {
+                $jefes = collect($recinto->jefe ?? []);
+                $jefeNombres = $jefes->pluck('name')->filter()->implode(', ');
+                $jefeCelulares = $jefes->pluck('celular')->filter()->implode(', ');
+
+                return collect($recinto->mesas ?? [])
+                    ->filter(fn ($mesa) => empty($mesa['delegado_id']))
+                    ->map(function ($mesa) use ($recinto, $jefeNombres, $jefeCelulares) {
+                        return [
+                            'recinto' => $recinto->nombre,
+                            'provincia' => $recinto->provincia?->nombre,
+                            'municipio' => $recinto->municipio?->nombre,
+                            'localidad' => $recinto->localidad?->nombre,
+                            'mesa_numero' => $mesa['numero_mesa'] ?? null,
+                            'estado' => $mesa['estado'] ?? 'PENDIENTE',
+                            'jefes' => $jefeNombres ?: 'Sin jefe asignado',
+                            'celulares' => $jefeCelulares ?: 'Sin celular',
+                        ];
+                    });
+            })
+            ->sortBy([
+                ['provincia', 'asc'],
+                ['municipio', 'asc'],
+                ['localidad', 'asc'],
+                ['recinto', 'asc'],
+                ['mesa_numero', 'asc'],
+            ])
+            ->values();
+
+        $pdf = Pdf::loadView('pdf.mapa_recintos_mesas_sin_delegado', [
+            'title' => 'Mesas sin delegado asignado',
+            'rows' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i'),
+            'generatedBy' => $user->name ?? $user->username ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('mesas_sin_delegado.pdf');
+    }
+
+    public function printRecintosSinJefe(Request $request)
+    {
+        $user = $request->user();
+        $query = $this->visibleRecintosQuery($user, $request);
+        if (!$query) {
+            return response()->json([], 403);
+        }
+
+        $rows = $query
+            ->get()
+            ->filter(fn (Recinto $recinto) => collect($recinto->jefe ?? [])->isEmpty())
+            ->map(function (Recinto $recinto) {
+                return [
+                    'recinto' => $recinto->nombre,
+                    'provincia' => $recinto->provincia?->nombre,
+                    'municipio' => $recinto->municipio?->nombre,
+                    'localidad' => $recinto->localidad?->nombre,
+                    'mesas_total' => (int) ($recinto->mesas_count ?? 0),
+                    'mesas_asignadas' => (int) ($recinto->mesas_asignadas_count ?? 0),
+                    'mesas_faltan' => max(0, (int) ($recinto->mesas_count ?? 0) - (int) ($recinto->mesas_asignadas_count ?? 0)),
+                ];
+            })
+            ->sortBy([
+                ['provincia', 'asc'],
+                ['municipio', 'asc'],
+                ['localidad', 'asc'],
+                ['recinto', 'asc'],
+            ])
+            ->values();
+
+        $pdf = Pdf::loadView('pdf.mapa_recintos_recintos_sin_jefe', [
+            'title' => 'Recintos sin jefe asignado',
+            'rows' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i'),
+            'generatedBy' => $user->name ?? $user->username ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('recintos_sin_jefe.pdf');
     }
 }

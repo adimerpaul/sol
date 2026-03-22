@@ -98,6 +98,8 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('admin/mapa-recintos/bootstrap', [AdminRecintoJefeMapaController::class, 'bootstrap']);
     Route::get('admin/mapa-recintos/recintos', [AdminRecintoJefeMapaController::class, 'recintos']);
     Route::get('admin/mapa-recintos/jefes', [AdminRecintoJefeMapaController::class, 'jefes']);
+    Route::get('admin/mapa-recintos/print/mesas-sin-delegado', [AdminRecintoJefeMapaController::class, 'printMesasSinDelegado']);
+    Route::get('admin/mapa-recintos/print/recintos-sin-jefe', [AdminRecintoJefeMapaController::class, 'printRecintosSinJefe']);
     Route::put('admin/mapa-recintos/recintos/{recinto}/jefe', [AdminRecintoJefeMapaController::class, 'asignar']);
 
 //    Route::get('admin/mesas', [SuperAdminMesasController::class, 'index']);

@@ -2,11 +2,41 @@
   <q-page class="q-pa-md bg-grey-2">
     <q-card flat bordered class="bg-white">
       <q-card-section>
-        <div class="text-h6 text-weight-bold">
-          Asignacion de Jefes por Recinto (Mapa)
-          <q-btn icon="refresh" round dense flat class="q-ml-sm" @click="load" />
+        <div class="row items-center q-col-gutter-sm">
+          <div class="col">
+            <div class="text-h6 text-weight-bold">
+              Asignacion de Jefes por Recinto (Mapa)
+              <q-btn icon="refresh" round dense flat class="q-ml-sm" @click="load" />
+            </div>
+            <div class="text-caption text-grey-7">Selecciona un recinto en el mapa y asigna sus jefes</div>
+          </div>
+          <div class="col-auto">
+            <q-btn-dropdown
+              color="primary"
+              icon="print"
+              label="Impresiones"
+              no-caps
+              :disable="loading"
+            >
+              <q-list>
+                <q-item clickable v-close-popup @click="openPrint('mesas-sin-delegado')">
+                  <q-item-section avatar><q-icon name="groups" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label>Mesas sin delegado</q-item-label>
+                    <q-item-label caption>Incluye jefe de recinto y celulares</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="openPrint('recintos-sin-jefe')">
+                  <q-item-section avatar><q-icon name="domain_disabled" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label>Recintos sin jefe</q-item-label>
+                    <q-item-label caption>Resumen por recinto y mesas faltantes</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
         </div>
-        <div class="text-caption text-grey-7">Selecciona un recinto en el mapa y asigna sus jefes</div>
 
         <div class="row items-center q-col-gutter-sm q-mt-sm">
           <div class="col-auto">
@@ -34,6 +64,65 @@
         </div>
 
         <div class="row q-col-gutter-sm q-mt-sm">
+          <div class="col-12 col-sm-4 col-md-3">
+            <q-select
+              v-model="filters.provincia_id"
+              :options="provinciasOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              dense
+              outlined
+              clearable
+              label="Provincia"
+              @update:model-value="onProvinciaChange"
+            />
+          </div>
+          <div class="col-12 col-sm-4 col-md-3">
+            <q-select
+              v-model="filters.municipio_id"
+              :options="municipiosOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              dense
+              outlined
+              clearable
+              label="Municipio"
+              :disable="!filters.provincia_id"
+              @update:model-value="onMunicipioChange"
+            />
+          </div>
+          <div class="col-12 col-sm-4 col-md-3">
+            <q-select
+              v-model="filters.localidad_id"
+              :options="localidadesOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              dense
+              outlined
+              clearable
+              label="Localidad"
+              :disable="!filters.municipio_id"
+              @update:model-value="load"
+            />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-btn
+              flat
+              color="grey-8"
+              icon="filter_alt_off"
+              label="Limpiar filtros"
+              no-caps
+              class="full-width"
+              @click="clearGeoFilters"
+            />
+          </div>
+
           <div class="col-12 col-md-6">
             <q-select
               v-model="recintoPick"
@@ -294,6 +383,21 @@ export default {
       jefesOptionsAll: [],
       delegadosOptions: [],
       delegadosOptionsAll: [],
+      geo: {
+        provincias: [],
+        municipios: [],
+        localidades: [],
+        defaults: {
+          provincia_id: 57,
+          municipio_id: 191,
+          localidad_id: 1988
+        }
+      },
+      filters: {
+        provincia_id: 57,
+        municipio_id: 191,
+        localidad_id: 1988
+      },
       selected: null,
       jefeIdToAdd: null,
       savingJefe: false,
@@ -312,11 +416,60 @@ export default {
     this.load()
   },
 
+  computed: {
+    provinciasOptions () {
+      return (this.geo.provincias || []).map(item => ({
+        label: item.nombre,
+        value: item.id
+      }))
+    },
+
+    municipiosOptions () {
+      return (this.geo.municipios || [])
+        .filter(item => !this.filters.provincia_id || item.provincia_id === this.filters.provincia_id)
+        .map(item => ({
+          label: item.nombre,
+          value: item.id
+        }))
+    },
+
+    localidadesOptions () {
+      return (this.geo.localidades || [])
+        .filter(item => !this.filters.municipio_id || item.municipio_id === this.filters.municipio_id)
+        .map(item => ({
+          label: item.nombre,
+          value: item.id
+        }))
+    }
+  },
+
   methods: {
+    buildLoadParams () {
+      return {
+        provincia_id: this.filters.provincia_id || undefined,
+        municipio_id: this.filters.municipio_id || undefined,
+        localidad_id: this.filters.localidad_id || undefined
+      }
+    },
+
     async load () {
       this.loading = true
       try {
-        const { data } = await this.$axios.get('admin/mapa-recintos/bootstrap')
+        const { data } = await this.$axios.get('admin/mapa-recintos/bootstrap', {
+          params: this.buildLoadParams()
+        })
+        if (data?.geo) {
+          this.geo = {
+            provincias: Array.isArray(data.geo.provincias) ? data.geo.provincias : [],
+            municipios: Array.isArray(data.geo.municipios) ? data.geo.municipios : [],
+            localidades: Array.isArray(data.geo.localidades) ? data.geo.localidades : [],
+            defaults: {
+              provincia_id: data.geo.defaults?.provincia_id ?? 57,
+              municipio_id: data.geo.defaults?.municipio_id ?? 191,
+              localidad_id: data.geo.defaults?.localidad_id ?? 1988
+            }
+          }
+        }
         this.recintos = (Array.isArray(data?.recintos) ? data.recintos : []).map(this.normalizeRecinto)
         this.jefes = Array.isArray(data?.jefes) ? data.jefes : []
         this.jefesOptionsAll = this.buildJefesOptions(this.jefes)
@@ -332,6 +485,11 @@ export default {
           const again = (this.recintos || []).find(x => x.id === this.selected.id)
           if (again) {
             this.applySelectedRecinto(again)
+          } else {
+            this.selected = null
+            this.mesas = []
+            this.recintoPick = null
+            this.focusRecinto = null
           }
         }
       } catch (e) {
@@ -373,9 +531,12 @@ export default {
         const okDelegados = tieneJefe && (mesasTotal === 0 || mesasAsignadas >= mesasTotal)
 
         return {
-          label: `${x.nombre} - ${jefeNombre}`,
+          label: `${x.nombre} - ${x.localidad_nombre || x.municipio_nombre || ''} - ${jefeNombre}`,
           value: x.id,
           nombre: x.nombre,
+          provinciaNombre: x.provincia_nombre || '',
+          municipioNombre: x.municipio_nombre || '',
+          localidadNombre: x.localidad_nombre || '',
           jefeNombre,
           tieneJefe,
           mesas_total: mesasTotal,
@@ -413,9 +574,30 @@ export default {
 
         this.recintosOptions = base.filter(o =>
           o.nombre.toLowerCase().includes(needle) ||
+          o.provinciaNombre.toLowerCase().includes(needle) ||
+          o.municipioNombre.toLowerCase().includes(needle) ||
+          o.localidadNombre.toLowerCase().includes(needle) ||
           o.jefeNombre.toLowerCase().includes(needle)
         )
       })
+    },
+
+    onProvinciaChange () {
+      this.filters.municipio_id = null
+      this.filters.localidad_id = null
+      this.load()
+    },
+
+    onMunicipioChange () {
+      this.filters.localidad_id = null
+      this.load()
+    },
+
+    clearGeoFilters () {
+      this.filters.provincia_id = null
+      this.filters.municipio_id = null
+      this.filters.localidad_id = null
+      this.load()
     },
 
     filterJefes (val, update) {
@@ -578,6 +760,21 @@ export default {
     async clearMesa (mesa) {
       mesa.delegadoDraftId = null
       await this.saveMesa(mesa)
+    },
+
+    openPrint (type) {
+      const params = new URLSearchParams()
+      const payload = this.buildLoadParams()
+
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value != null && value !== '') {
+          params.set(key, value)
+        }
+      })
+
+      const query = params.toString()
+      const suffix = query ? `?${query}` : ''
+      window.open(`${this.$url}/admin/mapa-recintos/print/${type}${suffix}`, '_blank', 'noopener,noreferrer')
     }
   }
 }
