@@ -35,6 +35,7 @@ class SuperAdminMesasController extends Controller
         return response()->json([
             'geo' => $this->buildGeoOptionsPayload(),
             'delegados' => $this->buildDelegadosOptionsPayload(),
+            'jefes_recinto' => $this->buildJefesRecintoOptionsPayload(),
             'recintos' => $this->buildRecintosOptionsPayload($request),
             'mesas' => $this->buildMesasIndexPayload($request),
         ]);
@@ -55,6 +56,7 @@ class SuperAdminMesasController extends Controller
         $mesaId       = $request->get('mesa_id');
         $asignado     = $request->get('asignado', 'ALL');
         $delegadoId   = $request->get('delegado_id');
+        $jefeRecintoId = $request->get('jefe_recinto_id');
         $estado       = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
         $enMesa       = $request->get('en_mesa', 'ALL');
@@ -76,6 +78,7 @@ class SuperAdminMesasController extends Controller
 
         $summaryBase = Mesa::query()
             ->whereHas('recinto', $scopeRecinto)
+            ->when($jefeRecintoId, fn($qq) => $qq->whereHas('recinto.jefe', fn($q) => $q->where('users.id', $jefeRecintoId)))
             ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
             ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
             ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
@@ -540,10 +543,12 @@ class SuperAdminMesasController extends Controller
         $departamentoId = $request->get('departamento_id', 5);
         $provinciaId = $request->get('provincia_id');
         $municipioId = $request->get('municipio_id');
+        $localidadId = $request->get('localidad_id');
         $recintoId = $request->get('recinto_id');
         $mesaId = $request->get('mesa_id');
         $asignado = $request->get('asignado', 'ALL');
         $delegadoId = $request->get('delegado_id');
+        $jefeRecintoId = $request->get('jefe_recinto_id');
         $estado = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
         $enMesa = $request->get('en_mesa', 'ALL');
@@ -582,6 +587,7 @@ class SuperAdminMesasController extends Controller
                 'resultado:id,mesa_id',
             ])
             ->whereHas('recinto', $scopeRecinto)
+            ->when($jefeRecintoId, fn($qq) => $qq->whereHas('recinto.jefe', fn($q) => $q->where('users.id', $jefeRecintoId)))
             ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
             ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
             ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
@@ -655,6 +661,7 @@ class SuperAdminMesasController extends Controller
         $mesaId = $request->get('mesa_id');
         $asignado = $request->get('asignado', 'ALL');
         $delegadoId = $request->get('delegado_id');
+        $jefeRecintoId = $request->get('jefe_recinto_id');
         $estado = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
 
@@ -682,12 +689,14 @@ class SuperAdminMesasController extends Controller
             ])
             ->with([
                 'recinto:id,nombre',
+                'recinto.jefe:id,name,celular',
                 'provincia:id,nombre',
                 'municipio:id,nombre',
                 'delegado:id,name,username,celular,ci,fecha_nacimiento',
                 'resultado:id,mesa_id',
             ])
             ->whereHas('recinto', $scopeRecinto)
+            ->when($jefeRecintoId, fn($qq) => $qq->whereHas('recinto.jefe', fn($q) => $q->where('users.id', $jefeRecintoId)))
             ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
             ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
             ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
@@ -734,6 +743,15 @@ class SuperAdminMesasController extends Controller
         return User::query()
             ->select('id','name','username','role','ci')
             ->where('role', 'Delegado de Mesa')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function buildJefesRecintoOptionsPayload()
+    {
+        return User::query()
+            ->select('id', 'name', 'username', 'celular')
+            ->where('role', 'Jefe de Recinto')
             ->orderBy('name')
             ->get();
     }
