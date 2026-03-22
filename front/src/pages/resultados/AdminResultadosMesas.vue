@@ -294,6 +294,19 @@
                 <div class="text-caption text-grey-7">
                   <strong>Celular:</strong>
                   {{ r.delegado.celular || 'Sin celular' }}
+                  <q-btn
+                    v-if="whatsappUrl(r.delegado.celular)"
+                    flat
+                    round
+                    dense
+                    size="sm"
+                    color="positive"
+                    icon="fa-brands fa-whatsapp"
+                    class="q-ml-xs"
+                    @click="openWhatsapp(r.delegado.celular)"
+                  >
+                    <q-tooltip>Enviar WhatsApp</q-tooltip>
+                  </q-btn>
                 </div>
               </div>
               <q-badge v-else outline color="negative">
@@ -1773,6 +1786,26 @@ export default {
       const lng = row?.delegado_longitud
       if (lat == null || lng == null || lat === '' || lng === '') return null
       return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`
+    },
+
+    normalizePhone (value) {
+      const digits = String(value || '').replace(/\D/g, '')
+      if (!digits) return ''
+      if (digits.startsWith('591')) return digits
+      if (digits.length === 8) return `591${digits}`
+      return digits
+    },
+
+    whatsappUrl (value) {
+      const phone = this.normalizePhone(value)
+      if (!phone) return null
+      return `https://wa.me/${phone}`
+    },
+
+    openWhatsapp (value) {
+      const url = this.whatsappUrl(value)
+      if (!url) return
+      window.open(url, '_blank', 'noopener,noreferrer')
     },
 
     openPresenceMap () {
