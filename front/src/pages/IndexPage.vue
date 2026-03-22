@@ -190,6 +190,9 @@
           <div class="col-12 col-md-3">
             <q-select v-model="monitorFilters.ganador" :options="monitorWinnerOptions" option-label="label" option-value="value" emit-value map-options use-input input-debounce="0" clearable dense outlined label="Filtrar por ganador" @filter="filterMonitorWinners" />
           </div>
+          <div class="col-12 col-md-3">
+            <q-select v-model="monitorFilters.categoria" :options="monitorCategoryOptions" option-label="label" option-value="value" emit-value map-options use-input input-debounce="0" clearable dense outlined label="Filtrar por categoría" @filter="filterMonitorCategories" />
+          </div>
           <div class="col-12 col-md-1">
             <q-btn flat color="grey-7" no-caps label="Limpiar" @click="clearMesasViewerFilters" />
           </div>
@@ -502,6 +505,23 @@
                 @filter="filterMonitorWinners"
               />
             </div>
+            <div class="col-12 col-md-3">
+              <q-select
+                v-model="monitorFilters.categoria"
+                :options="monitorCategoryOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                use-input
+                input-debounce="0"
+                clearable
+                dense
+                outlined
+                label="Filtrar por categoría"
+                @filter="filterMonitorCategories"
+              />
+            </div>
             <div class="col-12 col-md-1">
               <q-btn flat color="grey-7" no-caps label="Limpiar" @click="clearMesasViewerFilters" />
             </div>
@@ -632,20 +652,25 @@ export default {
       monitorFilters: {
         recinto_id: null,
         confirmador: null,
-        ganador: null
+        ganador: null,
+        categoria: null
       },
       monitorOptionPool: {
         recintos: [],
         confirmadores: [],
-        ganadores: []
+        ganadores: [],
+        categorias: []
       },
       monitorOptions: {
         recintos: [],
         confirmadores: [],
-        ganadores: []
+        ganadores: [],
+        categorias: []
       },
       chartsViewMode: 'both',
       audioContext: null,
+      isAlive: false,
+      dashboardRequestId: 0,
       socket: null,
       socketRefreshTimer: null
     }
@@ -708,6 +733,7 @@ export default {
         if (this.monitorFilters.recinto_id && card.recintoId !== this.monitorFilters.recinto_id) return false
         if (this.monitorFilters.confirmador && card.confirmador !== this.monitorFilters.confirmador) return false
         if (this.monitorFilters.ganador && card.ganador !== this.monitorFilters.ganador) return false
+        if (this.monitorFilters.categoria && card.ganadorCategoria !== this.monitorFilters.categoria) return false
         return true
       })
     },
@@ -722,14 +748,19 @@ export default {
     },
     monitorWinnerOptions () {
       return this.monitorOptions.ganadores
+    },
+    monitorCategoryOptions () {
+      return this.monitorOptions.categorias
     }
   },
   async mounted () {
+    this.isAlive = true
     this.syncDashboardMode()
     await this.loadDashboard()
     this.connectSocket()
   },
   beforeUnmount () {
+    this.isAlive = false
     const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
     if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
     if (this.audioContext?.state !== 'closed') {
@@ -813,18 +844,23 @@ export default {
       const recintos = this.monitorCards.map(card => ({ label: card.recinto, value: card.recintoId }))
       const confirmadores = this.monitorCards.map(card => ({ label: card.confirmador, value: card.confirmador }))
       const ganadores = this.monitorCards.map(card => ({ label: card.ganador, value: card.ganador }))
+      const categorias = this.monitorCards
+        .filter(card => card.ganadorCategoria)
+        .map(card => ({ label: card.ganadorCategoria, value: card.ganadorCategoria }))
 
       const uniq = (rows) => rows.filter((row, index, arr) => arr.findIndex(item => item.value === row.value) === index)
 
       this.monitorOptionPool = {
         recintos: uniq(recintos).sort((a, b) => a.label.localeCompare(b.label)),
         confirmadores: uniq(confirmadores).sort((a, b) => a.label.localeCompare(b.label)),
-        ganadores: uniq(ganadores).sort((a, b) => a.label.localeCompare(b.label))
+        ganadores: uniq(ganadores).sort((a, b) => a.label.localeCompare(b.label)),
+        categorias: uniq(categorias).sort((a, b) => a.label.localeCompare(b.label))
       }
       this.monitorOptions = {
         recintos: [...this.monitorOptionPool.recintos],
         confirmadores: [...this.monitorOptionPool.confirmadores],
-        ganadores: [...this.monitorOptionPool.ganadores]
+        ganadores: [...this.monitorOptionPool.ganadores],
+        categorias: [...this.monitorOptionPool.categorias]
       }
     },
     filterMonitorRecintos (val, update) {
@@ -851,12 +887,21 @@ export default {
           : this.monitorOptionPool.ganadores.filter(option => String(option.label || '').toLowerCase().includes(needle))
       })
     },
+    filterMonitorCategories (val, update) {
+      update(() => {
+        const needle = String(val || '').toLowerCase().trim()
+        this.monitorOptions.categorias = !needle
+          ? [...this.monitorOptionPool.categorias]
+          : this.monitorOptionPool.categorias.filter(option => String(option.label || '').toLowerCase().includes(needle))
+      })
+    },
     clearMesasViewerFilters () {
-      this.monitorFilters = { recinto_id: null, confirmador: null, ganador: null }
+      this.monitorFilters = { recinto_id: null, confirmador: null, ganador: null, categoria: null }
       this.monitorOptions = {
         recintos: [...this.monitorOptionPool.recintos],
         confirmadores: [...this.monitorOptionPool.confirmadores],
-        ganadores: [...this.monitorOptionPool.ganadores]
+        ganadores: [...this.monitorOptionPool.ganadores],
+        categorias: [...this.monitorOptionPool.categorias]
       }
     },
     pieOptions (card) { return { chart: { toolbar: { show: true } }, labels: card.labels, colors: card.colors, legend: { position: 'right', fontSize: '11px', width: 130 }, dataLabels: { enabled: true, formatter: (val, opts) => `${opts?.w?.globals?.labels?.[opts.seriesIndex] || ''} ${Number(val || 0).toFixed(1)}%`, style: { fontSize: '10px', fontWeight: 700 } } } },
@@ -944,16 +989,19 @@ export default {
       if (!socketUrl) return
       this.socket = io(socketUrl, { transports: ['websocket', 'polling'], reconnection: true })
       this.socket.on(socketEvent, () => {
+        if (!this.isAlive) return
         this.playVoteSound()
         if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
         this.socketRefreshTimer = setTimeout(() => this.loadDashboard(), 400)
       })
     },
     async loadDashboard () {
+      const requestId = ++this.dashboardRequestId
       this.loading = true
       this.loadingMap = true
       try {
         const { data } = await this.$axios.get('dashboard/bootstrap', { params: this.dashboardParams() })
+        if (!this.isAlive || requestId !== this.dashboardRequestId) return
         this.votosValidosTotal = Number(data?.votos_validos_total || 0)
         this.categorias = data?.categorias || {}
         this.categoryRankings = {
@@ -974,8 +1022,10 @@ export default {
         this.selectedMapRecinto = this.selectedMapRecinto?.id ? (this.mapData.find(x => x.id === this.selectedMapRecinto.id) || this.mapData[0] || null) : (this.mapData[0] || null)
         this.resetMonitorOptionFilters()
       } catch (e) {
+        if (!this.isAlive || requestId !== this.dashboardRequestId) return
         this.$q.notify({ type: 'negative', message: e?.response?.data?.message || 'No se pudo cargar dashboard' })
       } finally {
+        if (!this.isAlive || requestId !== this.dashboardRequestId) return
         this.loading = false
         this.loadingMap = false
       }
