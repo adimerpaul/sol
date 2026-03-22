@@ -136,6 +136,7 @@ class SuperAdminMesasController extends Controller
                 'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos'
             ])
             ->whereHas('recinto', $scopeRecinto)
+            ->when($jefeRecintoId, fn($qq) => $qq->whereHas('recinto.jefe', fn($q) => $q->where('users.id', $jefeRecintoId)))
             ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
             ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
             ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
