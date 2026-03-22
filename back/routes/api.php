@@ -114,6 +114,8 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('admin/mesas/options/delegados', [SuperAdminMesasController::class, 'delegadosOptions']);
     Route::get('admin/mesas-print/asistencia-capacitacion', [SuperAdminMesasController::class, 'printAsistenciaCapacitacion']);
     Route::get('admin/mesas-print/actas', [SuperAdminMesasController::class, 'printActas']);
+    Route::get('admin/mesas-print/en-mesa', [SuperAdminMesasController::class, 'printEnMesa']);
+    Route::get('admin/mesas-export/en-mesa', [SuperAdminMesasController::class, 'exportEnMesaCsv']);
     Route::put('admin/mesas/{mesa}/delegado', [SuperAdminMesasController::class, 'asignarDelegado']);
     Route::put('admin/mesas/{mesa}/asistencia-capacitacion', [SuperAdminMesasController::class, 'asistenciaCapacitacion']);
     Route::get('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'resultado']);

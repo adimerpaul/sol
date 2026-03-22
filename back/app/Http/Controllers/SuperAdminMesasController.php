@@ -20,6 +20,7 @@ class SuperAdminMesasController extends Controller
 {
     // límite duro
     private int $MAX_ROWS = 250;
+    private int $PRINT_TIMEOUT_SECONDS = 600;
 
     /**
      * GET /api/admin/mesas?recinto_id=&mesa_id=&asignado=&delegado_id=&estado=&con_resultado=
@@ -51,6 +52,7 @@ class SuperAdminMesasController extends Controller
         $delegadoId   = $request->get('delegado_id');
         $estado       = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
+        $enMesa       = $request->get('en_mesa', 'ALL');
 
         // NUEVO
         $all     = $request->boolean('all', false);          // all=1
@@ -88,11 +90,16 @@ class SuperAdminMesasController extends Controller
                 }
             });
 
+        $summaryPresenceBase = clone $summaryBase;
+        $this->applyEnMesaFilter($summaryPresenceBase, 'YES');
+        $this->applyEnMesaFilter($summaryBase, $enMesa);
+
         $summary = [
             'total' => (clone $summaryBase)->count(),
             'asignadas' => (clone $summaryBase)->whereNotNull('delegado_id')->count(),
             'sin_delegado' => (clone $summaryBase)->whereNull('delegado_id')->count(),
             'con_resultado' => (clone $summaryBase)->whereHas('resultado')->count(),
+            'en_mesa' => (clone $summaryPresenceBase)->count(),
         ];
 
         $base = Mesa::query()
@@ -138,7 +145,11 @@ class SuperAdminMesasController extends Controller
                 if ($conResultado === 'NO') {
                     $qq->whereDoesntHave('resultado');
                 }
-            })
+            });
+
+        $this->applyEnMesaFilter($base, $enMesa);
+
+        $base = $base
             ->orderBy('mesas.numero_mesa');
 
         // ✅ si piden ALL => paginate real (para traer TODO por lotes)
@@ -370,6 +381,93 @@ class SuperAdminMesasController extends Controller
         return $pdf->stream('mesas_actas_list.pdf');
     }
 
+    public function printEnMesa(Request $request)
+    {
+        @set_time_limit($this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('max_execution_time', (string) $this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('memory_limit', '1024M');
+        @ignore_user_abort(true);
+        $actor = $request->user();
+        $enMesa = $request->get('en_mesa', 'YES');
+        $isNoEnMesa = $enMesa === 'NO';
+
+        $query = $this->buildMesasBaseQuery($request);
+
+        if ($isNoEnMesa) {
+            $query->whereNotNull('mesas.delegado_id');
+        }
+
+        $rows = $query
+            ->orderBy('mesas.numero_mesa')
+            ->get()
+            ->map(fn($m) => $this->buildEnMesaReportRow($m))
+            ->values();
+
+        $pdf = Pdf::loadView('pdf.mesas_en_mesa', [
+            'title' => $isNoEnMesa ? 'Reporte de delegados asignados no en mesa' : 'Reporte de delegados en mesa',
+            'isNoEnMesa' => $isNoEnMesa,
+            'rows' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream($isNoEnMesa ? 'mesas_no_en_mesa.pdf' : 'mesas_en_mesa.pdf');
+    }
+
+    public function exportEnMesaCsv(Request $request)
+    {
+        @set_time_limit($this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('max_execution_time', (string) $this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('memory_limit', '1024M');
+        @ignore_user_abort(true);
+
+        $enMesa = $request->get('en_mesa', 'YES');
+        $filename = $enMesa === 'NO' ? 'delegados_no_en_mesa.csv' : 'delegados_en_mesa.csv';
+
+        return response()->streamDownload(function () use ($request) {
+            $handle = fopen('php://output', 'w');
+
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($handle, [
+                'Mesa',
+                'Recinto',
+                'Municipio',
+                'Provincia',
+                'Delegado',
+                'Usuario',
+                'Celular',
+                'Presencia',
+                'Estado',
+            ]);
+
+            $this->buildMesasBaseQuery($request)
+                ->orderBy('mesas.id')
+                ->chunk(500, function ($mesas) use ($handle) {
+                    foreach ($mesas as $mesa) {
+                        $row = $this->buildEnMesaReportRow($mesa);
+
+                        fputcsv($handle, [
+                            $row['mesa_numero'],
+                            $row['recinto_nombre'] ?? '-',
+                            $row['municipio_nombre'] ?? '-',
+                            $row['provincia_nombre'] ?? '-',
+                            $row['delegado_nombre'] ?? 'SIN ASIGNAR',
+                            $row['delegado_username'] ?? '-',
+                            $row['delegado_celular'] ?? '-',
+                            $row['presencia_at'] ?? 'No registrada',
+                            $row['estado'] ?? '-',
+                        ]);
+                    }
+
+                    fflush($handle);
+                });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private function buildMesasBaseQuery(Request $request)
     {
         $departamentoId = $request->get('departamento_id', 5);
@@ -381,6 +479,7 @@ class SuperAdminMesasController extends Controller
         $delegadoId = $request->get('delegado_id');
         $estado = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
+        $enMesa = $request->get('en_mesa', 'ALL');
 
         $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $recintoId) {
             $qq->whereNull('deleted_at')
@@ -390,7 +489,7 @@ class SuperAdminMesasController extends Controller
                 ->when($recintoId, fn($q) => $q->where('id', $recintoId));
         };
 
-        return Mesa::query()
+        $query = Mesa::query()
             ->select([
                 'mesas.id',
                 'mesas.departamento_id',
@@ -433,6 +532,48 @@ class SuperAdminMesasController extends Controller
                     $qq->whereDoesntHave('resultado');
                 }
             });
+
+        $this->applyEnMesaFilter($query, $enMesa);
+
+        return $query;
+    }
+
+    private function buildEnMesaReportRow(Mesa $m): array
+    {
+        return [
+            'mesa_numero' => $m->numero_mesa,
+            'recinto_nombre' => $m->recinto?->nombre,
+            'municipio_nombre' => $m->municipio?->nombre,
+            'provincia_nombre' => $m->provincia?->nombre,
+            'delegado_nombre' => $m->delegado?->name,
+            'delegado_username' => $m->delegado?->username,
+            'delegado_celular' => $m->delegado?->celular,
+            'presencia_at' => $m->delegado_presente_at?->format('d/m/Y H:i:s'),
+            'estado' => $m->estado,
+        ];
+    }
+
+    private function applyEnMesaFilter($query, $enMesa): void
+    {
+        if ($enMesa === 'YES') {
+            $query->where(function ($qq) {
+                $qq->whereNotNull('mesas.delegado_presente_at')
+                    ->orWhereNotNull('mesas.delegado_latitud')
+                    ->orWhereNotNull('mesas.delegado_longitud')
+                    ->orWhereHas('resultado', function ($qr) {
+                        $qr->where('aviso_antes', true);
+                    });
+            });
+        }
+
+        if ($enMesa === 'NO') {
+            $query->whereNull('mesas.delegado_presente_at')
+                ->whereNull('mesas.delegado_latitud')
+                ->whereNull('mesas.delegado_longitud')
+                ->whereDoesntHave('resultado', function ($qr) {
+                    $qr->where('aviso_antes', true);
+                });
+        }
     }
 
     private function buildMesasPrintBaseQuery(Request $request)

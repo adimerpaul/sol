@@ -150,6 +150,16 @@
               />
             </div>
 
+            <div class="col-6 col-sm-3 col-md-2">
+              <q-select
+                v-model="filters.en_mesa"
+                dense outlined
+                label="En mesa"
+                :options="enMesaOptions"
+                emit-value map-options
+              />
+            </div>
+
             <div class="col-12 col-sm-3">
               <q-btn
                 color="primary"
@@ -175,17 +185,13 @@
                     <q-item-section><q-item-label>Extraer todos</q-item-label></q-item-section>
                   </q-item>
                   <q-separator />
-                  <q-item clickable v-close-popup @click="printAsistenciaCapacitacion(true)">
+                  <q-item clickable v-close-popup @click="printEnMesa">
                     <q-item-section avatar><q-icon name="print" /></q-item-section>
-                    <q-item-section><q-item-label>Imprimir asistencia SI</q-item-label></q-item-section>
+                    <q-item-section><q-item-label>Imprimir en mesa</q-item-label></q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="printAsistenciaCapacitacion(false)">
+                  <q-item clickable v-close-popup @click="printNoEnMesa">
                     <q-item-section avatar><q-icon name="print" /></q-item-section>
-                    <q-item-section><q-item-label>Imprimir asistencia NO</q-item-label></q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup @click="printActas">
-                    <q-item-section avatar><q-icon name="description" /></q-item-section>
-                    <q-item-section><q-item-label>Imprimir actas</q-item-label></q-item-section>
+                    <q-item-section><q-item-label>Imprimir no en mesa</q-item-label></q-item-section>
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
@@ -203,6 +209,7 @@
           <div class="col-auto"><q-chip outline color="primary">Total: {{ summaryTotal }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="positive">Asignadas: {{ countAsignadas }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="negative">Sin delegado: {{ countSinDelegado }}</q-chip></div>
+          <div class="col-auto"><q-chip outline color="indigo">En mesa: {{ countEnMesa }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="teal">Con resultado: {{ countConResultado }}</q-chip></div>
 
           <q-space />
@@ -287,16 +294,6 @@
                 <div class="text-caption text-grey-7">
                   <strong>Celular:</strong>
                   {{ r.delegado.celular || 'Sin celular' }}
-                </div>
-                <div class="q-mt-xs">
-                  <q-checkbox
-                    v-model="r.asistencia_capacitacion"
-                    dense
-                    size="xs"
-                    label="Capacitacion"
-                    :disable="capacitacionSavingId === r.id"
-                    @update:model-value="val => toggleAsistenciaCapacitacion(r, val)"
-                  />
                 </div>
               </div>
               <q-badge v-else outline color="negative">
@@ -932,7 +929,8 @@ export default {
         asignado: 'ALL',
         delegado_id: null,
         estado: null,
-        con_resultado: 'ALL'
+        con_resultado: 'ALL',
+        en_mesa: 'ALL'
       },
 
       estadoOptions: ['PENDIENTE','ASIGNADA','EN_PROCESO','FINALIZADA','OBSERVADA'],
@@ -945,6 +943,11 @@ export default {
         {label:'Todos', value:'ALL'},
         {label:'Con resultado', value:'YES'},
         {label:'Sin resultado', value:'NO'}
+      ],
+      enMesaOptions: [
+        { label: 'Todos', value: 'ALL' },
+        { label: 'En mesa', value: 'YES' },
+        { label: 'No en mesa', value: 'NO' }
       ],
 
       geoOptions: {
@@ -1103,6 +1106,7 @@ export default {
     countSinDelegado () {
       return Number(this.summary?.sin_delegado || 0)
     },
+    countEnMesa () { return Number(this.summary?.en_mesa || 0) },
     countAsignadas () { return Number(this.summary?.asignadas || 0) },
     countConResultado () { return Number(this.summary?.con_resultado || 0) },
 
@@ -1298,6 +1302,7 @@ export default {
             delegado_id: this.filters.delegado_id || undefined,
             estado: this.filters.estado || undefined,
             con_resultado: this.filters.con_resultado,
+            en_mesa: this.filters.en_mesa,
             all: 1,
             per_page: perPage,
             page: this.page
@@ -1538,7 +1543,8 @@ export default {
         asignado: this.filters.asignado,
         delegado_id: this.filters.delegado_id || undefined,
         estado: this.filters.estado || undefined,
-        con_resultado: this.filters.con_resultado
+        con_resultado: this.filters.con_resultado,
+        en_mesa: this.filters.en_mesa
       }
     },
 
@@ -1554,7 +1560,7 @@ export default {
       return `${this.$url}/${path}?${params.toString()}`
     },
 
-    async openPdfBlob (path, extraParams = {}, filename = 'reporte.pdf') {
+    async openBlobFile (path, extraParams = {}, filename = 'reporte.pdf', mimeType = 'application/pdf') {
       this.loadingPrint = true
       try {
         const url = this.buildPrintUrl(path, extraParams)
@@ -1562,11 +1568,14 @@ export default {
           responseType: 'blob'
         })
 
-        const blob = new Blob([response.data], { type: 'application/pdf' })
+        const blob = new Blob([response.data], { type: mimeType })
         const blobUrl = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = blobUrl
-        link.target = '_blank'
+        if (mimeType === 'application/pdf') {
+          link.target = '_blank'
+          link.rel = 'noopener'
+        }
         link.rel = 'noopener'
         link.download = filename
         document.body.appendChild(link)
@@ -1577,9 +1586,25 @@ export default {
           window.URL.revokeObjectURL(blobUrl)
         }, 1000)
       } catch (e) {
-        this.$alert.error(e.response?.data?.message || 'No se pudo generar el PDF')
+        throw e
       } finally {
         this.loadingPrint = false
+      }
+    },
+
+    async openPdfBlob (path, extraParams = {}, filename = 'reporte.pdf') {
+      try {
+        await this.openBlobFile(path, extraParams, filename, 'application/pdf')
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo generar el PDF')
+      }
+    },
+
+    async openCsvBlob (path, extraParams = {}, filename = 'reporte.csv') {
+      try {
+        await this.openBlobFile(path, extraParams, filename, 'text/csv;charset=utf-8')
+      } catch (e) {
+        this.$alert.error(e.response?.data?.message || 'No se pudo generar el archivo')
       }
     },
 
@@ -1599,6 +1624,44 @@ export default {
       )
     },
 
+    async printEnMesa () {
+      await this.openPdfBlob(
+        'admin/mesas-print/en-mesa',
+        {
+          departamento_id: this.filters.departamento_id || undefined,
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined,
+          recinto_id: this.filters.recinto_id || undefined,
+          mesa_id: this.filters.mesa_id || undefined,
+          asignado: this.filters.asignado,
+          delegado_id: this.filters.delegado_id || undefined,
+          estado: this.filters.estado || undefined,
+          con_resultado: this.filters.con_resultado,
+          en_mesa: 'YES'
+        },
+        'delegados_en_mesa.pdf'
+      )
+    },
+
+    async printNoEnMesa () {
+      await this.openPdfBlob(
+        'admin/mesas-print/en-mesa',
+        {
+          departamento_id: this.filters.departamento_id || undefined,
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined,
+          recinto_id: this.filters.recinto_id || undefined,
+          mesa_id: this.filters.mesa_id || undefined,
+          asignado: this.filters.asignado,
+          delegado_id: this.filters.delegado_id || undefined,
+          estado: this.filters.estado || undefined,
+          con_resultado: this.filters.con_resultado,
+          en_mesa: 'NO'
+        },
+        'delegados_no_en_mesa.pdf'
+      )
+    },
+
     async fetchAll () {
       this.loadingAll = true
       try {
@@ -1612,6 +1675,7 @@ export default {
           delegado_id: this.filters.delegado_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
+          en_mesa: this.filters.en_mesa,
           all: 1,              // 🔥 activa paginate del backend
           per_page: 200        // lote (sube/baja)
         }
@@ -1672,6 +1736,7 @@ export default {
           delegado_id: this.filters.delegado_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
+          en_mesa: this.filters.en_mesa,
           all: 1,
           per_page: perPage,
           page: this.page
