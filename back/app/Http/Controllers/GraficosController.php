@@ -253,6 +253,7 @@ class GraficosController extends Controller
     private function buildMesaPayload(Mesa $mesa): array
     {
         $resultado = $mesa->resultado;
+        $hasVotes = $resultado && (int) ($resultado->total_votos ?? 0) > 0;
         $detalles = collect($resultado?->detalles ?? [])
             ->map(function ($detalle) {
                 return [
@@ -277,9 +278,10 @@ class GraficosController extends Controller
         return [
             'id' => $mesa->id,
             'numero_mesa' => $mesa->numero_mesa,
-            'estado' => $resultado ? 'REALIZADO' : ($mesa->estado ?: 'PENDIENTE'),
+            'estado' => $hasVotes ? 'REALIZADO' : ($mesa->estado ?: 'PENDIENTE'),
             'delegado_id' => $mesa->delegado_id,
             'delegado' => $this->buildDelegadoPayload($mesa->delegado),
+            'tiene_resultado' => $hasVotes,
             'resultado' => $resultado ? [
                 'id' => $resultado->id,
                 'total_votos' => (int) ($resultado->total_votos ?? 0),
@@ -325,7 +327,7 @@ class GraficosController extends Controller
     {
         $mesas = collect($recinto->mesas ?? []);
         $mesasPayload = $mesas->map(fn ($mesa) => $this->buildMesaPayload($mesa))->values();
-        $mesasConResultado = $mesasPayload->filter(fn ($mesa) => $mesa['resultado'] !== null)->count();
+        $mesasConResultado = $mesasPayload->filter(fn ($mesa) => !empty($mesa['tiene_resultado']))->count();
         $mesasFaltantes = max(0, $mesasPayload->count() - $mesasConResultado);
         $isComplete = $mesasPayload->count() > 0 && $mesasFaltantes === 0;
         $detalles = $mesas

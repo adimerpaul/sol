@@ -139,8 +139,8 @@
                       expand-separator
                       icon="how_to_vote"
                       :label="`Mesa ${mesa.numero_mesa}`"
-                      :caption="mesa.resultado ? `${mesa.resultado.total_votos} votos registrados` : 'Sin resultado registrado'"
-                      :caption-class="mesa.resultado ? 'text-grey-7' : 'text-negative text-weight-bold'"
+                      :caption="mesa.tiene_resultado ? `${mesa.resultado?.total_votos ?? 0} votos registrados` : 'Pendiente'"
+                      :caption-class="mesa.tiene_resultado ? 'text-grey-7' : 'text-negative text-weight-bold'"
                     >
                       <template v-slot:header>
 <!--                        <q-item-section avatar>-->
@@ -150,7 +150,7 @@
                         <q-item-section>
                           <div class="row items-center no-wrap q-gutter-sm">
                             <span class="text-weight-bold">Mesa {{ mesa.numero_mesa }}</span>
-                            <q-chip dense :color="mesa.resultado ? 'positive' : 'grey-6'" text-color="white">{{ mesa.resultado ? 'Con resultado' : 'Sin resultado' }}</q-chip>
+                            <q-chip dense :color="mesa.tiene_resultado ? 'positive' : 'grey-6'" text-color="white">{{ mesa.tiene_resultado ? 'Con resultado' : 'Pendiente' }}</q-chip>
                           </div>
                         </q-item-section>
 
@@ -167,7 +167,7 @@
                           <q-badge outline color="grey-8">Estado: {{ mesa.estado }}</q-badge>
                           <q-badge outline color="primary">Total votos: {{ mesa.resultado?.total_votos ?? 0 }}</q-badge>
                           <q-badge outline color="secondary">Validos: {{ mesa.resultado?.total_validos ?? 0 }}</q-badge>
-                          <q-chip dense :color="mesa.resultado ? 'positive' : 'grey-6'" text-color="white">{{ mesa.resultado ? 'Con resultado' : 'Sin resultado' }}</q-chip>
+                          <q-chip dense :color="mesa.tiene_resultado ? 'positive' : 'grey-6'" text-color="white">{{ mesa.tiene_resultado ? 'Con resultado' : 'Pendiente' }}</q-chip>
                         </div>
                         <div class="text-caption text-grey-7">Delegado</div>
                         <div class="text-body2 text-weight-medium">{{ mesa.delegado?.name || 'Sin delegado asignado' }} <span v-if="mesa.delegado?.username" class="text-grey-7">({{ mesa.delegado.username }})</span></div>
