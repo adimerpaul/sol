@@ -167,6 +167,8 @@ class SuperAdminMesasController extends Controller
                     'municipio_nombre' => $m->municipio?->nombre,
                     'recinto_id' => $m->recinto_id,
                     'recinto_nombre' => $m->recinto?->nombre,
+                    'recinto_latitud' => $m->recinto?->latitud !== null ? (string) $m->recinto?->latitud : null,
+                    'recinto_longitud' => $m->recinto?->longitud !== null ? (string) $m->recinto?->longitud : null,
 
                     'numero_mesa' => $m->numero_mesa,
                     'habilitados' => (int) ($m->habilitados ?? 260),
@@ -228,6 +230,8 @@ class SuperAdminMesasController extends Controller
                 'municipio_nombre' => $m->municipio?->nombre,
                 'recinto_id' => $m->recinto_id,
                 'recinto_nombre' => $m->recinto?->nombre,
+                'recinto_latitud' => $m->recinto?->latitud !== null ? (string) $m->recinto?->latitud : null,
+                'recinto_longitud' => $m->recinto?->longitud !== null ? (string) $m->recinto?->longitud : null,
                 'numero_mesa' => $m->numero_mesa,
                 'habilitados' => (int) ($m->habilitados ?? 260),
                 'delegado_id' => $m->delegado_id,

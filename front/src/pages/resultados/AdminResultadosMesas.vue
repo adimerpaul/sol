@@ -831,6 +831,25 @@
                 <q-item-label caption>{{ presenceRow?.delegado_longitud || 'Sin dato' }}</q-item-label>
               </q-item-section>
             </q-item>
+            <q-item>
+              <q-item-section avatar><q-icon name="store" color="indigo" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Recinto</q-item-label>
+                <q-item-label caption>
+                  {{ presenceRow?.recinto_nombre || 'Sin recinto' }}
+                  <span v-if="presenceRow?.recinto_latitud && presenceRow?.recinto_longitud">
+                    · {{ presenceRow.recinto_latitud }}, {{ presenceRow.recinto_longitud }}
+                  </span>
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section avatar><q-icon name="route" color="deep-orange" /></q-item-section>
+              <q-item-section>
+                <q-item-label>Distancia al recinto</q-item-label>
+                <q-item-label caption>{{ fmtDistanceToRecinto(presenceRow) }}</q-item-label>
+              </q-item-section>
+            </q-item>
           </q-list>
 
           <q-card v-if="presenceMapUrl(presenceRow)" flat bordered class="q-mt-md">
@@ -844,6 +863,8 @@
               <PresenceLeafletMap
                 :latitud="presenceRow?.delegado_latitud"
                 :longitud="presenceRow?.delegado_longitud"
+                :recinto-latitud="presenceRow?.recinto_latitud"
+                :recinto-longitud="presenceRow?.recinto_longitud"
               />
             </q-card-section>
           </q-card>
@@ -1779,6 +1800,31 @@ export default {
         dateStyle: 'short',
         timeStyle: 'medium'
       }).format(date)
+    },
+
+    distanceKm (lat1, lng1, lat2, lng2) {
+      const toRad = deg => (Number(deg) * Math.PI) / 180
+      const r = 6371
+      const dLat = toRad(lat2 - lat1)
+      const dLng = toRad(lng2 - lng1)
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2)
+      return r * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+    },
+
+    fmtDistanceToRecinto (row) {
+      const lat1 = Number(row?.delegado_latitud)
+      const lng1 = Number(row?.delegado_longitud)
+      const lat2 = Number(row?.recinto_latitud)
+      const lng2 = Number(row?.recinto_longitud)
+      if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) {
+        return 'Sin coordenadas suficientes'
+      }
+      const km = this.distanceKm(lat1, lng1, lat2, lng2)
+      if (km < 1) return `${Math.round(km * 1000)} m aprox.`
+      return `${km.toFixed(2)} km aprox.`
     },
 
     presenceMapUrl (row) {

@@ -50,8 +50,22 @@
       <l-marker v-if="hasLatLng" :lat-lng="[lat, lng]">
         <l-popup>
           <div>
+            Delegado<br>
             Lat: {{ lat.toFixed(7) }}<br>
             Lng: {{ lng.toFixed(7) }}
+          </div>
+        </l-popup>
+      </l-marker>
+
+      <l-marker v-if="hasRecintoLatLng" :lat-lng="[recintoLat, recintoLng]">
+        <l-icon :icon-anchor="[12, 24]" :popup-anchor="[0, -20]" class-name="recinto-marker-container">
+          <div class="recinto-marker"></div>
+        </l-icon>
+        <l-popup>
+          <div>
+            Recinto<br>
+            Lat: {{ recintoLat.toFixed(7) }}<br>
+            Lng: {{ recintoLng.toFixed(7) }}
           </div>
         </l-popup>
       </l-marker>
@@ -78,6 +92,8 @@ L.Icon.Default.mergeOptions({
 const props = defineProps({
   latitud: { type: [Number, String], default: null },
   longitud: { type: [Number, String], default: null },
+  recintoLatitud: { type: [Number, String], default: null },
+  recintoLongitud: { type: [Number, String], default: null },
   zoomInit: { type: Number, default: 16 },
   fallbackCenter: { type: Array, default: () => [-17.9647, -67.1060] }
 })
@@ -88,16 +104,32 @@ const zoom = ref(props.zoomInit)
 const lat = computed(() => Number(props.latitud))
 const lng = computed(() => Number(props.longitud))
 const hasLatLng = computed(() => Number.isFinite(lat.value) && Number.isFinite(lng.value))
-const mapCenter = computed(() => hasLatLng.value ? [lat.value, lng.value] : props.fallbackCenter)
+const recintoLat = computed(() => Number(props.recintoLatitud))
+const recintoLng = computed(() => Number(props.recintoLongitud))
+const hasRecintoLatLng = computed(() => Number.isFinite(recintoLat.value) && Number.isFinite(recintoLng.value))
+const mapCenter = computed(() => {
+  if (hasLatLng.value) return [lat.value, lng.value]
+  if (hasRecintoLatLng.value) return [recintoLat.value, recintoLng.value]
+  return props.fallbackCenter
+})
 
 watch(
-  () => [props.latitud, props.longitud],
+  () => [props.latitud, props.longitud, props.recintoLatitud, props.recintoLongitud],
   async () => {
-    if (!hasLatLng.value) return
     await nextTick()
     const leaflet = mapRef.value?.leafletObject
     if (!leaflet) return
-    leaflet.flyTo([lat.value, lng.value], Math.max(zoom.value, props.zoomInit))
+    if (hasLatLng.value && hasRecintoLatLng.value) {
+      leaflet.fitBounds([[lat.value, lng.value], [recintoLat.value, recintoLng.value]], { padding: [24, 24] })
+      return
+    }
+    if (hasLatLng.value) {
+      leaflet.flyTo([lat.value, lng.value], Math.max(zoom.value, props.zoomInit))
+      return
+    }
+    if (hasRecintoLatLng.value) {
+      leaflet.flyTo([recintoLat.value, recintoLng.value], Math.max(zoom.value, props.zoomInit))
+    }
   },
   { immediate: true }
 )
@@ -106,5 +138,19 @@ watch(
 <style scoped>
 .presence-map-wrapper {
   width: 100%;
+}
+
+.recinto-marker-container {
+  background: transparent !important;
+  border: none !important;
+}
+
+.recinto-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #1e3a8a;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(30, 58, 138, 0.5);
 }
 </style>
