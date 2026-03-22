@@ -289,7 +289,7 @@
                     clearable
                     dense
                     outlined
-                    label="Jefe de Recinto o Delegado"
+                    label="Administrador, Jefe o Delegado"
                     @filter="filterJefes"
                   />
                 </div>
@@ -638,7 +638,7 @@ export default {
         this.jefesOptions = this.jefesOptionsAll
         this.delegadosOptionsAll = (Array.isArray(data?.delegados) ? data.delegados : []).map(item => ({
           value: item.id,
-          label: `${item.name} (${item.username})`
+          label: `${item.name} (${item.username}) · ${item.role || 'Sin rol'}`
         }))
         this.delegadosOptions = this.delegadosOptionsAll
         this.recintosOptions = this.buildOptions(this.recintos)

@@ -197,7 +197,7 @@ class AdminRecintoJefeMapaController extends Controller
         }
 
         if ($user->role === 'Administrador') {
-            return User::whereIn('role', ['Jefe de Recinto', 'Delegado de Mesa'])
+            return User::whereIn('role', ['Administrador', 'Jefe de Recinto', 'Delegado de Mesa'])
                 ->select('id', 'name', 'username', 'celular', 'role')
                 ->orderBy('name')
                 ->get();
@@ -209,7 +209,7 @@ class AdminRecintoJefeMapaController extends Controller
             ->get();
 
         $delegados = User::query()
-            ->where('role', 'Delegado de Mesa')
+            ->whereIn('role', ['Administrador', 'Delegado de Mesa'])
             ->select('id', 'name', 'username', 'celular', 'role')
             ->orderBy('name')
             ->get();
@@ -223,8 +223,8 @@ class AdminRecintoJefeMapaController extends Controller
     private function availableDelegados()
     {
         return User::query()
-            ->select('id', 'name', 'username')
-            ->where('role', 'Delegado de Mesa')
+            ->select('id', 'name', 'username', 'role')
+            ->whereIn('role', ['Administrador', 'Delegado de Mesa'])
             ->orderBy('name')
             ->get();
     }
@@ -315,11 +315,11 @@ class AdminRecintoJefeMapaController extends Controller
         if ($ids->isNotEmpty()) {
             $validCount = User::query()
                 ->whereIn('id', $ids)
-                ->whereIn('role', ['Jefe de Recinto', 'Delegado de Mesa'])
+                ->whereIn('role', ['Administrador', 'Jefe de Recinto', 'Delegado de Mesa'])
                 ->count();
 
             if ($validCount !== $ids->count()) {
-                return response()->json(['message' => 'Uno o mas usuarios no son Jefe de Recinto o Delegado de Mesa'], 422);
+                return response()->json(['message' => 'Uno o mas usuarios no son Administrador, Jefe de Recinto o Delegado de Mesa'], 422);
             }
         }
 

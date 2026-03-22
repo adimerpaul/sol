@@ -1031,8 +1031,8 @@ class SuperAdminMesasController extends Controller
 
         if (!empty($data['delegado_id'])) {
             $delegado = User::findOrFail($data['delegado_id']);
-            if ($delegado->role !== 'Delegado de Mesa') {
-                return response()->json(['message' => 'El usuario no es Delegado de Mesa'], 422);
+            if (!in_array($delegado->role, ['Administrador', 'Delegado de Mesa'])) {
+                return response()->json(['message' => 'El usuario no es Administrador ni Delegado de Mesa'], 422);
             }
 
             if ((int) $mesa->delegado_id !== (int) $data['delegado_id']) {
