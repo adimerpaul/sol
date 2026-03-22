@@ -860,7 +860,48 @@ export default {
       }
     },
     pieOptions (card) { return { chart: { toolbar: { show: true } }, labels: card.labels, colors: card.colors, legend: { position: 'right', fontSize: '11px', width: 130 }, dataLabels: { enabled: true, formatter: (val, opts) => `${opts?.w?.globals?.labels?.[opts.seriesIndex] || ''} ${Number(val || 0).toFixed(1)}%`, style: { fontSize: '10px', fontWeight: 700 } } } },
-    barOptions (card) { return { chart: { toolbar: { show: true } }, colors: card.colors, plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '58%', distributed: true } }, xaxis: { categories: card.labels, labels: { style: { fontSize: '11px', fontWeight: 600 } } }, dataLabels: { enabled: true, style: { fontSize: '12px', fontWeight: 700 } }, legend: { show: false } } },
+    barOptions (card) {
+      return {
+        chart: { toolbar: { show: true } },
+        colors: card.colors,
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            borderRadius: 6,
+            barHeight: '72%',
+            distributed: true
+          }
+        },
+        xaxis: {
+          categories: card.labels,
+          labels: {
+            style: { fontSize: '11px', fontWeight: 700 }
+          }
+        },
+        grid: {
+          borderColor: '#e5e7eb',
+          strokeDashArray: 3
+        },
+        dataLabels: {
+          enabled: true,
+          offsetX: 6,
+          style: {
+            fontSize: '13px',
+            fontWeight: 800,
+            colors: ['#ffffff']
+          },
+          dropShadow: {
+            enabled: true,
+            top: 1,
+            left: 1,
+            blur: 2,
+            color: '#000000',
+            opacity: 0.95
+          }
+        },
+        legend: { show: false }
+      }
+    },
     playVoteSound () {
       if (typeof window === 'undefined') return
       const AudioCtx = window.AudioContext || window.webkitAudioContext
