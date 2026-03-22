@@ -37,6 +37,9 @@
           <div class="col-12 col-md-auto">
             <q-btn color="secondary" icon="map" no-caps label="Ver Mapa" @click="openMapViewer" />
           </div>
+          <div class="col-12 col-md-auto">
+            <q-btn color="dark" icon="view_module" no-caps label="Ver Mesas" @click="openMesasViewer" />
+          </div>
         </div>
       </q-card-section>
 
@@ -232,6 +235,157 @@
         <q-inner-loading :showing="loadingMap"><q-spinner color="secondary" size="4em" /></q-inner-loading>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="mesasViewerOpen" maximized transition-show="slide-up" transition-hide="slide-down">
+      <q-card class="bg-grey-1 text-dark">
+        <q-toolbar class="bg-dark text-white">
+          <q-toolbar-title class="text-weight-bold">Mesas del control</q-toolbar-title>
+          <div class="text-caption q-mr-md">{{ filteredMonitorCards.length }} mesas</div>
+          <q-btn flat dense no-caps icon="refresh" label="Actualizar" :loading="loading" @click="loadDashboard" />
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-toolbar>
+
+        <q-card-section class="q-pb-none">
+          <div class="text-subtitle1 text-weight-bold">Historial en vivo</div>
+          <div class="text-caption text-grey-7 row items-center q-gutter-xs">
+            <span class="live-dot" />
+            <span>Actualización en tiempo real de mesas con datos</span>
+          </div>
+        </q-card-section>
+
+        <q-card-section>
+          <div class="row q-col-gutter-sm q-mb-md">
+            <div class="col-12 col-md-4">
+              <q-select
+                v-model="monitorFilters.recinto_id"
+                :options="monitorRecintoOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                use-input
+                input-debounce="0"
+                clearable
+                dense
+                outlined
+                label="Filtrar por recinto"
+                @filter="filterMonitorRecintos"
+              />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-select
+                v-model="monitorFilters.confirmador"
+                :options="monitorConfirmadorOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                use-input
+                input-debounce="0"
+                clearable
+                dense
+                outlined
+                label="Filtrar por confirmador"
+                @filter="filterMonitorConfirmadores"
+              />
+            </div>
+            <div class="col-12 col-md-3">
+              <q-select
+                v-model="monitorFilters.ganador"
+                :options="monitorWinnerOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                use-input
+                input-debounce="0"
+                clearable
+                dense
+                outlined
+                label="Filtrar por ganador"
+                @filter="filterMonitorWinners"
+              />
+            </div>
+            <div class="col-12 col-md-1">
+              <q-btn flat color="grey-7" no-caps label="Limpiar" @click="clearMesasViewerFilters" />
+            </div>
+          </div>
+
+          <div class="row q-col-gutter-md monitor-shell">
+            <div class="col-12 col-lg-9">
+              <div v-if="!filteredMonitorCards.length" class="q-pa-xl text-center text-grey-7">
+                No hay mesas para mostrar.
+              </div>
+              <div v-else class="monitor-grid">
+                <q-card v-for="card in filteredMonitorCards" :key="card.id" flat bordered class="monitor-card">
+                  <q-card-section class="q-pa-sm">
+                    <div class="row items-start justify-between q-col-gutter-sm">
+                      <div class="col">
+                        <div class="text-h6 text-weight-bold">Mesa {{ card.numero }}</div>
+                        <div class="text-subtitle2 text-grey-8">{{ card.recinto }}</div>
+                      </div>
+                      <div class="col-auto">
+                        <q-chip dense square :color="card.tieneResultado ? 'positive' : 'negative'" text-color="white">
+                          {{ card.tieneResultado ? `${card.totalVotos} votos` : 'Pendiente' }}
+                        </q-chip>
+                      </div>
+                    </div>
+
+                    <div class="winner-box q-mt-sm" :style="{ borderColor: card.ganadorColor || '#d1d5db' }">
+                      <div class="row items-center no-wrap q-gutter-sm">
+                        <q-avatar v-if="card.ganadorIcono" size="28px" rounded>
+                          <img :src="assetUrl(card.ganadorIcono)" alt="logo ganador">
+                        </q-avatar>
+                        <q-avatar v-else size="28px" rounded :style="{ backgroundColor: card.ganadorColor || '#cbd5e1' }" />
+                        <div class="col">
+                          <div class="text-caption text-grey-7">{{ card.tieneResultado ? 'Ganador' : 'Estado' }}</div>
+                          <div class="text-weight-bold" :style="{ color: card.ganadorColor || '#111827' }">
+                            {{ card.ganador }}
+                          </div>
+                        </div>
+                        <q-chip dense square :style="{ backgroundColor: card.ganadorColor || '#111827', color: '#fff' }">
+                          {{ card.tieneResultado ? card.ganadorVotos : '-' }}
+                        </q-chip>
+                      </div>
+                    </div>
+
+                    <div class="q-mt-sm text-caption text-grey-8">
+                      <div>Confirmó: {{ card.confirmador }}</div>
+                      <div>Hora: {{ card.hora }}</div>
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-3">
+              <q-card flat bordered class="history-card">
+                <q-card-section class="q-pb-sm">
+                  <div class="text-subtitle1 text-weight-bold">Historial</div>
+                  <div class="text-caption text-grey-7">Últimas mesas que llegaron</div>
+                </q-card-section>
+                <q-separator />
+                <q-list separator class="history-list">
+                  <q-item v-for="item in mesasHistory" :key="`history-${item.id}`">
+                    <q-item-section avatar>
+                      <q-avatar size="30px" rounded v-if="item.ganadorIcono">
+                        <img :src="assetUrl(item.ganadorIcono)" alt="logo ganador">
+                      </q-avatar>
+                      <q-avatar v-else size="30px" rounded :style="{ backgroundColor: item.ganadorColor || '#94a3b8' }" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label class="text-weight-medium">Mesa {{ item.numero }} · {{ item.ganador }}</q-item-label>
+                      <q-item-label caption>{{ item.recinto }}</q-item-label>
+                      <q-item-label caption>{{ item.hora }} · {{ item.confirmador }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-card>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -269,11 +423,27 @@ export default {
       filters: { provincia_id: 57, municipio_id: 191, localidad_id: 1988, delegado_id: null },
       geoOptions: { provincias: [], municipios: [], localidades: [], delegados: [] },
       mapViewerOpen: false,
+      mesasViewerOpen: false,
       viewerCategory: 'alcalde',
       mapData: [],
       selectedMapRecinto: null,
       zoom: 12,
       center: [-17.9647, -67.1060],
+      monitorFilters: {
+        recinto_id: null,
+        confirmador: null,
+        ganador: null
+      },
+      monitorOptionPool: {
+        recintos: [],
+        confirmadores: [],
+        ganadores: []
+      },
+      monitorOptions: {
+        recintos: [],
+        confirmadores: [],
+        ganadores: []
+      },
       socket: null,
       socketRefreshTimer: null
     }
@@ -304,6 +474,37 @@ export default {
     },
     activeCategoryColumnLabel () {
       return this.activeCategoryDef?.label || 'Alcalde'
+    },
+    monitorCards () {
+      return (this.mapData || [])
+        .flatMap(recinto => (recinto.mesas || []).map(mesa => this.buildMonitorCard(recinto, mesa)))
+        .filter(Boolean)
+        .sort((a, b) => {
+          if (a.tieneResultado !== b.tieneResultado) {
+            return a.tieneResultado ? -1 : 1
+          }
+          return new Date(b.isoHora || 0) - new Date(a.isoHora || 0)
+        })
+    },
+    filteredMonitorCards () {
+      return this.monitorCards.filter(card => {
+        if (this.monitorFilters.recinto_id && card.recintoId !== this.monitorFilters.recinto_id) return false
+        if (this.monitorFilters.confirmador && card.confirmador !== this.monitorFilters.confirmador) return false
+        if (this.monitorFilters.ganador && card.ganador !== this.monitorFilters.ganador) return false
+        return true
+      })
+    },
+    mesasHistory () {
+      return this.monitorCards.filter(card => card.tieneResultado).slice(0, 18)
+    },
+    monitorRecintoOptions () {
+      return this.monitorOptions.recintos
+    },
+    monitorConfirmadorOptions () {
+      return this.monitorOptions.confirmadores
+    },
+    monitorWinnerOptions () {
+      return this.monitorOptions.ganadores
     }
   },
   async mounted () {
@@ -324,9 +525,19 @@ export default {
     onMunicipioChange () { this.filters.localidad_id = null; this.loadDashboard() },
     clearFilters () { this.filters = { provincia_id: 57, municipio_id: 191, localidad_id: 1988, delegado_id: null }; this.loadDashboard() },
     openMapViewer () { this.mapViewerOpen = true; if (!this.selectedMapRecinto && this.mapData.length) this.selectedMapRecinto = this.mapData[0] },
+    openMesasViewer () { this.mesasViewerOpen = true },
     selectMapRecinto (recinto) { this.selectedMapRecinto = recinto },
     toNameCase (text) { const v = String(text || '').trim().toLowerCase(); return v ? v.charAt(0).toUpperCase() + v.slice(1) : '-' },
-    assetUrl (path) { return !path ? '' : (String(path).startsWith('http') ? path : `${this.$url}/..${path}`) },
+    assetUrl (path) {
+      if (!path) return ''
+      const value = String(path).trim()
+      if (!value) return ''
+      if (value.startsWith('http')) return value
+      if (value.startsWith('/storage') || value.startsWith('/images') || value.startsWith('/')) {
+        return `${this.$url}/..${value}`
+      }
+      return `${this.$url}/../images/partidos/${value}`
+    },
     openPhoto (path) {
       const url = this.assetUrl(path)
       if (url) window.open(url, '_blank', 'noopener')
@@ -337,6 +548,89 @@ export default {
       if (estado === 'proceso') return 'Jacha va ganando'
       if (estado === 'perdido') return 'Realizado sin ganar'
       return 'Sin resultado'
+    },
+    formatDateTime (value) {
+      if (!value) return 'Sin hora'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return 'Sin hora'
+      return date.toLocaleString('es-BO', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    },
+    buildMonitorCard (recinto, mesa) {
+      const resultado = mesa?.resultado || {}
+      const ganador = Array.isArray(resultado.ganadores_resumen) && resultado.ganadores_resumen.length
+        ? resultado.ganadores_resumen[0]
+        : null
+
+      return {
+        id: mesa.id,
+        recintoId: recinto.id,
+        recinto: recinto.nombre,
+        numero: mesa.numero_mesa,
+        tieneResultado: !!mesa.tiene_resultado,
+        totalVotos: Number(resultado.total_votos || 0),
+        confirmador: resultado.registrado_por_nombre || 'Sin confirmador',
+        hora: resultado.updated_at ? this.formatDateTime(resultado.updated_at) : 'Sin registro',
+        isoHora: resultado.updated_at || null,
+        ganador: ganador?.sigla || ganador?.nombre || (mesa.tiene_resultado ? 'Sin ganador' : 'Pendiente'),
+        ganadorColor: ganador?.color || (mesa.tiene_resultado ? '#2563eb' : '#dc2626'),
+        ganadorIcono: ganador?.icono || null,
+        ganadorVotos: Number(ganador?.votos || 0)
+      }
+    },
+    resetMonitorOptionFilters () {
+      const recintos = this.monitorCards.map(card => ({ label: card.recinto, value: card.recintoId }))
+      const confirmadores = this.monitorCards.map(card => ({ label: card.confirmador, value: card.confirmador }))
+      const ganadores = this.monitorCards.map(card => ({ label: card.ganador, value: card.ganador }))
+
+      const uniq = (rows) => rows.filter((row, index, arr) => arr.findIndex(item => item.value === row.value) === index)
+
+      this.monitorOptionPool = {
+        recintos: uniq(recintos).sort((a, b) => a.label.localeCompare(b.label)),
+        confirmadores: uniq(confirmadores).sort((a, b) => a.label.localeCompare(b.label)),
+        ganadores: uniq(ganadores).sort((a, b) => a.label.localeCompare(b.label))
+      }
+      this.monitorOptions = {
+        recintos: [...this.monitorOptionPool.recintos],
+        confirmadores: [...this.monitorOptionPool.confirmadores],
+        ganadores: [...this.monitorOptionPool.ganadores]
+      }
+    },
+    filterMonitorRecintos (val, update) {
+      update(() => {
+        const needle = String(val || '').toLowerCase().trim()
+        this.monitorOptions.recintos = !needle
+          ? [...this.monitorOptionPool.recintos]
+          : this.monitorOptionPool.recintos.filter(option => String(option.label || '').toLowerCase().includes(needle))
+      })
+    },
+    filterMonitorConfirmadores (val, update) {
+      update(() => {
+        const needle = String(val || '').toLowerCase().trim()
+        this.monitorOptions.confirmadores = !needle
+          ? [...this.monitorOptionPool.confirmadores]
+          : this.monitorOptionPool.confirmadores.filter(option => String(option.label || '').toLowerCase().includes(needle))
+      })
+    },
+    filterMonitorWinners (val, update) {
+      update(() => {
+        const needle = String(val || '').toLowerCase().trim()
+        this.monitorOptions.ganadores = !needle
+          ? [...this.monitorOptionPool.ganadores]
+          : this.monitorOptionPool.ganadores.filter(option => String(option.label || '').toLowerCase().includes(needle))
+      })
+    },
+    clearMesasViewerFilters () {
+      this.monitorFilters = { recinto_id: null, confirmador: null, ganador: null }
+      this.monitorOptions = {
+        recintos: [...this.monitorOptionPool.recintos],
+        confirmadores: [...this.monitorOptionPool.confirmadores],
+        ganadores: [...this.monitorOptionPool.ganadores]
+      }
     },
     pieOptions (card) { return { chart: { toolbar: { show: true } }, labels: card.labels, colors: card.colors, legend: { position: 'right', fontSize: '11px', width: 130 }, dataLabels: { enabled: true, formatter: (val, opts) => `${opts?.w?.globals?.labels?.[opts.seriesIndex] || ''} ${Number(val || 0).toFixed(1)}%`, style: { fontSize: '10px', fontWeight: 700 } } } },
     barOptions (card) { return { chart: { toolbar: { show: true } }, colors: card.colors, plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '58%', distributed: true } }, xaxis: { categories: card.labels, labels: { style: { fontSize: '11px', fontWeight: 600 } } }, dataLabels: { enabled: true, style: { fontSize: '12px', fontWeight: 700 } }, legend: { show: false } } },
@@ -373,6 +667,7 @@ export default {
         }
         this.mapData = Array.isArray(data?.mapa) ? data.mapa : []
         this.selectedMapRecinto = this.selectedMapRecinto?.id ? (this.mapData.find(x => x.id === this.selectedMapRecinto.id) || this.mapData[0] || null) : (this.mapData[0] || null)
+        this.resetMonitorOptionFilters()
       } catch (e) {
         this.$q.notify({ type: 'negative', message: e?.response?.data?.message || 'No se pudo cargar dashboard' })
       } finally {
@@ -393,6 +688,14 @@ export default {
 .modern-marker { width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; animation: pulse 2s infinite ease-in-out; cursor: pointer; }
 .modern-marker--active { transform: scale(1.35); border-color: #111827; }
 .inner-dot { width: 6px; height: 6px; background-color: white; border-radius: 50%; opacity: 0.8; }
+.monitor-shell { align-items: stretch; }
+.monitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.monitor-card { border-radius: 18px; background: linear-gradient(180deg, #fff6f6 0%, #fffdfd 100%); border-color: #f2c3c3; }
+.winner-box { border: 1px solid #d1d5db; border-radius: 14px; background: #fff; padding: 10px; }
+.history-card { height: 100%; min-height: 420px; }
+.history-list { max-height: calc(100vh - 260px); overflow: auto; }
+.live-dot { width: 10px; height: 10px; border-radius: 999px; background: #ef4444; display: inline-block; box-shadow: 0 0 0 rgba(239, 68, 68, 0.55); animation: livePulse 1.4s infinite; }
 @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.9; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.9; } }
+@keyframes livePulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 @media (max-width: 768px) { .map-panel, .map-panel-scroll { height: auto; } }
 </style>

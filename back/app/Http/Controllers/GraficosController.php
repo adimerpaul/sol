@@ -209,6 +209,36 @@ class GraficosController extends Controller
         return $photos;
     }
 
+    private function resolveMesaCategoryWinners($detalles): array
+    {
+        $rows = collect($detalles ?? []);
+        $winners = [];
+
+        foreach (self::CATEGORY_FIELDS as $category => $field) {
+            $winner = $rows
+                ->groupBy('partido_id')
+                ->map(function ($groupRows) use ($field) {
+                    $first = $groupRows->first();
+                    return [
+                        'partido_id' => (int) ($first?->partido_id ?? 0),
+                        'sigla' => $first?->partido?->sigla,
+                        'nombre' => $first?->partido?->nombre,
+                        'color' => $first?->partido?->color,
+                        'icono' => $first?->partido?->icono,
+                        'votos' => (int) collect($groupRows)->sum($field),
+                    ];
+                })
+                ->sortByDesc('votos')
+                ->first();
+
+            $winners[$category] = !empty($winner) && (int) ($winner['votos'] ?? 0) > 0
+                ? $winner
+                : null;
+        }
+
+        return $winners;
+    }
+
     private function buildDelegadoPayload($delegado): ?array
     {
         if (!$delegado) {
@@ -254,6 +284,35 @@ class GraficosController extends Controller
     {
         $resultado = $mesa->resultado;
         $hasVotes = $resultado && (int) ($resultado->total_votos ?? 0) > 0;
+        $mesaWinners = $this->resolveMesaCategoryWinners($resultado?->detalles ?? []);
+        $winnerSummary = collect($mesaWinners)
+            ->map(function ($winner, $category) {
+                if (!$winner) {
+                    return null;
+                }
+
+                $label = match ($category) {
+                    'alcalde' => 'Alcalde',
+                    'concejal' => 'Concejal',
+                    'gobernador' => 'Gobernador',
+                    'asambleista_distrito' => 'Asam. Territorio',
+                    'asambleista_poblacion' => 'Asam. Poblacion',
+                    default => ucfirst((string) $category),
+                };
+
+                return [
+                    'category' => $category,
+                    'label' => $label,
+                    'sigla' => $winner['sigla'] ?? null,
+                    'nombre' => $winner['nombre'] ?? null,
+                    'color' => $winner['color'] ?? null,
+                    'icono' => $winner['icono'] ?? null,
+                    'votos' => (int) ($winner['votos'] ?? 0),
+                ];
+            })
+            ->filter()
+            ->values();
+
         $detalles = collect($resultado?->detalles ?? [])
             ->map(function ($detalle) {
                 return [
@@ -288,8 +347,13 @@ class GraficosController extends Controller
                 'total_validos' => (int) ($resultado->total_validos ?? 0),
                 'total_blancos' => (int) ($resultado->total_blancos ?? 0),
                 'total_nulos' => (int) ($resultado->total_nulos ?? 0),
+                'updated_at' => $resultado->updated_at?->toIso8601String(),
                 'observacion' => $resultado->observacion,
+                'registrado_por_id' => $resultado->registrado_por,
+                'registrado_por_nombre' => $resultado->registradoPor?->name ?: $resultado->registradoPor?->username,
                 'fotos' => $this->buildPhotoUrls($resultado),
+                'ganadores' => $mesaWinners,
+                'ganadores_resumen' => $winnerSummary,
                 'detalles' => $detalles,
             ] : null,
         ];
@@ -384,7 +448,8 @@ class GraficosController extends Controller
                             'delegado:id,name,username,celular,foto_personal,ci_anverso,ci_reverso',
                             'delegado.jefes:id,name,username,celular',
                             'delegado.jefes.supervisores:id,name,username,celular',
-                            'resultado:id,mesa_id,total_votos,total_validos,total_blancos,total_nulos,observacion,foto1,foto2,foto3,foto4,foto5,foto6,foto7,foto8,foto9,foto10',
+                            'resultado:id,mesa_id,registrado_por,total_votos,total_validos,total_blancos,total_nulos,observacion,foto1,foto2,foto3,foto4,foto5,foto6,foto7,foto8,foto9,foto10,updated_at',
+                            'resultado.registradoPor:id,name,username',
                             'resultado.detalles:id,resultado_mesa_id,partido_id,votos_alcalde,votos_concejal,votos_gobernador,votos_asambleista_distrito,votos_asambleista_poblacion',
                             'resultado.detalles.partido:id,sigla,nombre,color,icono',
                         ]);

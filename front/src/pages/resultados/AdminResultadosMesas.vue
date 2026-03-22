@@ -449,6 +449,9 @@
                 <q-chip v-if="r.hora_apertura_mesa" dense size="11px" color="indigo" text-color="white">
                   {{ r.hora_apertura_mesa }}
                 </q-chip>
+                <q-chip v-if="horaCierreMesa(r.hora_apertura_mesa)" dense size="11px" color="deep-purple-6" text-color="white">
+                  Cierre: {{ horaCierreMesa(r.hora_apertura_mesa) }}
+                </q-chip>
               </div>
               <div v-if="hasPresenceData(r)" class="q-mt-xs">
                 <q-btn
@@ -2438,6 +2441,15 @@ export default {
           }
         })
         .filter(Boolean)
+    },
+
+    horaCierreMesa (horaApertura) {
+      if (!horaApertura || !/^\d{2}:\d{2}$/.test(horaApertura)) return null
+      const [hh, mm] = horaApertura.split(':').map(Number)
+      if (Number.isNaN(hh) || Number.isNaN(mm)) return null
+
+      const cierre = (hh + 8) % 24
+      return `${String(cierre).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
     },
 
     async openResultado (row) {

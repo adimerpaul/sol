@@ -1,14 +1,56 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="row q-col-gutter-md">
+    <div class="public-recintos-page">
+      <q-card flat bordered class="public-hero q-mb-md">
+        <q-card-section class="row items-center q-col-gutter-md">
+          <div class="col-12 col-md">
+            <div class="text-overline text-primary text-weight-bold">Ciudad de Oruro</div>
+            <div class="text-h5 text-weight-bold">Recintos públicos</div>
+            <div class="text-body2 text-grey-7">
+              Ubicación, jefe de recinto y cantidad de mesas en un mapa público y directo.
+            </div>
+          </div>
+          <div class="col-12 col-md-auto">
+            <div class="row q-col-gutter-sm">
+              <div class="col-auto">
+                <q-chip color="white" text-color="primary" icon="apartment" class="public-stat-chip">
+                  {{ rows.length }} recintos
+                </q-chip>
+              </div>
+              <div class="col-auto">
+                <q-chip color="white" text-color="positive" icon="how_to_reg" class="public-stat-chip">
+                  {{ rowsWithJefe }} con jefe
+                </q-chip>
+              </div>
+              <div class="col-auto">
+                <q-chip color="white" text-color="warning" icon="pending_actions" class="public-stat-chip">
+                  {{ rowsWithoutJefe }} sin jefe
+                </q-chip>
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <div class="row q-col-gutter-md">
       <div :class="mapColumnClass">
-        <q-card flat bordered class="overflow-hidden" :class="{ 'public-map-expanded': expandedMap }">
-          <q-card-section class="row items-center q-col-gutter-sm">
+        <q-card flat bordered class="overflow-hidden public-map-card" :class="{ 'public-map-expanded': expandedMap }">
+          <q-card-section class="row items-center q-col-gutter-sm public-map-card-header">
             <div class="col">
               <div class="text-h6 text-weight-bold">Mapa de Recintos</div>
-              <div class="text-caption text-grey-7">{{ rows.length }} recintos públicos</div>
+              <div class="text-caption text-grey-7">
+                {{ rows.length }} recintos públicos visibles en Oruro
+              </div>
             </div>
-            <div class="col-auto">
+            <div class="col-auto row items-center q-gutter-sm">
+              <q-chip square dense class="public-state-chip">
+                <span class="public-state-dot public-state-dot--green" />
+                Con jefe
+              </q-chip>
+              <q-chip square dense class="public-state-chip">
+                <span class="public-state-dot public-state-dot--amber" />
+                Sin jefe
+              </q-chip>
               <q-btn
                 flat
                 color="primary"
@@ -41,6 +83,7 @@
               />
               <q-btn
                 color="primary"
+                unelevated
                 icon="my_location"
                 label="Dónde estoy"
                 no-caps
@@ -124,7 +167,7 @@
       </div>
 
       <div v-if="!expandedMap" class="col-12 col-lg-4">
-        <q-card flat bordered>
+        <q-card flat bordered class="public-list-card">
           <q-card-section class="row items-center">
             <div class="text-h6 text-weight-bold">Listado de Recintos</div>
             <q-space />
@@ -141,12 +184,26 @@
               v-if="selectedRecinto"
               flat
               bordered
-              class="q-mb-sm bg-blue-1"
+              class="q-mb-sm public-selected-card"
             >
               <q-card-section class="q-pa-sm">
-                <div class="text-weight-bold">{{ selectedRecinto.nombre }}</div>
-                <div class="text-caption text-grey-8">Jefe: {{ selectedRecinto.jefesText }}</div>
-                <div class="text-caption text-grey-8">Mesas: {{ selectedRecinto.mesas_count }}</div>
+                <div class="row items-start q-col-gutter-sm">
+                  <div class="col">
+                    <div class="text-weight-bold">{{ selectedRecinto.nombre }}</div>
+                    <div class="text-caption text-grey-8">Jefe: {{ selectedRecinto.jefesText }}</div>
+                    <div class="text-caption text-grey-8">Mesas: {{ selectedRecinto.mesas_count }}</div>
+                  </div>
+                  <div class="col-auto">
+                    <q-chip
+                      dense
+                      square
+                      :color="selectedRecinto.jefes?.length ? 'positive' : 'warning'"
+                      text-color="white"
+                    >
+                      {{ selectedRecinto.jefes?.length ? 'Asignado' : 'Pendiente' }}
+                    </q-chip>
+                  </div>
+                </div>
                 <q-btn
                   class="q-mt-sm"
                   color="primary"
@@ -154,6 +211,7 @@
                   label="Ir ahí"
                   no-caps
                   dense
+                  unelevated
                   @click="goToRecinto(selectedRecinto)"
                 />
               </q-card-section>
@@ -184,6 +242,7 @@
         </q-card>
       </div>
     </div>
+    </div>
   </q-page>
 </template>
 
@@ -211,12 +270,18 @@ export default {
     }
   },
   computed: {
+    rowsWithJefe () {
+      return this.rows.filter(row => Array.isArray(row.jefes) && row.jefes.length > 0).length
+    },
+    rowsWithoutJefe () {
+      return this.rows.length - this.rowsWithJefe
+    },
     mapColumnClass () {
       return this.expandedMap ? 'col-12' : 'col-12 col-lg-8'
     },
     mapSectionStyle () {
       return this.expandedMap
-        ? 'height: calc(100vh - 160px); min-height: 520px;'
+        ? 'height: 100vh; min-height: 100vh;'
         : 'height: 72vh; min-height: 420px;'
     },
     recintoOptions () {
@@ -370,13 +435,44 @@ export default {
 </script>
 
 <style scoped>
+.public-recintos-page {
+  --public-border: rgba(15, 23, 42, 0.08);
+  --public-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.public-hero {
+  border-color: var(--public-border);
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: var(--public-shadow);
+}
+
+.public-stat-chip {
+  border: 1px solid rgba(14, 165, 233, 0.12);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
 .recinto-active {
   background: #e0f2fe;
 }
 
+.public-map-card,
+.public-list-card {
+  border-color: var(--public-border);
+  box-shadow: var(--public-shadow);
+}
+
 .public-map-expanded {
-  position: relative;
-  z-index: 5;
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  margin: 0;
+  border-radius: 0;
+}
+
+.public-map-card-header {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .public-map-shell {
@@ -398,5 +494,46 @@ export default {
   min-width: 260px;
   max-width: 420px;
   background: rgba(255, 255, 255, 0.96);
+  border-radius: 14px;
+}
+
+.public-state-chip {
+  background: rgba(248, 250, 252, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.public-state-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.public-state-dot--green {
+  background: #16a34a;
+}
+
+.public-state-dot--amber {
+  background: #f59e0b;
+}
+
+.public-selected-card {
+  background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
+  border-color: rgba(59, 130, 246, 0.18);
+}
+
+@media (max-width: 768px) {
+  .public-map-toolbar {
+    left: 52px;
+    right: 12px;
+    flex-wrap: wrap;
+  }
+
+  .public-map-select {
+    min-width: 220px;
+    width: 100%;
+    max-width: none;
+  }
 }
 </style>
