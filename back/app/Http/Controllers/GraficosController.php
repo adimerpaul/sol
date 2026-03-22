@@ -460,15 +460,11 @@ class GraficosController extends Controller
 
     public function bootstrap(Request $request)
     {
-        $scope = $this->buildScope($request);
-        $summary = $this->buildSummaryPayload($scope);
-
         return response()->json([
-            ...$summary,
-            'mapa' => $this->buildMapPayload($scope),
-            'scope' => $scope,
+            'message' => 'Endpoint obsoleto. Usa los nuevos bootstrap separados por vista.',
+            'data' => [],
             'generated_at' => now()->toIso8601String(),
-        ]);
+        ], 410);
     }
 
     private function buildSummaryResponse(array $scope): array
@@ -528,7 +524,11 @@ class GraficosController extends Controller
 
     public function index(Request $request)
     {
-        return response()->json($this->bootstrap($request)->getData(true));
+        return response()->json([
+            'message' => 'Endpoint obsoleto. Usa los nuevos bootstrap separados por vista.',
+            'data' => [],
+            'generated_at' => now()->toIso8601String(),
+        ], 410);
     }
 
     public function mapa(Request $request)

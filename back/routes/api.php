@@ -82,7 +82,8 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('mapas/recintos/{recinto}', [RecintoMapaController::class, 'update']);
 
     Route::middleware('auth:sanctum')->get('/dashboard/elecciones/resumen', [EleccionesDashboardController::class, 'resumen']);
-    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap', [GraficosController::class, 'bootstrap']);
+    // Route legado bloqueado: no debe devolver datos.
+    // Route::middleware('auth:sanctum')->get('/dashboard/bootstrap', [GraficosController::class, 'bootstrap']);
     Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/dashboard', [GraficosController::class, 'bootstrapDashboard']);
     Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/permmapa', [GraficosController::class, 'bootstrapPermMapa']);
     Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/permesa', [GraficosController::class, 'bootstrapPerMesa']);
