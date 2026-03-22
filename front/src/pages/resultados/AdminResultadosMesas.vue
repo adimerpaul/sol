@@ -164,6 +164,24 @@
               />
             </div>
 
+            <div class="col-12 col-sm-6 col-md-4">
+              <q-select
+                v-model="filters.supervisor_id"
+                :options="supervisoresOptFiltered"
+                option-label="label"
+                option-value="id"
+                emit-value
+                map-options
+                use-input
+                input-debounce="200"
+                dense
+                outlined
+                clearable
+                label="Supervisor"
+                @filter="filterSupervisores"
+              />
+            </div>
+
             <div class="col-6 col-sm-3 col-md-2">
               <q-select
                 v-model="filters.estado"
@@ -1001,6 +1019,7 @@ export default {
         asignado: 'ALL',
         delegado_id: null,
         jefe_recinto_id: null,
+        supervisor_id: null,
         estado: null,
         con_resultado: 'ALL',
         en_mesa: 'ALL'
@@ -1036,6 +1055,8 @@ export default {
       mesasOpt: [],
       jefesRecintoOpt: [],
       jefesRecintoOptFiltered: [],
+      supervisoresOpt: [],
+      supervisoresOptFiltered: [],
       delegadosOptFiltered: [],
       delegadosAsignarOptFiltered: [],
 
@@ -1387,6 +1408,7 @@ export default {
             asignado: this.filters.asignado,
             delegado_id: this.filters.delegado_id || undefined,
             jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
+            supervisor_id: this.filters.supervisor_id || undefined,
             estado: this.filters.estado || undefined,
             con_resultado: this.filters.con_resultado,
             en_mesa: this.filters.en_mesa,
@@ -1408,6 +1430,11 @@ export default {
           label: `${j.name || '-'} (${j.username || '-'})`
         }))
         this.jefesRecintoOptFiltered = this.jefesRecintoOpt
+        this.supervisoresOpt = (Array.isArray(data?.supervisores) ? data.supervisores : []).map(s => ({
+          ...s,
+          label: `${s.name || '-'} (${s.username || '-'})`
+        }))
+        this.supervisoresOptFiltered = this.supervisoresOpt
         this.recintosBase = (Array.isArray(data?.recintos) ? data.recintos : []).map(r => ({
           ...r,
           value: r.id,
@@ -1528,6 +1555,21 @@ export default {
           String(j.name || '').toLowerCase().includes(needle) ||
           String(j.username || '').toLowerCase().includes(needle) ||
           String(j.celular || '').toLowerCase().includes(needle)
+        )
+      })
+    },
+
+    filterSupervisores (val, update) {
+      update(() => {
+        const needle = (val || '').toLowerCase().trim()
+        if (!needle) {
+          this.supervisoresOptFiltered = this.supervisoresOpt
+          return
+        }
+        this.supervisoresOptFiltered = (this.supervisoresOpt || []).filter(s =>
+          String(s.name || '').toLowerCase().includes(needle) ||
+          String(s.username || '').toLowerCase().includes(needle) ||
+          String(s.celular || '').toLowerCase().includes(needle)
         )
       })
     },
@@ -1668,6 +1710,7 @@ export default {
         asignado: this.filters.asignado,
         delegado_id: this.filters.delegado_id || undefined,
         jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
+        supervisor_id: this.filters.supervisor_id || undefined,
         estado: this.filters.estado || undefined,
         con_resultado: this.filters.con_resultado,
         en_mesa: this.filters.en_mesa
@@ -1763,6 +1806,7 @@ export default {
           asignado: this.filters.asignado,
           delegado_id: this.filters.delegado_id || undefined,
           jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
+          supervisor_id: this.filters.supervisor_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
           en_mesa: 'YES'
@@ -1784,6 +1828,7 @@ export default {
           asignado: this.filters.asignado,
           delegado_id: this.filters.delegado_id || undefined,
           jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
+          supervisor_id: this.filters.supervisor_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
           en_mesa: 'NO'
@@ -1805,6 +1850,7 @@ export default {
           asignado: this.filters.asignado,
           delegado_id: this.filters.delegado_id || undefined,
           jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
+          supervisor_id: this.filters.supervisor_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado
         },
@@ -1825,6 +1871,7 @@ export default {
           asignado: this.filters.asignado,
           delegado_id: this.filters.delegado_id || undefined,
           jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
+          supervisor_id: this.filters.supervisor_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
           en_mesa: this.filters.en_mesa,
@@ -1888,6 +1935,7 @@ export default {
           asignado: this.filters.asignado,
           delegado_id: this.filters.delegado_id || undefined,
           jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
+          supervisor_id: this.filters.supervisor_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
           en_mesa: this.filters.en_mesa,
