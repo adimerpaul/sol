@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/ambos', [GraficosController::class, 'bootstrapAmbos']);
     Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/tortas', [GraficosController::class, 'bootstrapTortas']);
     Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/histograma', [GraficosController::class, 'bootstrapHistograma']);
+    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap/avance-mesas', [GraficosController::class, 'bootstrapAvanceMesas']);
     Route::middleware('auth:sanctum')->get('/dashboard/graficos', [GraficosController::class, 'index']);
     Route::middleware('auth:sanctum')->get('/dashboard/mapa', [GraficosController::class, 'mapa']);
 

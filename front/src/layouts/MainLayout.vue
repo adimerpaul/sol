@@ -305,6 +305,11 @@
             <q-item-section avatar><q-icon name="bar_chart" class="text-white"/></q-item-section>
             <q-item-section><q-item-label class="text-white">Histogramas</q-item-label></q-item-section>
           </q-item>
+
+          <q-item dense to="/dashboard/avance-mesas" clickable class="menu-item" active-class="menu-active" v-close-popup>
+            <q-item-section avatar><q-icon name="analytics" class="text-white"/></q-item-section>
+            <q-item-section><q-item-label class="text-white">Avance Mesas</q-item-label></q-item-section>
+          </q-item>
         </template>
 
         <q-item

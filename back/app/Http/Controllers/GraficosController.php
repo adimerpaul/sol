@@ -19,6 +19,35 @@ class GraficosController extends Controller
         'asambleista_distrito' => 'votos_asambleista_distrito',
         'asambleista_poblacion' => 'votos_asambleista_poblacion',
     ];
+    private const CATEGORY_MESA_LABELS = [
+        'alcalde' => 'Alcalde',
+        'concejal' => 'Concejal',
+        'gobernador' => 'Gobernador',
+        'asambleista_distrito' => 'Asambleista por territorio',
+        'asambleista_poblacion' => 'Asambleista por poblacion',
+    ];
+    private const CATEGORY_RESULT_FIELDS = [
+        'alcalde' => [
+            'detalle' => 'votos_alcalde',
+            'resumen' => ['blancos_alcalde', 'nulos_alcalde', 'papeletas_no_utilizadas_alcalde'],
+        ],
+        'concejal' => [
+            'detalle' => 'votos_concejal',
+            'resumen' => ['blancos_concejal', 'nulos_concejal', 'papeletas_no_utilizadas_concejal'],
+        ],
+        'gobernador' => [
+            'detalle' => 'votos_gobernador',
+            'resumen' => ['blancos_gobernador', 'nulos_gobernador', 'papeletas_no_utilizadas_gobernador'],
+        ],
+        'asambleista_distrito' => [
+            'detalle' => 'votos_asambleista_distrito',
+            'resumen' => ['blancos_asambleista_distrito', 'nulos_asambleista_distrito', 'papeletas_no_utilizadas_asambleista_distrito'],
+        ],
+        'asambleista_poblacion' => [
+            'detalle' => 'votos_asambleista_poblacion',
+            'resumen' => ['blancos_asambleista_poblacion', 'nulos_asambleista_poblacion', 'papeletas_no_utilizadas_asambleista_poblacion'],
+        ],
+    ];
 
     private function buildScope(Request $request): array
     {
@@ -139,6 +168,56 @@ class GraficosController extends Controller
                 'con_resultado' => $mesasConResultado,
                 'faltantes' => max(0, $mesasTotal - $mesasConResultado),
             ],
+        ];
+    }
+
+    private function buildMesaProgressPayload(array $scope): array
+    {
+        $mesasTotal = (int) $this->applyMesaScope(Mesa::query(), $scope)->count();
+        $mesasRealizadas = (int) ResultadoMesa::query()
+            ->whereHas('mesa', fn ($q) => $this->applyMesaScope($q, $scope))
+            ->where(function ($query) {
+                $this->applyResultadoConDatosConstraint($query);
+            })
+            ->distinct('mesa_id')
+            ->count('mesa_id');
+
+        $categorias = collect(self::CATEGORY_RESULT_FIELDS)
+            ->map(function ($config, $key) use ($scope, $mesasTotal) {
+                $mesasCategoria = (int) ResultadoMesa::query()
+                    ->whereHas('mesa', fn ($q) => $this->applyMesaScope($q, $scope))
+                    ->where(function ($query) use ($config) {
+                        foreach ($config['resumen'] as $column) {
+                            $query->orWhere($column, '>', 0);
+                        }
+
+                        $query->orWhereHas('detalles', function ($detalleQuery) use ($config) {
+                            $detalleQuery->where($config['detalle'], '>', 0);
+                        });
+                    })
+                    ->distinct('mesa_id')
+                    ->count('mesa_id');
+
+                return [
+                    'key' => $key,
+                    'label' => self::CATEGORY_MESA_LABELS[$key] ?? ucfirst((string) $key),
+                    'mesas_total' => $mesasTotal,
+                    'mesas_realizadas' => $mesasCategoria,
+                    'mesas_faltantes' => max(0, $mesasTotal - $mesasCategoria),
+                    'porcentaje' => $mesasTotal > 0 ? round(($mesasCategoria / $mesasTotal) * 100, 2) : 0,
+                ];
+            })
+            ->values();
+
+        return [
+            'mesas' => [
+                'total' => $mesasTotal,
+                'realizadas' => $mesasRealizadas,
+                'faltantes' => max(0, $mesasTotal - $mesasRealizadas),
+                'porcentaje' => $mesasTotal > 0 ? round(($mesasRealizadas / $mesasTotal) * 100, 2) : 0,
+            ],
+            'categorias' => $categorias,
+            'generated_at' => now()->toIso8601String(),
         ];
     }
 
@@ -520,6 +599,12 @@ class GraficosController extends Controller
     {
         $scope = $this->buildScope($request);
         return response()->json($this->buildSummaryResponse($scope));
+    }
+
+    public function bootstrapAvanceMesas(Request $request)
+    {
+        $scope = $this->buildScope($request);
+        return response()->json($this->buildMesaProgressPayload($scope));
     }
 
     public function index(Request $request)

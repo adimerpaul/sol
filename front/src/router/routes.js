@@ -16,6 +16,7 @@ const routes = [
       { path: 'dashboard/ambos', component: () => import('pages/IndexPage.vue'), meta: { requiresAuth: true, dashboardMode: 'both' } },
       { path: 'dashboard/tortas', component: () => import('pages/IndexPage.vue'), meta: { requiresAuth: true, dashboardMode: 'pie' } },
       { path: 'dashboard/histogramas', component: () => import('pages/IndexPage.vue'), meta: { requiresAuth: true, dashboardMode: 'bar' } },
+      { path: 'dashboard/avance-mesas', component: () => import('pages/DashboardAvanceMesasPage.vue'), meta: { requiresAuth: true } },
       { path: 'usuarios', component: () => import('pages/usuarios/Usuarios.vue'), meta: { requiresAuth: true } },
       { path: 'recintos', component: () => import('pages/geo/GeoMaster.vue'), meta: { requiresAuth: true } },
       { path: 'partidos', component: () => import('pages/partidos/Partidos.vue'), meta: { requiresAuth: true } },
