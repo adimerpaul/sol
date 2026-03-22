@@ -248,6 +248,10 @@
                     <q-item-section avatar><q-icon name="schedule" /></q-item-section>
                     <q-item-section><q-item-label>Imprimir mesa abierta</q-item-label></q-item-section>
                   </q-item>
+                  <q-item clickable v-close-popup @click="openSupervisorPrintDialog">
+                    <q-item-section avatar><q-icon name="supervisor_account" /></q-item-section>
+                    <q-item-section><q-item-label>Recintos por supervisor</q-item-label></q-item-section>
+                  </q-item>
                 </q-list>
               </q-btn-dropdown>
             </div>
@@ -962,6 +966,39 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="dlgSupervisorPrint" persistent>
+      <q-card style="width: 460px; max-width: 95vw;">
+        <q-card-section class="row items-center">
+          <div class="text-weight-bold">Recintos por supervisor</div>
+          <q-space />
+          <q-btn icon="close" flat round dense @click="dlgSupervisorPrint = false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <q-select
+            v-model="supervisorPrintId"
+            :options="supervisoresOptFiltered"
+            option-label="label"
+            option-value="id"
+            emit-value
+            map-options
+            use-input
+            input-debounce="200"
+            dense
+            outlined
+            clearable
+            label="Supervisor"
+            @filter="filterSupervisores"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat color="grey-7" label="Cancelar" no-caps @click="dlgSupervisorPrint = false" />
+          <q-btn color="primary" label="Generar PDF" no-caps :disable="!supervisorPrintId" @click="printRecintosPorSupervisor" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -1072,6 +1109,8 @@ export default {
       resMesa: null,
       dlgPresencia: false,
       presenceRow: null,
+      dlgSupervisorPrint: false,
+      supervisorPrintId: null,
       partidos: [],
       votosMap: {},
       voteTypes: [
@@ -1856,6 +1895,21 @@ export default {
         },
         'mesas_abiertas.pdf'
       )
+    },
+
+    openSupervisorPrintDialog () {
+      this.supervisorPrintId = this.filters.supervisor_id || null
+      this.dlgSupervisorPrint = true
+    },
+
+    async printRecintosPorSupervisor () {
+      if (!this.supervisorPrintId) return
+      await this.openPdfBlob(
+        'admin/mesas-print/recintos-por-supervisor',
+        { supervisor_id: this.supervisorPrintId },
+        'recintos_por_supervisor.pdf'
+      )
+      this.dlgSupervisorPrint = false
     },
 
     async fetchAll () {

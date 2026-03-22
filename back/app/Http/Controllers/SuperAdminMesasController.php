@@ -489,6 +489,62 @@ class SuperAdminMesasController extends Controller
         return $pdf->stream('mesas_abiertas.pdf');
     }
 
+    public function printRecintosPorSupervisor(Request $request)
+    {
+        @set_time_limit($this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('max_execution_time', (string) $this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('memory_limit', '1024M');
+        @ignore_user_abort(true);
+
+        $actor = $request->user();
+        $supervisorId = (int) $request->get('supervisor_id');
+
+        if (!$supervisorId) {
+            return response()->json(['message' => 'Supervisor requerido'], 422);
+        }
+
+        $supervisor = User::query()
+            ->with(['jefesAsignados.recintosComoJefe'])
+            ->where('role', 'Supervisor')
+            ->find($supervisorId);
+
+        if (!$supervisor) {
+            return response()->json(['message' => 'Supervisor no encontrado'], 404);
+        }
+
+        $rows = $supervisor->jefesAsignados
+            ->sortBy('name')
+            ->map(function ($jefe) {
+                $recintos = $jefe->recintosComoJefe
+                    ->sortBy('nombre')
+                    ->pluck('nombre')
+                    ->filter()
+                    ->values();
+
+                return [
+                    'jefe_nombre' => $jefe->name,
+                    'jefe_username' => $jefe->username,
+                    'jefe_celular' => $jefe->celular ?: 'Sin celular',
+                    'recintos' => $recintos,
+                ];
+            })
+            ->values();
+
+        $pdf = Pdf::loadView('pdf.recintos_por_supervisor', [
+            'title' => 'Recintos por supervisor',
+            'supervisor' => [
+                'name' => $supervisor->name,
+                'username' => $supervisor->username,
+                'celular' => $supervisor->celular ?: 'Sin celular',
+            ],
+            'rows' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i:s'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('recintos_por_supervisor.pdf');
+    }
+
     public function exportEnMesaCsv(Request $request)
     {
         @set_time_limit($this->PRINT_TIMEOUT_SECONDS);
@@ -704,8 +760,8 @@ class SuperAdminMesasController extends Controller
                 'resultado:id,mesa_id',
             ])
             ->whereHas('recinto', $scopeRecinto)
-            ->when($jefeRecintoId, fn($qq) => $qq->whereHas('recinto.jefe', fn($q) => $q->where('users.id', $jefeRecintoId)))
-            ->when($supervisorId, fn($qq) => $qq->whereHas('recinto.jefe', fn($q) => $q->whereHas('supervisores', fn($sq) => $sq->where('users.id', $supervisorId))))
+            ->when($jefeRecintoId, fn($qq) => $qq->whereHas('delegado.jefes', fn($q) => $q->where('users.id', $jefeRecintoId)))
+            ->when($supervisorId, fn($qq) => $qq->whereHas('delegado.jefes', fn($q) => $q->whereHas('supervisores', fn($sq) => $sq->where('users.id', $supervisorId))))
             ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
             ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
             ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
