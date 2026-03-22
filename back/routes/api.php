@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('mapas/recintos/{recinto}', [RecintoMapaController::class, 'update']);
 
     Route::middleware('auth:sanctum')->get('/dashboard/elecciones/resumen', [EleccionesDashboardController::class, 'resumen']);
+    Route::middleware('auth:sanctum')->get('/dashboard/bootstrap', [GraficosController::class, 'bootstrap']);
     Route::middleware('auth:sanctum')->get('/dashboard/graficos', [GraficosController::class, 'index']);
     Route::middleware('auth:sanctum')->get('/dashboard/mapa', [GraficosController::class, 'mapa']);
 
