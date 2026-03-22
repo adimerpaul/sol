@@ -34,6 +34,13 @@
                     <q-item-label caption>Resumen por recinto y mesas faltantes</q-item-label>
                   </q-item-section>
                 </q-item>
+                <q-item clickable v-close-popup @click="openPrint('jefes-mesas-delegados')">
+                  <q-item-section avatar><q-icon name="badge" /></q-item-section>
+                  <q-item-section>
+                    <q-item-label>Jefes, mesas y delegados</q-item-label>
+                    <q-item-label caption>Formato agrupado por jefe de recinto</q-item-label>
+                  </q-item-section>
+                </q-item>
               </q-list>
             </q-btn-dropdown>
           </div>

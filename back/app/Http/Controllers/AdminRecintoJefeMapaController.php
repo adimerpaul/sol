@@ -27,7 +27,7 @@ class AdminRecintoJefeMapaController extends Controller
                 'municipio:id,nombre',
                 'localidad:id,nombre',
                 'mesas:id,recinto_id,numero_mesa,delegado_id,estado',
-                'mesas.delegado:id,name,username',
+                'mesas.delegado:id,name,username,celular',
             ])
             ->withCount([
                 'mesas',
@@ -165,6 +165,7 @@ class AdminRecintoJefeMapaController extends Controller
                         'id' => $mesa->delegado->id,
                         'name' => $mesa->delegado->name,
                         'username' => $mesa->delegado->username,
+                        'celular' => $mesa->delegado->celular,
                     ] : null,
                     'estado' => $mesa->estado,
                 ];
@@ -409,5 +410,83 @@ class AdminRecintoJefeMapaController extends Controller
         ])->setPaper('a4', 'landscape');
 
         return $pdf->stream('recintos_sin_jefe.pdf');
+    }
+
+    public function printJefesMesasDelegados(Request $request)
+    {
+        $user = $request->user();
+        $query = $this->visibleRecintosQuery($user, $request);
+        if (!$query) {
+            return response()->json([], 403);
+        }
+
+        $groups = $query
+            ->get()
+            ->flatMap(function (Recinto $recinto) {
+                $mesas = collect($recinto->mesas ?? [])
+                    ->map(function ($mesa) use ($recinto) {
+                        return [
+                            'recinto' => $recinto->nombre,
+                            'provincia' => $recinto->provincia?->nombre,
+                            'municipio' => $recinto->municipio?->nombre,
+                            'localidad' => $recinto->localidad?->nombre,
+                            'mesa_numero' => $mesa['numero_mesa'] ?? null,
+                            'estado' => $mesa['estado'] ?? 'PENDIENTE',
+                            'delegado_nombre' => $mesa['delegado']['name'] ?? 'Sin delegado',
+                            'delegado_username' => $mesa['delegado']['username'] ?? '',
+                            'delegado_celular' => $mesa['delegado']['celular'] ?? 'Sin celular',
+                        ];
+                    })
+                    ->sortBy('mesa_numero')
+                    ->values();
+
+                return collect($recinto->jefe ?? [])->map(function ($jefe) use ($mesas, $recinto) {
+                    return [
+                        'jefe_id' => $jefe->id,
+                        'jefe_nombre' => $jefe->name,
+                        'jefe_username' => $jefe->username,
+                        'jefe_celular' => $jefe->celular ?: 'Sin celular',
+                        'super_jefe' => (bool) ($jefe->super_jefe ?? false),
+                        'recinto' => $recinto->nombre,
+                        'provincia' => $recinto->provincia?->nombre,
+                        'municipio' => $recinto->municipio?->nombre,
+                        'localidad' => $recinto->localidad?->nombre,
+                        'mesas' => $mesas,
+                    ];
+                });
+            })
+            ->groupBy('jefe_id')
+            ->map(function ($items) {
+                $first = $items->first();
+                return [
+                    'jefe_nombre' => $first['jefe_nombre'],
+                    'jefe_username' => $first['jefe_username'],
+                    'jefe_celular' => $first['jefe_celular'],
+                    'super_jefe' => $first['super_jefe'],
+                    'recintos' => $items
+                        ->map(function ($item) {
+                            return [
+                                'recinto' => $item['recinto'],
+                                'provincia' => $item['provincia'],
+                                'municipio' => $item['municipio'],
+                                'localidad' => $item['localidad'],
+                                'mesas' => $item['mesas'],
+                            ];
+                        })
+                        ->sortBy('recinto')
+                        ->values(),
+                ];
+            })
+            ->sortBy('jefe_nombre')
+            ->values();
+
+        $pdf = Pdf::loadView('pdf.mapa_recintos_jefes_mesas_delegados', [
+            'title' => 'Jefes, mesas y delegados asignados',
+            'groups' => $groups,
+            'generatedAt' => now()->format('d/m/Y H:i:s'),
+            'generatedBy' => $user->name ?? $user->username ?? 'Sistema',
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('jefes_mesas_delegados.pdf');
     }
 }
