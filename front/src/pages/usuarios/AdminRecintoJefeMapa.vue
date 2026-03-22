@@ -17,6 +17,7 @@
               label="Impresiones"
               no-caps
               :disable="loading"
+              :loading="printing"
             >
               <q-list>
                 <q-item clickable v-close-popup @click="openPrint('mesas-sin-delegado')">
@@ -408,7 +409,8 @@ export default {
       recintoPick: null,
       recintosOptions: [],
       focusRecinto: null,
-      loading: false
+      loading: false,
+      printing: false
     }
   },
 
@@ -762,7 +764,8 @@ export default {
       await this.saveMesa(mesa)
     },
 
-    openPrint (type) {
+    async openPrint (type) {
+      this.printing = true
       const params = new URLSearchParams()
       const payload = this.buildLoadParams()
 
@@ -772,9 +775,21 @@ export default {
         }
       })
 
-      const query = params.toString()
-      const suffix = query ? `?${query}` : ''
-      window.open(`${this.$url}/admin/mapa-recintos/print/${type}${suffix}`, '_blank', 'noopener,noreferrer')
+      try {
+        const response = await this.$axios.get(`admin/mapa-recintos/print/${type}`, {
+          params: Object.fromEntries(params.entries()),
+          responseType: 'blob'
+        })
+
+        const blob = new Blob([response.data], { type: 'application/pdf' })
+        const url = window.URL.createObjectURL(blob)
+        window.open(url, '_blank', 'noopener,noreferrer')
+        window.setTimeout(() => window.URL.revokeObjectURL(url), 60000)
+      } catch (e) {
+        this.$alert?.error(e.response?.data?.message || 'No se pudo generar la impresión')
+      } finally {
+        this.printing = false
+      }
     }
   }
 }
