@@ -531,6 +531,15 @@
         <q-card-section class="row items-center">
           <div class="text-weight-bold">Resultado de Mesa</div>
           <q-space />
+          <q-btn
+            color="primary"
+            label="Guardar"
+            no-caps
+            class="q-mr-sm"
+            :disable="!resMesa?.id || !resMesa?.delegado_id"
+            :loading="saving"
+            @click="saveResultado"
+          />
           <q-btn icon="close" flat round dense @click="dlgResultado=false" />
         </q-card-section>
 
