@@ -44,26 +44,6 @@
       </q-card-section>
 
       <q-card-section v-if="isChartRoute" class="q-pa-md">
-        <div class="row items-center justify-between q-col-gutter-sm q-mb-md">
-          <div class="col-auto">
-            <div class="text-subtitle2 text-weight-medium">Vista de gráficos</div>
-          </div>
-          <div class="col-auto">
-            <q-btn-toggle
-              v-model="chartsViewMode"
-              no-caps
-              unelevated
-              toggle-color="primary"
-              color="grey-3"
-              text-color="grey-8"
-              :options="[
-                { label: 'Ambos', value: 'both' },
-                { label: 'Tortas', value: 'pie' },
-                { label: 'Histogramas', value: 'bar' }
-              ]"
-            />
-          </div>
-        </div>
         <template v-if="chartsViewMode === 'both'">
           <div v-for="card in chartCards" :key="card.key" class="category-block q-mb-md">
             <div class="row items-center justify-between q-mb-sm">
