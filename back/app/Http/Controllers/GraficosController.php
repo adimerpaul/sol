@@ -132,6 +132,9 @@ class GraficosController extends Controller
         $mesasTotal = (int) (clone $mesasBase)->count();
         $mesasConResultado = (int) ResultadoMesa::query()
             ->whereHas('mesa', fn ($q) => $this->applyMesaScope($q, $scope))
+            ->where(function ($query) {
+                $this->applyResultadoConDatosConstraint($query);
+            })
             ->distinct('mesa_id')
             ->count('mesa_id');
 
@@ -145,6 +148,54 @@ class GraficosController extends Controller
                 'faltantes' => max(0, $mesasTotal - $mesasConResultado),
             ],
         ];
+    }
+
+    private function applyResultadoConDatosConstraint($query): void
+    {
+        $query->where(function ($qq) {
+            $qq->where('total_votos', '>', 0)
+                ->orWhere('total_validos', '>', 0)
+                ->orWhere('total_blancos', '>', 0)
+                ->orWhere('total_nulos', '>', 0)
+                ->orWhereHas('detalles', function ($dq) {
+                    $dq->where('votos_gobernador', '>', 0)
+                        ->orWhere('votos_asambleista_distrito', '>', 0)
+                        ->orWhere('votos_asambleista_poblacion', '>', 0)
+                        ->orWhere('votos_concejal', '>', 0)
+                        ->orWhere('votos_alcalde', '>', 0);
+                });
+        });
+    }
+
+    private function resultadoTieneDatos($resultado): bool
+    {
+        if (!$resultado) {
+            return false;
+        }
+
+        if ((int) ($resultado->total_votos ?? 0) > 0) {
+            return true;
+        }
+
+        if ((int) ($resultado->total_validos ?? 0) > 0) {
+            return true;
+        }
+
+        if ((int) ($resultado->total_blancos ?? 0) > 0) {
+            return true;
+        }
+
+        if ((int) ($resultado->total_nulos ?? 0) > 0) {
+            return true;
+        }
+
+        return collect($resultado->detalles ?? [])->contains(function ($detalle) {
+            return (int) ($detalle->votos_gobernador ?? 0) > 0
+                || (int) ($detalle->votos_asambleista_distrito ?? 0) > 0
+                || (int) ($detalle->votos_asambleista_poblacion ?? 0) > 0
+                || (int) ($detalle->votos_concejal ?? 0) > 0
+                || (int) ($detalle->votos_alcalde ?? 0) > 0;
+        });
     }
 
     private function buildOptionsPayload(array $scope): array
@@ -283,7 +334,7 @@ class GraficosController extends Controller
     private function buildMesaPayload(Mesa $mesa): array
     {
         $resultado = $mesa->resultado;
-        $hasVotes = $resultado && (int) ($resultado->total_votos ?? 0) > 0;
+        $hasVotes = $this->resultadoTieneDatos($resultado);
         $mesaWinners = $this->resolveMesaCategoryWinners($resultado?->detalles ?? []);
         $winnerSummary = collect($mesaWinners)
             ->map(function ($winner, $category) {
