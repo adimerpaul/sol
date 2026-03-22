@@ -66,6 +66,7 @@ class MesaAiControlController extends Controller
             'mesa_board' => $this->mesaBoard($mesaIds, 0, $latestControls),
             'recinto_status' => $this->recintoStatus($mesaIds, $recintos, $latestControls),
             'chart_data' => $this->chartData($latestControls),
+            'user_chart_data' => $this->userChartData($latestControls),
             'recent_controls' => $this->recentControls($mesaIds),
             'selected_mesa' => $selectedMesa,
         ]);
@@ -244,6 +245,7 @@ class MesaAiControlController extends Controller
             $control->update(array_merge(
                 [
                     'estado' => 'confirmado',
+                    'confirmado_por' => request()->user()?->id,
                     'observaciones' => $data['observaciones'] ?? $control->observaciones,
                     'confirmado_at' => now(),
                     'total_detectado' => $this->detectedTotal($normalizedRows, $normalizedCategorias),
@@ -401,7 +403,7 @@ class MesaAiControlController extends Controller
         }
 
         return MesaAiControl::query()
-            ->with(['mesa.recinto:id,nombre'])
+            ->with(['mesa.recinto:id,nombre', 'confirmadoPor:id,name,username'])
             ->whereIn('mesa_id', $mesaIds->all())
             ->latest('id')
             ->get()
@@ -419,6 +421,7 @@ class MesaAiControlController extends Controller
             ->with([
                 'mesa.recinto:id,nombre',
                 'registradoPor:id,name,username',
+                'confirmadoPor:id,name,username',
             ])
             ->whereIn('mesa_id', $mesaIds->all())
             ->latest('id')
@@ -431,6 +434,7 @@ class MesaAiControlController extends Controller
                     'mesa_numero' => $control->mesa?->numero_mesa,
                     'recinto' => $control->mesa?->recinto?->nombre,
                     'usuario' => $control->registradoPor?->name ?: $control->registradoPor?->username,
+                    'confirmado_por' => $control->confirmadoPor?->name ?: $control->confirmadoPor?->username,
                     'total_detectado' => (int) $control->total_detectado,
                     'updated_at' => optional($control->updated_at)->toDateTimeString(),
                 ];
@@ -527,6 +531,7 @@ class MesaAiControlController extends Controller
                     'status' => $status,
                     'color' => $color,
                     'control_id' => $control?->id,
+                    'confirmado_por' => $control?->confirmadoPor?->name ?: $control?->confirmadoPor?->username,
                 ];
             })
             ->values()
@@ -577,6 +582,49 @@ class MesaAiControlController extends Controller
         }
 
         return $charts;
+    }
+
+    private function userChartData(Collection $latestControls): array
+    {
+        if ($latestControls->isEmpty()) {
+            return [];
+        }
+
+        $confirmedIds = $latestControls
+            ->where('estado', 'confirmado')
+            ->pluck('id')
+            ->filter()
+            ->values();
+
+        if ($confirmedIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('mesa_ai_controles as mac')
+            ->join('mesas', 'mesas.id', '=', 'mac.mesa_id')
+            ->join('recintos', 'recintos.id', '=', 'mesas.recinto_id')
+            ->leftJoin('users as confirmadores', 'confirmadores.id', '=', 'mac.confirmado_por')
+            ->whereIn('mac.id', $confirmedIds->all())
+            ->whereNull('mac.deleted_at')
+            ->selectRaw("
+                COALESCE(confirmadores.name, confirmadores.username, 'Sin nombre') as usuario,
+                COUNT(mac.id) as confirmaciones,
+                COUNT(DISTINCT recintos.id) as recintos
+            ")
+            ->groupBy('mac.confirmado_por', 'confirmadores.name', 'confirmadores.username')
+            ->orderByDesc('recintos')
+            ->orderByDesc('confirmaciones')
+            ->limit(10)
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'usuario' => (string) $row->usuario,
+                    'confirmaciones' => (int) $row->confirmaciones,
+                    'recintos' => (int) $row->recintos,
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     private function storeSourceImages(Request $request, Mesa $mesa, array $data): array
@@ -891,8 +939,9 @@ class MesaAiControlController extends Controller
                 'mesa.municipio:id,nombre',
                 'mesa.provincia:id,nombre',
                 'mesa.departamento:id,nombre',
-                'detalles.partido:id,sigla,nombre,color',
+                'detalles.partido:id,sigla,nombre,color,icono',
                 'registradoPor:id,name,username',
+                'confirmadoPor:id,name,username',
             ])
             ->findOrFail($controlId);
 
@@ -909,6 +958,7 @@ class MesaAiControlController extends Controller
             'total_detectado' => (int) $control->total_detectado,
             'confirmado_at' => optional($control->confirmado_at)->toDateTimeString(),
             'registrado_por' => $control->registradoPor?->name ?: $control->registradoPor?->username,
+            'confirmado_por' => $control->confirmadoPor?->name ?: $control->confirmadoPor?->username,
             'mesa_contexto' => [
                 'recinto' => $control->mesa?->recinto?->nombre,
                 'localidad' => $control->mesa?->localidad?->nombre,
@@ -929,6 +979,8 @@ class MesaAiControlController extends Controller
                     'sigla' => $detalle->partido?->sigla,
                     'nombre' => $detalle->partido?->nombre,
                     'color' => $detalle->partido?->color ?: '#c62828',
+                    'icono' => $detalle->partido?->icono,
+                    'icono_url' => $detalle->partido?->icono ? $this->publicPartyIconUrl($detalle->partido->icono) : null,
                     'votos_gobernador' => (int) $detalle->votos_gobernador,
                     'votos_asambleista_distrito' => (int) $detalle->votos_asambleista_distrito,
                     'votos_asambleista_poblacion' => (int) $detalle->votos_asambleista_poblacion,
@@ -950,6 +1002,7 @@ class MesaAiControlController extends Controller
                 'partidos.sigla',
                 'partidos.nombre',
                 'partidos.color',
+                'partidos.icono',
                 'partidos.orden_municipal',
                 'partidos.orden_departamental',
             ]);
@@ -992,5 +1045,14 @@ class MesaAiControlController extends Controller
 
         $base = rtrim((string) config('app.url'), '/');
         return $base . Storage::url($path);
+    }
+
+    private function publicPartyIconUrl(?string $filename): ?string
+    {
+        if (!$filename) {
+            return null;
+        }
+
+        return rtrim((string) config('app.url'), '/') . '/../images/partidos/' . ltrim($filename, '/');
     }
 }

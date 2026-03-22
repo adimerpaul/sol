@@ -17,6 +17,7 @@ class MesaAiControl extends Model implements Auditable
         'mesa_id',
         'resultado_mesa_id',
         'registrado_por',
+        'confirmado_por',
         'fuente_tipo',
         'fuente_slot',
         'fuente_slot_secundaria',
@@ -66,6 +67,11 @@ class MesaAiControl extends Model implements Auditable
     public function registradoPor()
     {
         return $this->belongsTo(User::class, 'registrado_por');
+    }
+
+    public function confirmadoPor()
+    {
+        return $this->belongsTo(User::class, 'confirmado_por');
     }
 
     public function detalles()

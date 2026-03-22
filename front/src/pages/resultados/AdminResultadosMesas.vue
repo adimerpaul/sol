@@ -271,7 +271,7 @@
 
             <td class="text-left">
               <div v-if="r.delegado">
-                <div class="text-weight-medium">{{ r.delegado.name }}</div>
+                <div class="text-weight-medium" style="max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ r.delegado.name }}</div>
                 <div class="text-caption text-grey-7">
                   <strong>Username:</strong>
                   {{ r.delegado.username }}
@@ -279,6 +279,10 @@
                 <div class="text-caption text-grey-7">
                   <strong>CI:</strong>
                   {{ r.delegado.ci }}
+                </div>
+                <div class="text-caption text-grey-7">
+                  <strong>Nac:</strong>
+                  {{ r.delegado.fecha_nacimiento }}
                 </div>
                 <div class="text-caption text-grey-7">
                   <strong>Celular:</strong>

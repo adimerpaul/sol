@@ -33,12 +33,18 @@
                 <div class="col-12 col-md-6">
                   <q-select
                     v-model="selectedRecintoId"
-                    :options="recintoOptions"
+                    :options="filteredRecintoOptions"
                     emit-value
                     map-options
+                    use-input
+                    fill-input
+                    hide-selected
+                    input-debounce="0"
                     outlined
+                    clearable
                     dense
                     label="Recinto"
+                    @filter="filterRecintoOptions"
                     @update:model-value="onRecintoChange"
                   />
                 </div>
@@ -292,7 +298,7 @@
               />
 
               <div class="table-shell">
-                <q-markup-table flat bordered dense separator="cell">
+                <q-markup-table flat bordered dense separator="cell" class="dense-control-table">
                   <thead>
                     <tr>
                       <th class="text-left">Partido</th>
@@ -303,15 +309,32 @@
                   </thead>
                   <tbody>
                     <tr v-for="row in editableVotes" :key="row.partido_id">
-                      <td class="text-left">
+                      <td class="text-left party-cell">
                         <div class="row items-center no-wrap q-gutter-sm">
-                          <span class="party-color" :style="{ background: row.color || '#c62828' }"></span>
-                          <span>{{ row.sigla || row.nombre }}</span>
+                          <div class="party-avatar" :style="{ borderColor: row.color || '#c62828' }">
+                            <q-img
+                              v-if="row.icono_url || row.icono"
+                              :src="partyIconUrl(row)"
+                              fit="contain"
+                              class="party-icon"
+                            />
+                            <span v-else class="party-fallback">{{ partyInitials(row) }}</span>
+                          </div>
+                          <div class="party-copy">
+                            <div class="party-sigla">{{ row.sigla || row.nombre }}</div>
+                            <div class="party-name">{{ row.nombre }}</div>
+                          </div>
                         </div>
                       </td>
-                      <td><q-input v-model.number="row.votos_concejal" type="number" dense borderless input-class="text-right" /></td>
-                      <td><q-input v-model.number="row.votos_alcalde" type="number" dense borderless input-class="text-right" /></td>
-                      <td><q-input v-model.number="row.confianza" type="number" dense borderless input-class="text-right" /></td>
+                      <td>
+                        <q-input v-model.number="row.votos_concejal" type="number" dense outlined class="vote-input" input-class="text-right" />
+                      </td>
+                      <td>
+                        <q-input v-model.number="row.votos_alcalde" type="number" dense outlined class="vote-input" input-class="text-right" />
+                      </td>
+                      <td>
+                        <q-input v-model.number="row.confianza" type="number" dense outlined class="vote-input vote-input-confidence" input-class="text-right" />
+                      </td>
                     </tr>
                   </tbody>
                 </q-markup-table>
@@ -339,7 +362,7 @@
       </div>
 
       <div class="row q-col-gutter-md q-mt-md">
-        <div class="col-12">
+        <div class="col-12 col-xl-6">
           <q-card flat class="panel-card">
             <q-card-section>
               <div class="text-subtitle1 text-weight-bold">Gráficas</div>
@@ -366,7 +389,28 @@
           </q-card>
         </div>
 
-        <div class="col-12 col-lg-5"></div>
+        <div class="col-12 col-xl-6">
+          <q-card flat class="panel-card">
+            <q-card-section>
+              <div class="text-subtitle1 text-weight-bold">Confirmaciones por usuario</div>
+              <div class="text-caption text-grey-7">Ranking de usuarios por recintos distintos y confirmaciones realizadas.</div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section>
+              <div v-if="userChartData.length" class="user-chart-wrap">
+                <apexchart
+                  type="bar"
+                  height="320"
+                  :options="userBarOptions"
+                  :series="userBarSeries"
+                />
+              </div>
+              <div v-else class="text-caption text-grey-7">
+                AÃºn no hay confirmaciones para mostrar en este grÃ¡fico.
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
       </div>
 
       <q-card flat class="panel-card q-mt-md">
@@ -375,14 +419,50 @@
             <div class="text-subtitle1 text-weight-bold">Mesas del control</div>
             <div class="text-caption text-grey-7">Tablero general de todas las mesas del alcance seleccionado.</div>
           </div>
-          <q-badge color="primary">{{ mesaBoard.length }} mesas</q-badge>
+          <q-badge color="primary">{{ filteredMesaBoard.length }} mesas</q-badge>
         </q-card-section>
         <q-separator />
+        <q-card-section class="q-pb-none">
+          <div class="row q-col-gutter-sm">
+            <div class="col-12 col-md-6 col-xl-4">
+              <q-select
+                v-model="mesaBoardRecintoFilter"
+                :options="filteredMesaBoardRecintoOptions"
+                emit-value
+                map-options
+                use-input
+                fill-input
+                hide-selected
+                outlined
+                dense
+                clearable
+                label="Filtrar por recinto"
+                @filter="filterMesaBoardRecintos"
+              />
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+              <q-select
+                v-model="mesaBoardConfirmadorFilter"
+                :options="filteredMesaBoardConfirmadorOptions"
+                emit-value
+                map-options
+                use-input
+                fill-input
+                hide-selected
+                outlined
+                dense
+                clearable
+                label="Filtrar por confirmador"
+                @filter="filterMesaBoardConfirmadores"
+              />
+            </div>
+          </div>
+        </q-card-section>
         <q-card-section class="mesa-board-grid">
           <q-card
             flat
             bordered
-            v-for="mesa in mesaBoard"
+            v-for="mesa in filteredMesaBoard"
             :key="mesa.id"
             class="mesa-board-card"
             :class="`mesa-${mesa.color}`"
@@ -392,6 +472,9 @@
               <div class="text-weight-bold">Mesa {{ mesa.numero_mesa }}</div>
               <div class="text-caption text-grey-7">{{ mesa.recinto }}</div>
               <q-badge :color="mesa.color" class="q-mt-sm">{{ mesa.status }}</q-badge>
+              <div v-if="mesa.confirmado_por" class="mesa-confirmed-by q-mt-xs">
+                Confirmado: {{ mesa.confirmado_por }}
+              </div>
             </q-card-section>
           </q-card>
         </q-card-section>
@@ -446,9 +529,15 @@ export default {
       recintos: [],
       mesaBoard: [],
       chartData: [],
+      userChartData: [],
+      mesaBoardRecintoFilter: null,
+      mesaBoardConfirmadorFilter: null,
+      filteredMesaBoardRecintoOptions: [],
+      filteredMesaBoardConfirmadorOptions: [],
       selectedRecintoId: null,
       selectedMesaId: null,
       selectedMesa: null,
+      filteredRecintoOptions: [],
       mesaOptions: [],
       currentControl: null,
       editableControl: null,
@@ -509,6 +598,66 @@ export default {
     totalControlGeneral () {
       return this.totalAlcalde + this.totalConcejal
     },
+    userBarSeries () {
+      return [
+        {
+          name: 'Recintos',
+          data: this.userChartData.map(item => Number(item.recintos || 0))
+        },
+        {
+          name: 'Confirmaciones',
+          data: this.userChartData.map(item => Number(item.confirmaciones || 0))
+        }
+      ]
+    },
+    userBarOptions () {
+      return {
+        chart: { toolbar: { show: false } },
+        colors: ['#9f1239', '#d97706'],
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            borderRadius: 6,
+            barHeight: '58%'
+          }
+        },
+        dataLabels: { enabled: true },
+        xaxis: {
+          categories: this.userChartData.map(item => item.usuario)
+        },
+        legend: {
+          position: 'top',
+          horizontalAlign: 'left'
+        },
+        tooltip: {
+          shared: true,
+          intersect: false
+        }
+      }
+    },
+    mesaBoardRecintoOptions () {
+      return [...new Set((this.mesaBoard || []).map(item => item.recinto).filter(Boolean))]
+        .sort((a, b) => String(a).localeCompare(String(b)))
+        .map(item => ({
+          label: item,
+          value: item
+        }))
+    },
+    mesaBoardConfirmadorOptions () {
+      return [...new Set((this.mesaBoard || []).map(item => item.confirmado_por).filter(Boolean))]
+        .sort((a, b) => String(a).localeCompare(String(b)))
+        .map(item => ({
+          label: item,
+          value: item
+        }))
+    },
+    filteredMesaBoard () {
+      return (this.mesaBoard || []).filter(mesa => {
+        const recintoOk = !this.mesaBoardRecintoFilter || mesa.recinto === this.mesaBoardRecintoFilter
+        const confirmadorOk = !this.mesaBoardConfirmadorFilter || mesa.confirmado_por === this.mesaBoardConfirmadorFilter
+        return recintoOk && confirmadorOk
+      })
+    },
     categoryCards () {
       return CATEGORY_CARDS
     },
@@ -530,9 +679,64 @@ export default {
     await this.loadMesaOptions('')
   },
   methods: {
+    syncMesaBoardFilterOptions () {
+      this.filteredMesaBoardRecintoOptions = this.mesaBoardRecintoOptions
+      this.filteredMesaBoardConfirmadorOptions = this.mesaBoardConfirmadorOptions
+    },
+    syncFilteredRecintoOptions () {
+      this.filteredRecintoOptions = this.recintoOptions
+    },
+    filterRecintoOptions (val, update) {
+      update(() => {
+        const needle = String(val || '').trim().toLowerCase()
+        if (!needle) {
+          this.syncFilteredRecintoOptions()
+          return
+        }
+
+        this.filteredRecintoOptions = this.recintoOptions.filter(option => option.label.toLowerCase().includes(needle))
+      })
+    },
+    filterMesaBoardRecintos (val, update) {
+      update(() => {
+        const needle = String(val || '').trim().toLowerCase()
+        if (!needle) {
+          this.filteredMesaBoardRecintoOptions = this.mesaBoardRecintoOptions
+          return
+        }
+
+        this.filteredMesaBoardRecintoOptions = this.mesaBoardRecintoOptions.filter(option => option.label.toLowerCase().includes(needle))
+      })
+    },
+    filterMesaBoardConfirmadores (val, update) {
+      update(() => {
+        const needle = String(val || '').trim().toLowerCase()
+        if (!needle) {
+          this.filteredMesaBoardConfirmadorOptions = this.mesaBoardConfirmadorOptions
+          return
+        }
+
+        this.filteredMesaBoardConfirmadorOptions = this.mesaBoardConfirmadorOptions.filter(option => option.label.toLowerCase().includes(needle))
+      })
+    },
     categoryTotal (key) {
       const row = this.editableCategories?.[key] || {}
       return Number(row.blancos || 0) + Number(row.nulos || 0) + Number(row.papeletas_no_utilizadas || 0)
+    },
+    partyIconUrl (row) {
+      if (row?.icono_url) {
+        return row.icono_url
+      }
+
+      if (row?.icono) {
+        return `${this.$url}/../images/partidos/${row.icono}`
+      }
+
+      return null
+    },
+    partyInitials (row) {
+      const base = String(row?.sigla || row?.nombre || '?').trim()
+      return base.slice(0, 2).toUpperCase()
     },
     statusColor (status) {
       if (status === 'confirmado' || status === 'completo') return 'positive'
@@ -601,8 +805,11 @@ export default {
         const { data } = await this.$axios.get('admin/ia-control/bootstrap', { params })
         this.filters = data.filters || {}
         this.recintos = Array.isArray(data.recintos) ? data.recintos : []
+        this.syncFilteredRecintoOptions()
         this.mesaBoard = Array.isArray(data.mesa_board) ? data.mesa_board : []
         this.chartData = Array.isArray(data.chart_data) ? data.chart_data : []
+        this.userChartData = Array.isArray(data.user_chart_data) ? data.user_chart_data : []
+        this.syncMesaBoardFilterOptions()
         this.selectedMesa = data.selected_mesa || null
 
         if (!this.selectedRecintoId && this.recintos.length) {
@@ -821,6 +1028,96 @@ export default {
   overflow: auto;
 }
 
+.dense-control-table {
+  font-size: 12px;
+}
+
+.dense-control-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff8f8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dense-control-table th,
+.dense-control-table td {
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.party-cell {
+  min-width: 240px;
+}
+
+.party-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid #eadede;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.party-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.party-fallback {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7a2e2e;
+}
+
+.party-copy {
+  min-width: 0;
+}
+
+.party-sigla {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.party-name {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.vote-input {
+  min-width: 92px;
+}
+
+.vote-input :deep(.q-field__control) {
+  height: 34px;
+  border-radius: 10px;
+  background: #fffdfd;
+}
+
+.vote-input :deep(.q-field__native),
+.vote-input :deep(.q-field__input) {
+  font-size: 13px;
+  font-weight: 600;
+  padding-right: 4px;
+}
+
+.vote-input-confidence {
+  min-width: 82px;
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -857,6 +1154,17 @@ export default {
 .mesa-negative {
   border-color: rgba(198, 40, 40, 0.2);
   background: #fff2f2;
+}
+
+.mesa-confirmed-by {
+  font-size: 11px;
+  line-height: 1.25;
+  color: #5b6472;
+}
+
+.user-chart-wrap {
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .dialog-image-wrap {
