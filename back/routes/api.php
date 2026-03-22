@@ -138,6 +138,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::post('admin/ia-control/{control}/confirm', [MesaAiControlController::class, 'confirm']);
 
     // ─── Reportes ─────────────────────────────────────────────────────────────
+    Route::get('reportes/bootstrap', [ReportesController::class, 'bootstrap']);
     Route::get('reportes/delegados-asignados', [ReportesController::class, 'delegadosAsignados']);
     Route::get('reportes/jefes-asignados', [ReportesController::class, 'jefesAsignados']);
     Route::get('reportes/delegados-libres', [ReportesController::class, 'delegadosLibres']);

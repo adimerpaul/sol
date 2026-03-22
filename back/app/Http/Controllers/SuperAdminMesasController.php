@@ -96,12 +96,7 @@ class SuperAdminMesasController extends Controller
                 }
             })
             ->when($conResultado !== 'ALL', function ($qq) use ($conResultado) {
-                if ($conResultado === 'YES') {
-                    $qq->whereHas('resultado');
-                }
-                if ($conResultado === 'NO') {
-                    $qq->whereDoesntHave('resultado');
-                }
+                $this->applyConResultadoFilter($qq, $conResultado);
             });
 
         $summaryPresenceBase = clone $summaryBase;
@@ -113,7 +108,9 @@ class SuperAdminMesasController extends Controller
             'total' => (clone $summaryBase)->count(),
             'asignadas' => (clone $summaryBase)->whereNotNull('delegado_id')->count(),
             'sin_delegado' => (clone $summaryBase)->whereNull('delegado_id')->count(),
-            'con_resultado' => (clone $summaryBase)->whereHas('resultado')->count(),
+            'con_resultado' => tap(clone $summaryBase, function ($query) {
+                $this->applyConResultadoFilter($query, 'YES');
+            })->count(),
             'en_mesa' => (clone $summaryPresenceBase)->count(),
         ];
 
@@ -139,7 +136,9 @@ class SuperAdminMesasController extends Controller
                 'provincia:id,nombre',
                 'municipio:id,nombre',
                 'delegado:id,name,username,celular,ci,fecha_nacimiento',
-                'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos'
+                'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos',
+                'resultado.detalles:id,resultado_mesa_id,partido_id,votos_gobernador,votos_asambleista_distrito,votos_asambleista_poblacion,votos_concejal,votos_alcalde',
+                'resultado.detalles.partido:id,nombre,sigla,icono'
             ])
             ->whereHas('recinto', $scopeRecinto)
             ->when($jefeRecintoId, fn($qq) => $qq->whereHas('delegado.jefes', fn($q) => $q->where('users.id', $jefeRecintoId)))
@@ -156,12 +155,7 @@ class SuperAdminMesasController extends Controller
                 }
             })
             ->when($conResultado !== 'ALL', function ($qq) use ($conResultado) {
-                if ($conResultado === 'YES') {
-                    $qq->whereHas('resultado');
-                }
-                if ($conResultado === 'NO') {
-                    $qq->whereDoesntHave('resultado');
-                }
+                $this->applyConResultadoFilter($qq, $conResultado);
             });
 
         $this->applyEnMesaFilter($base, $enMesa);
@@ -206,7 +200,7 @@ class SuperAdminMesasController extends Controller
                     'delegado_longitud' => $m->delegado_longitud !== null ? (string) $m->delegado_longitud : null,
                     'delegado_presente_at' => $m->delegado_presente_at?->toIso8601String(),
 
-                    'tiene_resultado' => (bool) $m->resultado,
+                    'tiene_resultado' => $this->mesaTieneResultado($m),
                     'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
                     'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
                     'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
@@ -219,6 +213,7 @@ class SuperAdminMesasController extends Controller
                     'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
                     'total_blancos' => (int) (optional($m->resultado)->total_blancos ?? 0),
                     'total_nulos' => (int) (optional($m->resultado)->total_nulos ?? 0),
+                    'ganadores' => $this->resolveGanadoresPorCategoria($m),
                 ];
             })->values();
 
@@ -266,7 +261,7 @@ class SuperAdminMesasController extends Controller
                 'delegado_latitud' => $m->delegado_latitud !== null ? (string) $m->delegado_latitud : null,
                 'delegado_longitud' => $m->delegado_longitud !== null ? (string) $m->delegado_longitud : null,
                 'delegado_presente_at' => $m->delegado_presente_at?->toIso8601String(),
-                'tiene_resultado' => (bool) $m->resultado,
+                'tiene_resultado' => $this->mesaTieneResultado($m),
                 'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
                 'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
                 'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
@@ -278,6 +273,7 @@ class SuperAdminMesasController extends Controller
                 'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
                 'total_blancos' => (int) (optional($m->resultado)->total_blancos ?? 0),
                 'total_nulos' => (int) (optional($m->resultado)->total_nulos ?? 0),
+                'ganadores' => $this->resolveGanadoresPorCategoria($m),
             ];
         })->values();
 
@@ -798,12 +794,7 @@ class SuperAdminMesasController extends Controller
                 }
             })
             ->when($conResultado !== 'ALL', function ($qq) use ($conResultado) {
-                if ($conResultado === 'YES') {
-                    $qq->whereHas('resultado');
-                }
-                if ($conResultado === 'NO') {
-                    $qq->whereDoesntHave('resultado');
-                }
+                $this->applyConResultadoFilter($qq, $conResultado);
             });
 
         $this->applyEnMesaFilter($query, $enMesa);
@@ -848,6 +839,147 @@ class SuperAdminMesasController extends Controller
                     $qr->where('aviso_antes', true);
                 });
         }
+    }
+
+    private function applyConResultadoFilter($query, $conResultado): void
+    {
+        if ($conResultado === 'YES') {
+            $query->whereHas('resultado', function ($qr) {
+                $this->applyResultadoConDatosConstraint($qr);
+            });
+        }
+
+        if ($conResultado === 'NO') {
+            $query->whereDoesntHave('resultado', function ($qr) {
+                $this->applyResultadoConDatosConstraint($qr);
+            });
+        }
+    }
+
+    private function applyResultadoConDatosConstraint($query): void
+    {
+        $query->where(function ($qq) {
+            $qq->where('total_votos', '>', 0)
+                ->orWhere('total_validos', '>', 0)
+                ->orWhere('total_blancos', '>', 0)
+                ->orWhere('total_nulos', '>', 0)
+                ->orWhereHas('detalles', function ($dq) {
+                    $dq->where('votos_gobernador', '>', 0)
+                        ->orWhere('votos_asambleista_distrito', '>', 0)
+                        ->orWhere('votos_asambleista_poblacion', '>', 0)
+                        ->orWhere('votos_concejal', '>', 0)
+                        ->orWhere('votos_alcalde', '>', 0);
+                });
+        });
+    }
+
+    private function mesaTieneResultado($mesa): bool
+    {
+        $resultado = $mesa->resultado ?? null;
+        if (!$resultado) {
+            return false;
+        }
+
+        if ((int) ($resultado->total_votos ?? 0) > 0) {
+            return true;
+        }
+
+        if ((int) ($resultado->total_validos ?? 0) > 0) {
+            return true;
+        }
+
+        if ((int) ($resultado->total_blancos ?? 0) > 0) {
+            return true;
+        }
+
+        if ((int) ($resultado->total_nulos ?? 0) > 0) {
+            return true;
+        }
+
+        if (!method_exists($resultado, 'relationLoaded') || !$resultado->relationLoaded('detalles')) {
+            return false;
+        }
+
+        return collect($resultado->detalles ?? [])->contains(function ($detalle) {
+            return (int) ($detalle->votos_gobernador ?? 0) > 0
+                || (int) ($detalle->votos_asambleista_distrito ?? 0) > 0
+                || (int) ($detalle->votos_asambleista_poblacion ?? 0) > 0
+                || (int) ($detalle->votos_concejal ?? 0) > 0
+                || (int) ($detalle->votos_alcalde ?? 0) > 0;
+        });
+    }
+
+    private function resolveGanadoresPorCategoria($mesa): array
+    {
+        $resultado = $mesa->resultado ?? null;
+        if (!$resultado || !method_exists($resultado, 'relationLoaded') || !$resultado->relationLoaded('detalles')) {
+            return [];
+        }
+
+        $campos = [
+            'gobernador' => 'votos_gobernador',
+            'asambleista_distrito' => 'votos_asambleista_distrito',
+            'asambleista_poblacion' => 'votos_asambleista_poblacion',
+            'alcalde' => 'votos_alcalde',
+            'concejal' => 'votos_concejal',
+        ];
+
+        $ganadores = [];
+
+        foreach ($campos as $key => $campo) {
+            $ganador = $this->resolveGanadorCategoria($resultado->detalles ?? [], $campo);
+            if ($ganador) {
+                $ganadores[$key] = $ganador;
+            }
+        }
+
+        return $ganadores;
+    }
+
+    private function resolveGanadorCategoria($detalles, string $campo): ?array
+    {
+        $totales = collect($detalles)
+            ->map(function ($detalle) use ($campo) {
+                return [
+                    'partido_id' => $detalle->partido_id,
+                    'nombre' => $detalle->partido?->nombre,
+                    'sigla' => $detalle->partido?->sigla,
+                    'icono' => $detalle->partido?->icono,
+                    'total' => (int) ($detalle->{$campo} ?? 0),
+                ];
+            })
+            ->filter(fn ($item) => $item['total'] > 0)
+            ->sortByDesc('total')
+            ->values();
+
+        if ($totales->isEmpty()) {
+            return null;
+        }
+
+        $primero = $totales->first();
+        $empatados = $totales->filter(fn ($item) => $item['total'] === $primero['total'])->values();
+
+        if ($empatados->count() > 1) {
+            return [
+                'es_empate' => true,
+                'total' => $primero['total'],
+                'partidos' => $empatados->map(fn ($item) => [
+                    'partido_id' => $item['partido_id'],
+                    'nombre' => $item['nombre'],
+                    'sigla' => $item['sigla'],
+                    'icono' => $item['icono'],
+                ])->all(),
+            ];
+        }
+
+        return [
+            'es_empate' => false,
+            'partido_id' => $primero['partido_id'],
+            'nombre' => $primero['nombre'],
+            'sigla' => $primero['sigla'],
+            'icono' => $primero['icono'],
+            'total' => $primero['total'],
+        ];
     }
 
     private function applyActaFilters($query, $actaAlcaldia, $actaGobernacion): void
@@ -939,12 +1071,7 @@ class SuperAdminMesasController extends Controller
                 }
             })
             ->when($conResultado !== 'ALL', function ($qq) use ($conResultado) {
-                if ($conResultado === 'YES') {
-                    $qq->whereHas('resultado');
-                }
-                if ($conResultado === 'NO') {
-                    $qq->whereDoesntHave('resultado');
-                }
+                $this->applyConResultadoFilter($qq, $conResultado);
             });
 
         $this->applyActaFilters($query, $actaAlcaldia, $actaGobernacion);

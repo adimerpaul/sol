@@ -1,7 +1,5 @@
 <template>
   <q-page class="q-pa-md">
-
-    <!-- ── Header ─────────────────────────────────────────────────── -->
     <div class="row items-center q-mb-md q-gutter-sm">
       <q-icon name="assessment" color="primary" size="30px" />
       <div class="text-h6 text-weight-bold">Reportes</div>
@@ -9,8 +7,98 @@
       <q-btn flat round dense icon="refresh" color="primary" :loading="loading" @click="cargar" />
     </div>
 
-    <!-- ── Tab bar ────────────────────────────────────────────────── -->
     <q-card flat bordered>
+      <div class="q-pa-md bg-grey-1">
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="filtros.recinto_id"
+              label="Recinto"
+              dense
+              outlined
+              clearable
+              emit-value
+              map-options
+              option-value="id"
+              option-label="label"
+              use-input
+              fill-input
+              hide-selected
+              input-debounce="0"
+              :options="optionsFiltradas.recintos"
+              @filter="(val, update) => filterOptions('recintos', val, update)"
+            />
+          </div>
+
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="filtros.persona_id"
+              label="Persona"
+              dense
+              outlined
+              clearable
+              emit-value
+              map-options
+              option-value="id"
+              option-label="label"
+              use-input
+              fill-input
+              hide-selected
+              input-debounce="0"
+              :options="optionsFiltradas.personas"
+              @filter="(val, update) => filterOptions('personas', val, update)"
+            />
+          </div>
+
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="filtros.jefe_recinto_id"
+              label="Jefe de recinto"
+              dense
+              outlined
+              clearable
+              emit-value
+              map-options
+              option-value="id"
+              option-label="label"
+              use-input
+              fill-input
+              hide-selected
+              input-debounce="0"
+              :options="optionsFiltradas.jefes"
+              @filter="(val, update) => filterOptions('jefes', val, update)"
+            />
+          </div>
+
+          <div class="col-12 col-md-3">
+            <q-select
+              v-model="filtros.delegado_mesa_id"
+              label="Delegado de mesa"
+              dense
+              outlined
+              clearable
+              emit-value
+              map-options
+              option-value="id"
+              option-label="label"
+              use-input
+              fill-input
+              hide-selected
+              input-debounce="0"
+              :options="optionsFiltradas.delegados"
+              @filter="(val, update) => filterOptions('delegados', val, update)"
+            />
+          </div>
+        </div>
+
+        <div class="row justify-end q-gutter-sm q-mt-md">
+          <q-btn flat no-caps label="Limpiar" color="grey-8" @click="limpiarFiltros" />
+          <q-btn unelevated no-caps label="Buscar" color="primary" icon="search" :loading="loading" @click="cargar" />
+        </div>
+      </div>
+
+      <q-separator />
+
       <q-tabs
         v-model="tab"
         dense
@@ -21,7 +109,6 @@
         no-caps
         class="bg-grey-1 text-grey-8"
       >
-        <!-- 1 -->
         <q-tab name="del_asignados" class="rounded-tab">
           <div class="row items-center no-wrap q-gutter-xs">
             <q-icon name="how_to_reg" />
@@ -30,7 +117,6 @@
           </div>
         </q-tab>
 
-        <!-- 2 -->
         <q-tab name="jef_asignados" class="rounded-tab">
           <div class="row items-center no-wrap q-gutter-xs">
             <q-icon name="supervisor_account" />
@@ -39,7 +125,6 @@
           </div>
         </q-tab>
 
-        <!-- 3 -->
         <q-tab name="del_libres" class="rounded-tab">
           <div class="row items-center no-wrap q-gutter-xs">
             <q-icon name="person_off" />
@@ -48,7 +133,6 @@
           </div>
         </q-tab>
 
-        <!-- 4 -->
         <q-tab name="jef_libres" class="rounded-tab">
           <div class="row items-center no-wrap q-gutter-xs">
             <q-icon name="manage_accounts" />
@@ -57,7 +141,6 @@
           </div>
         </q-tab>
 
-        <!-- 5 -->
         <q-tab name="rec_sin_jefe" class="rounded-tab">
           <div class="row items-center no-wrap q-gutter-xs">
             <q-icon name="location_off" />
@@ -77,10 +160,7 @@
 
       <q-separator />
 
-      <!-- ── Panels ──────────────────────────────────────────────── -->
       <q-tab-panels v-model="tab" animated>
-
-        <!-- 1. Delegados Asignados -->
         <q-tab-panel name="del_asignados" class="q-pa-none">
           <PanelReporte
             titulo="Delegados asignados en una mesa (ocupados)"
@@ -90,12 +170,19 @@
             :loading-export="loadingExport.del_asignados"
             @export="exportar('del_asignados')"
           >
-            <q-table flat dense :rows="delegadosAsig" :columns="colsDelegadosAsig"
-              row-key="ci" :pagination="pagination" no-data-label="Sin datos" rows-per-page-label="Filas" />
+            <q-table
+              flat
+              dense
+              :rows="delegadosAsig"
+              :columns="colsDelegadosAsig"
+              row-key="ci"
+              :pagination="pagination"
+              no-data-label="Sin datos"
+              rows-per-page-label="Filas"
+            />
           </PanelReporte>
         </q-tab-panel>
 
-        <!-- 2. Jefes Asignados -->
         <q-tab-panel name="jef_asignados" class="q-pa-none">
           <PanelReporte
             titulo="Jefes de recinto asignados"
@@ -105,12 +192,19 @@
             :loading-export="loadingExport.jef_asignados"
             @export="exportar('jef_asignados')"
           >
-            <q-table flat dense :rows="jefesAsig" :columns="colsJefesAsig"
-              row-key="ci" :pagination="pagination" no-data-label="Sin datos" rows-per-page-label="Filas" />
+            <q-table
+              flat
+              dense
+              :rows="jefesAsig"
+              :columns="colsJefesAsig"
+              row-key="ci"
+              :pagination="pagination"
+              no-data-label="Sin datos"
+              rows-per-page-label="Filas"
+            />
           </PanelReporte>
         </q-tab-panel>
 
-        <!-- 3. Delegados Libres -->
         <q-tab-panel name="del_libres" class="q-pa-none">
           <PanelReporte
             titulo="Delegados de mesa libres"
@@ -120,12 +214,19 @@
             :loading-export="loadingExport.del_libres"
             @export="exportar('del_libres')"
           >
-            <q-table flat dense :rows="delegadosLib" :columns="colsPersona"
-              row-key="ci" :pagination="pagination" no-data-label="Sin datos" rows-per-page-label="Filas" />
+            <q-table
+              flat
+              dense
+              :rows="delegadosLib"
+              :columns="colsPersona"
+              row-key="ci"
+              :pagination="pagination"
+              no-data-label="Sin datos"
+              rows-per-page-label="Filas"
+            />
           </PanelReporte>
         </q-tab-panel>
 
-        <!-- 4. Jefes Libres -->
         <q-tab-panel name="jef_libres" class="q-pa-none">
           <PanelReporte
             titulo="Jefes de recinto libres"
@@ -135,12 +236,19 @@
             :loading-export="loadingExport.jef_libres"
             @export="exportar('jef_libres')"
           >
-            <q-table flat dense :rows="jefesLib" :columns="colsPersona"
-              row-key="ci" :pagination="pagination" no-data-label="Sin datos" rows-per-page-label="Filas" />
+            <q-table
+              flat
+              dense
+              :rows="jefesLib"
+              :columns="colsPersona"
+              row-key="ci"
+              :pagination="pagination"
+              no-data-label="Sin datos"
+              rows-per-page-label="Filas"
+            />
           </PanelReporte>
         </q-tab-panel>
 
-        <!-- 5. Recintos sin Jefe -->
         <q-tab-panel name="rec_sin_jefe" class="q-pa-none">
           <PanelReporte
             titulo="Recintos sin jefe asignado"
@@ -150,8 +258,16 @@
             :loading-export="loadingExport.rec_sin_jefe"
             @export="exportar('rec_sin_jefe')"
           >
-            <q-table flat dense :rows="recintos" :columns="colsRecintos"
-              row-key="id_recinto" :pagination="pagination" no-data-label="Sin datos" rows-per-page-label="Filas" />
+            <q-table
+              flat
+              dense
+              :rows="recintos"
+              :columns="colsRecintos"
+              row-key="id_recinto"
+              :pagination="pagination"
+              no-data-label="Sin datos"
+              rows-per-page-label="Filas"
+            />
           </PanelReporte>
         </q-tab-panel>
 
@@ -164,24 +280,29 @@
             :loading-export="loadingExport.mesas_libres"
             @export="exportar('mesas_libres')"
           >
-            <q-table flat dense :rows="mesasLibres" :columns="colsMesasLibres"
-              row-key="mesa_key" :pagination="pagination" no-data-label="Sin datos" rows-per-page-label="Filas" />
+            <q-table
+              flat
+              dense
+              :rows="mesasLibres"
+              :columns="colsMesasLibres"
+              row-key="mesa_key"
+              :pagination="pagination"
+              no-data-label="Sin datos"
+              rows-per-page-label="Filas"
+            />
           </PanelReporte>
         </q-tab-panel>
-
       </q-tab-panels>
     </q-card>
-
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted, getCurrentInstance, defineComponent, h } from 'vue'
-import { QInnerLoading, QBtn, QIcon } from 'quasar'
+import { defineComponent, getCurrentInstance, h, onMounted, reactive, ref } from 'vue'
+import { QBtn, QIcon, QInnerLoading } from 'quasar'
 
 const { proxy } = getCurrentInstance()
 
-// ── Componente interno reutilizable ───────────────────────────────────────────
 const PanelReporte = defineComponent({
   props: {
     titulo: String,
@@ -201,9 +322,13 @@ const PanelReporte = defineComponent({
           h('span', props.titulo),
         ]),
         h(QBtn, {
-          unelevated: true, noCaps: true, dense: true,
-          icon: 'download', label: 'Exportar Excel',
-          color: 'positive', size: 'sm',
+          unelevated: true,
+          noCaps: true,
+          dense: true,
+          icon: 'download',
+          label: 'Exportar Excel',
+          color: 'positive',
+          size: 'sm',
           loading: props.loadingExport,
           onClick: () => emit('export'),
         }),
@@ -213,107 +338,156 @@ const PanelReporte = defineComponent({
         ? h(QInnerLoading, { showing: true, color: props.color })
         : slots.default?.(),
     ]
-  }
+  },
 })
 
-// ── State ─────────────────────────────────────────────────────────────────────
-const tab        = ref('del_asignados')
-const loading    = ref(false)
+const tab = ref('del_asignados')
+const loading = ref(false)
 const loadingExport = ref({
   del_asignados: false,
   jef_asignados: false,
-  del_libres:    false,
-  jef_libres:    false,
-  rec_sin_jefe:  false,
-  mesas_libres:  false,
+  del_libres: false,
+  jef_libres: false,
+  rec_sin_jefe: false,
+  mesas_libres: false,
+})
+
+const filtros = reactive({
+  recinto_id: null,
+  persona_id: null,
+  jefe_recinto_id: null,
+  delegado_mesa_id: null,
+})
+
+const optionsBase = reactive({
+  recintos: [],
+  personas: [],
+  jefes: [],
+  delegados: [],
+})
+
+const optionsFiltradas = reactive({
+  recintos: [],
+  personas: [],
+  jefes: [],
+  delegados: [],
 })
 
 const delegadosAsig = ref([])
-const jefesAsig     = ref([])
-const delegadosLib  = ref([])
-const jefesLib      = ref([])
-const recintos      = ref([])
-const mesasLibres   = ref([])
+const jefesAsig = ref([])
+const delegadosLib = ref([])
+const jefesLib = ref([])
+const recintos = ref([])
+const mesasLibres = ref([])
 
 const pagination = { rowsPerPage: 15 }
 
-// ── Columnas ─────────────────────────────────────────────────────────────────
 const colsDelegadosAsig = [
-  { name: 'nro_recinto',      label: 'Nro',        field: 'nro_recinto',      align: 'center', sortable: true },
-  { name: 'recinto',          label: 'Recinto',     field: 'recinto',          align: 'left',   sortable: true },
-  { name: 'numero_mesa',      label: 'Mesa',        field: 'numero_mesa',      align: 'center', sortable: true },
-  { name: 'nombres',          label: 'Nombres',     field: 'nombres',          align: 'left',   sortable: true },
-  { name: 'apellido_paterno', label: 'Ap. Paterno', field: 'apellido_paterno', align: 'left',   sortable: true },
-  { name: 'apellido_materno', label: 'Ap. Materno', field: 'apellido_materno', align: 'left',   sortable: true },
-  { name: 'ci',               label: 'CI',          field: 'ci',               align: 'center', sortable: true },
-  { name: 'fecha_nacimiento', label: 'Fecha Nac.',  field: 'fecha_nacimiento', align: 'center', sortable: true },
-  { name: 'celular',          label: 'Celular',     field: 'celular',          align: 'center' },
-  { name: 'bloque',           label: 'Bloque',      field: 'bloque',           align: 'center' },
-  { name: 'registrado_por',   label: 'Reg. por',    field: 'registrado_por',   align: 'left' },
+  { name: 'nro_recinto', label: 'Nro', field: 'nro_recinto', align: 'center', sortable: true },
+  { name: 'recinto', label: 'Recinto', field: 'recinto', align: 'left', sortable: true },
+  { name: 'numero_mesa', label: 'Mesa', field: 'numero_mesa', align: 'center', sortable: true },
+  { name: 'nombres', label: 'Nombres', field: 'nombres', align: 'left', sortable: true },
+  { name: 'apellido_paterno', label: 'Ap. Paterno', field: 'apellido_paterno', align: 'left', sortable: true },
+  { name: 'apellido_materno', label: 'Ap. Materno', field: 'apellido_materno', align: 'left', sortable: true },
+  { name: 'ci', label: 'CI', field: 'ci', align: 'center', sortable: true },
+  { name: 'fecha_nacimiento', label: 'Fecha Nac.', field: 'fecha_nacimiento', align: 'center', sortable: true },
+  { name: 'celular', label: 'Celular', field: 'celular', align: 'center' },
+  { name: 'bloque', label: 'Bloque', field: 'bloque', align: 'center' },
+  { name: 'registrado_por', label: 'Reg. por', field: 'registrado_por', align: 'left' },
   { name: 'registrado_en_fecha', label: 'Reg. en', field: 'registrado_en_fecha', align: 'center' },
 ]
 
 const colsJefesAsig = [
-  { name: 'nro_recinto',      label: 'Nro',        field: 'nro_recinto',      align: 'center', sortable: true },
-  { name: 'recinto',          label: 'Recinto',     field: 'recinto',          align: 'left',   sortable: true },
-  { name: 'nombres',          label: 'Nombres',     field: 'nombres',          align: 'left',   sortable: true },
-  { name: 'apellido_paterno', label: 'Ap. Paterno', field: 'apellido_paterno', align: 'left',   sortable: true },
-  { name: 'apellido_materno', label: 'Ap. Materno', field: 'apellido_materno', align: 'left',   sortable: true },
-  { name: 'ci',               label: 'CI',          field: 'ci',               align: 'center', sortable: true },
-  { name: 'fecha_nacimiento', label: 'Fecha Nac.',  field: 'fecha_nacimiento', align: 'center', sortable: true },
-  { name: 'celular',          label: 'Celular',     field: 'celular',          align: 'center' },
-  { name: 'bloque',           label: 'Bloque',      field: 'bloque',           align: 'center' },
-  { name: 'registrado_por',   label: 'Reg. por',    field: 'registrado_por',   align: 'left' },
+  { name: 'nro_recinto', label: 'Nro', field: 'nro_recinto', align: 'center', sortable: true },
+  { name: 'recinto', label: 'Recinto', field: 'recinto', align: 'left', sortable: true },
+  { name: 'nombres', label: 'Nombres', field: 'nombres', align: 'left', sortable: true },
+  { name: 'apellido_paterno', label: 'Ap. Paterno', field: 'apellido_paterno', align: 'left', sortable: true },
+  { name: 'apellido_materno', label: 'Ap. Materno', field: 'apellido_materno', align: 'left', sortable: true },
+  { name: 'ci', label: 'CI', field: 'ci', align: 'center', sortable: true },
+  { name: 'fecha_nacimiento', label: 'Fecha Nac.', field: 'fecha_nacimiento', align: 'center', sortable: true },
+  { name: 'celular', label: 'Celular', field: 'celular', align: 'center' },
+  { name: 'bloque', label: 'Bloque', field: 'bloque', align: 'center' },
+  { name: 'registrado_por', label: 'Reg. por', field: 'registrado_por', align: 'left' },
   { name: 'registrado_en_fecha', label: 'Reg. en', field: 'registrado_en_fecha', align: 'center' },
-  { name: 'tipo_jefe',        label: 'Tipo',        field: 'tipo_jefe',        align: 'center', sortable: true },
+  { name: 'tipo_jefe', label: 'Tipo', field: 'tipo_jefe', align: 'center', sortable: true },
 ]
 
 const colsPersona = [
-  { name: 'nro_recinto',      label: 'Nro',        field: 'nro_recinto',      align: 'center', sortable: true },
-  { name: 'recinto',          label: 'Recinto',     field: 'recinto',          align: 'left',   sortable: true },
-  { name: 'nombres',          label: 'Nombres',     field: 'nombres',          align: 'left',   sortable: true },
-  { name: 'apellido_paterno', label: 'Ap. Paterno', field: 'apellido_paterno', align: 'left',   sortable: true },
-  { name: 'apellido_materno', label: 'Ap. Materno', field: 'apellido_materno', align: 'left',   sortable: true },
-  { name: 'ci',               label: 'CI',          field: 'ci',               align: 'center', sortable: true },
-  { name: 'fecha_nacimiento', label: 'Fecha Nac.',  field: 'fecha_nacimiento', align: 'center', sortable: true },
-  { name: 'celular',          label: 'Celular',     field: 'celular',          align: 'center' },
-  { name: 'bloque',           label: 'Bloque',      field: 'bloque',           align: 'center' },
-  { name: 'registrado_por',   label: 'Reg. por',    field: 'registrado_por',   align: 'left' },
+  { name: 'nro_recinto', label: 'Nro', field: 'nro_recinto', align: 'center', sortable: true },
+  { name: 'recinto', label: 'Recinto', field: 'recinto', align: 'left', sortable: true },
+  { name: 'nombres', label: 'Nombres', field: 'nombres', align: 'left', sortable: true },
+  { name: 'apellido_paterno', label: 'Ap. Paterno', field: 'apellido_paterno', align: 'left', sortable: true },
+  { name: 'apellido_materno', label: 'Ap. Materno', field: 'apellido_materno', align: 'left', sortable: true },
+  { name: 'ci', label: 'CI', field: 'ci', align: 'center', sortable: true },
+  { name: 'fecha_nacimiento', label: 'Fecha Nac.', field: 'fecha_nacimiento', align: 'center', sortable: true },
+  { name: 'celular', label: 'Celular', field: 'celular', align: 'center' },
+  { name: 'bloque', label: 'Bloque', field: 'bloque', align: 'center' },
+  { name: 'registrado_por', label: 'Reg. por', field: 'registrado_por', align: 'left' },
   { name: 'registrado_en_fecha', label: 'Reg. en', field: 'registrado_en_fecha', align: 'center' },
-  { name: 'estado',           label: 'Estado',      field: 'estado',           align: 'center' },
+  { name: 'estado', label: 'Estado', field: 'estado', align: 'center' },
 ]
 
 const colsRecintos = [
-  { name: 'nro_recinto', label: 'Nro',     field: 'nro_recinto', align: 'center', sortable: true },
-  { name: 'id_recinto',  label: 'ID',      field: 'id_recinto',  align: 'center', sortable: true },
-  { name: 'recinto',     label: 'Recinto', field: 'recinto',     align: 'left',   sortable: true },
+  { name: 'nro_recinto', label: 'Nro', field: 'nro_recinto', align: 'center', sortable: true },
+  { name: 'id_recinto', label: 'ID', field: 'id_recinto', align: 'center', sortable: true },
+  { name: 'recinto', label: 'Recinto', field: 'recinto', align: 'left', sortable: true },
 ]
 
 const colsMesasLibres = [
-  { name: 'nro_recinto', label: 'Nro',     field: 'nro_recinto', align: 'center', sortable: true },
-  { name: 'recinto',     label: 'Recinto', field: 'recinto',     align: 'left',   sortable: true },
-  { name: 'numero_mesa', label: 'Mesa',    field: 'numero_mesa', align: 'center', sortable: true },
-  { name: 'estado',      label: 'Estado',  field: 'estado',      align: 'center', sortable: true },
+  { name: 'nro_recinto', label: 'Nro', field: 'nro_recinto', align: 'center', sortable: true },
+  { name: 'recinto', label: 'Recinto', field: 'recinto', align: 'left', sortable: true },
+  { name: 'numero_mesa', label: 'Mesa', field: 'numero_mesa', align: 'center', sortable: true },
+  { name: 'estado', label: 'Estado', field: 'estado', align: 'center', sortable: true },
 ]
 
-// ── Carga ─────────────────────────────────────────────────────────────────────
+function buildParams () {
+  const params = {}
+
+  if (filtros.recinto_id) params.recinto_id = filtros.recinto_id
+  if (filtros.persona_id) params.persona_id = filtros.persona_id
+  if (filtros.jefe_recinto_id) params.jefe_recinto_id = filtros.jefe_recinto_id
+  if (filtros.delegado_mesa_id) params.delegado_mesa_id = filtros.delegado_mesa_id
+
+  return params
+}
+
+function hydrateOptions (filters = {}) {
+  optionsBase.recintos = filters.recintos || []
+  optionsBase.personas = filters.personas || []
+  optionsBase.jefes = filters.jefes || []
+  optionsBase.delegados = filters.delegados || []
+
+  optionsFiltradas.recintos = [...optionsBase.recintos]
+  optionsFiltradas.personas = [...optionsBase.personas]
+  optionsFiltradas.jefes = [...optionsBase.jefes]
+  optionsFiltradas.delegados = [...optionsBase.delegados]
+}
+
+function filterOptions (key, value, update) {
+  const source = optionsBase[key] || []
+  update(() => {
+    const needle = String(value || '').trim().toLowerCase()
+    optionsFiltradas[key] = !needle
+      ? [...source]
+      : source.filter(option => String(option.label || '').toLowerCase().includes(needle))
+  })
+}
+
 async function cargar () {
   loading.value = true
   try {
-    const [r1, r2, r3, r4, r5, r6] = await Promise.all([
-      proxy.$axios.get('/reportes/delegados-asignados'),
-      proxy.$axios.get('/reportes/jefes-asignados'),
-      proxy.$axios.get('/reportes/delegados-libres'),
-      proxy.$axios.get('/reportes/jefes-libres'),
-      proxy.$axios.get('/reportes/recintos-sin-jefe'),
-      proxy.$axios.get('/reportes/mesas-libres'),
-    ])
-    delegadosAsig.value = r1.data
-    jefesAsig.value     = r2.data
-    delegadosLib.value  = r3.data
-    jefesLib.value      = r4.data
-    recintos.value      = r5.data
-    mesasLibres.value   = r6.data
+    const { data } = await proxy.$axios.get('/reportes/bootstrap', {
+      params: buildParams(),
+    })
+
+    hydrateOptions(data.filters || {})
+
+    delegadosAsig.value = data.data?.del_asignados || []
+    jefesAsig.value = data.data?.jef_asignados || []
+    delegadosLib.value = data.data?.del_libres || []
+    jefesLib.value = data.data?.jef_libres || []
+    recintos.value = data.data?.rec_sin_jefe || []
+    mesasLibres.value = data.data?.mesas_libres || []
   } catch {
     proxy.$alert.error('Error al cargar los reportes.')
   } finally {
@@ -321,33 +495,45 @@ async function cargar () {
   }
 }
 
-// ── Exportar ──────────────────────────────────────────────────────────────────
+function limpiarFiltros () {
+  filtros.recinto_id = null
+  filtros.persona_id = null
+  filtros.jefe_recinto_id = null
+  filtros.delegado_mesa_id = null
+  cargar()
+}
+
 const exportEndpoints = {
   del_asignados: '/reportes/export/delegados-asignados',
   jef_asignados: '/reportes/export/jefes-asignados',
-  del_libres:    '/reportes/export/delegados-libres',
-  jef_libres:    '/reportes/export/jefes-libres',
-  rec_sin_jefe:  '/reportes/export/recintos-sin-jefe',
-  mesas_libres:  '/reportes/export/mesas-libres',
+  del_libres: '/reportes/export/delegados-libres',
+  jef_libres: '/reportes/export/jefes-libres',
+  rec_sin_jefe: '/reportes/export/recintos-sin-jefe',
+  mesas_libres: '/reportes/export/mesas-libres',
 }
+
 const exportFilenames = {
   del_asignados: 'delegados_asignados.csv',
   jef_asignados: 'jefes_asignados.csv',
-  del_libres:    'delegados_libres.csv',
-  jef_libres:    'jefes_libres.csv',
-  rec_sin_jefe:  'recintos_sin_jefe.csv',
-  mesas_libres:  'mesas_libres.csv',
+  del_libres: 'delegados_libres.csv',
+  jef_libres: 'jefes_libres.csv',
+  rec_sin_jefe: 'recintos_sin_jefe.csv',
+  mesas_libres: 'mesas_libres.csv',
 }
 
 async function exportar (tipo) {
   loadingExport.value[tipo] = true
   try {
-    const resp = await proxy.$axios.get(exportEndpoints[tipo], { responseType: 'blob' })
-    const url = URL.createObjectURL(new Blob([resp.data]))
-    const a   = document.createElement('a')
-    a.href     = url
-    a.download = exportFilenames[tipo]
-    a.click()
+    const response = await proxy.$axios.get(exportEndpoints[tipo], {
+      params: buildParams(),
+      responseType: 'blob',
+    })
+
+    const url = URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = exportFilenames[tipo]
+    link.click()
     URL.revokeObjectURL(url)
   } catch {
     proxy.$alert.error('Error al exportar.')

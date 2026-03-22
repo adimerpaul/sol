@@ -401,6 +401,24 @@
               <q-chip dense text-color="white" :color="colorEstado(r.estado)">
                 {{ r.estado }}
               </q-chip>
+              <div v-if="ganadoresMesa(r).length" class="q-mt-xs ganadores-compactos">
+                <div
+                  v-for="item in ganadoresMesa(r)"
+                  :key="`${r.id}-${item.key}`"
+                  class="ganador-item"
+                >
+                  <q-img
+                    v-if="item.icono"
+                    :src="getImageUrl('images/partidos/' + item.icono)"
+                    class="ganador-icono"
+                  />
+                  <q-icon v-else name="flag" size="12px" color="grey-6" class="ganador-icono-fallback" />
+                  <span class="ganador-texto">
+                    <span class="text-weight-medium">{{ item.label }}:</span>
+                    {{ item.value }}
+                  </span>
+                </div>
+              </div>
             </td>
 
             <td class="text-left">
@@ -2368,6 +2386,33 @@ export default {
       input?.click?.()
     },
 
+    ganadoresMesa (row) {
+      const ganadores = row?.ganadores || {}
+      const labels = [
+        { key: 'gobernador', label: 'Gobernador' },
+        { key: 'asambleista_distrito', label: 'Asambleista distrito' },
+        { key: 'asambleista_poblacion', label: 'Asambleista poblacion' },
+        { key: 'alcalde', label: 'Alcalde' },
+        { key: 'concejal', label: 'Concejal' }
+      ]
+
+      return labels
+        .map(item => {
+          const ganador = ganadores[item.key]
+          if (!ganador) return null
+
+          return {
+            key: item.key,
+            label: item.label,
+            icono: ganador.icono || ganador.partidos?.[0]?.icono || null,
+            value: ganador.es_empate
+              ? 'Empate'
+              : (ganador.sigla || ganador.nombre || 'Sin partido')
+          }
+        })
+        .filter(Boolean)
+    },
+
     async openResultado (row) {
       this.saving = true
       try {
@@ -2628,6 +2673,37 @@ export default {
 .foto-preview,
 .foto-preview-empty {
   height: 88px;
+}
+
+.ganadores-compactos {
+  font-size: 11px;
+  line-height: 1.05;
+}
+
+.ganador-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.ganador-item:last-child {
+  margin-bottom: 0;
+}
+
+.ganador-icono {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+}
+
+.ganador-icono-fallback {
+  width: 12px;
+  text-align: center;
+}
+
+.ganador-texto {
+  display: inline-block;
 }
 </style>
 
