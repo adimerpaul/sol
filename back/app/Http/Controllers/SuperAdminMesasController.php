@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\SocketEmitter;
 use App\Models\Departamento;
+use App\Models\Localidad;
 use App\Models\Mesa;
 use App\Models\Municipio;
 use App\Models\Partido;
@@ -21,6 +22,9 @@ class SuperAdminMesasController extends Controller
     // límite duro
     private int $MAX_ROWS = 250;
     private int $PRINT_TIMEOUT_SECONDS = 600;
+    private int $ORURO_PROVINCIA_ID = 57;
+    private int $ORURO_MUNICIPIO_ID = 191;
+    private int $ORURO_LOCALIDAD_ID = 1988;
 
     /**
      * GET /api/admin/mesas?recinto_id=&mesa_id=&asignado=&delegado_id=&estado=&con_resultado=
@@ -46,6 +50,7 @@ class SuperAdminMesasController extends Controller
         $departamentoId = $request->get('departamento_id', 5);
         $provinciaId  = $request->get('provincia_id');
         $municipioId  = $request->get('municipio_id');
+        $localidadId  = $request->get('localidad_id');
         $recintoId    = $request->get('recinto_id');
         $mesaId       = $request->get('mesa_id');
         $asignado     = $request->get('asignado', 'ALL');
@@ -60,11 +65,12 @@ class SuperAdminMesasController extends Controller
         $perPage = (int) $request->get('per_page', $this->MAX_ROWS);
         $perPage = max(10, min($perPage, 500));              // techo de seguridad
 
-        $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $recintoId) {
+        $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $localidadId, $recintoId) {
             $qq->whereNull('deleted_at')
                 ->where('departamento_id', $departamentoId)
                 ->when($provinciaId, fn($q) => $q->where('provincia_id', $provinciaId))
                 ->when($municipioId, fn($q) => $q->where('municipio_id', $municipioId))
+                ->when($localidadId, fn($q) => $q->where('localidad_id', $localidadId))
                 ->when($recintoId, fn($q) => $q->where('id', $recintoId));
         };
 
@@ -286,6 +292,8 @@ class SuperAdminMesasController extends Controller
         $departamentoId = $request->get('departamento_id', 5);
         $provinciaId = $request->get('provincia_id');
         $municipioId = $request->get('municipio_id');
+        $localidadId = $request->get('localidad_id');
+        $localidadId = $request->get('localidad_id');
 
         return DB::table('recintos as r')
             ->leftJoin('provincias as p', 'p.id', '=', 'r.provincia_id')
@@ -297,16 +305,21 @@ class SuperAdminMesasController extends Controller
                 'r.departamento_id',
                 'r.provincia_id',
                 'r.municipio_id',
+                'r.localidad_id',
                 'd.nombre as departamento_nombre',
                 'p.nombre as provincia_nombre',
-                'm.nombre as municipio_nombre'
+                'm.nombre as municipio_nombre',
+                'l.nombre as localidad_nombre'
             )
+            ->leftJoin('localidades as l', 'l.id', '=', 'r.localidad_id')
             ->whereNull('r.deleted_at')
             ->where('r.departamento_id', $departamentoId)
             ->when($provinciaId, fn($qq) => $qq->where('r.provincia_id', $provinciaId))
             ->when($municipioId, fn($qq) => $qq->where('r.municipio_id', $municipioId))
+            ->when($localidadId, fn($qq) => $qq->where('r.localidad_id', $localidadId))
             ->orderBy('p.nombre')
             ->orderBy('m.nombre')
+            ->orderBy('l.nombre')
             ->orderBy('r.nombre')
             ->get();
     }
@@ -418,6 +431,56 @@ class SuperAdminMesasController extends Controller
         return $pdf->stream($isNoEnMesa ? 'mesas_no_en_mesa.pdf' : 'mesas_en_mesa.pdf');
     }
 
+    public function printMesaAbierta(Request $request)
+    {
+        @set_time_limit($this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('max_execution_time', (string) $this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('memory_limit', '1024M');
+        @ignore_user_abort(true);
+
+        $actor = $request->user();
+
+        $rows = $this->buildMesasPrintBaseQuery($request)
+            ->with([
+                'resultado:id,mesa_id,aviso_manana,hora_apertura_mesa,registrado_por',
+                'resultado.registradoPor:id,name,username',
+            ])
+            ->whereHas('resultado', function ($qq) {
+                $qq->where('aviso_manana', true);
+            })
+            ->orderBy('mesas.numero_mesa')
+            ->get()
+            ->map(function ($m) {
+                $jefes = collect($m->recinto?->jefe ?? []);
+                $jefeNombre = $jefes->pluck('name')->filter()->implode(', ');
+                $jefeCelular = $jefes->pluck('celular')->filter()->implode(', ');
+                $resultado = $m->resultado;
+                $isComplete = !empty($jefeNombre) && !empty($m->delegado?->name) && !empty($resultado?->hora_apertura_mesa);
+
+                return [
+                    'recinto_nombre' => $m->recinto?->nombre,
+                    'mesa_numero' => $m->numero_mesa,
+                    'jefe_nombre' => $jefeNombre ?: 'Sin jefe',
+                    'jefe_celular' => $jefeCelular ?: 'Sin celular',
+                    'delegado_nombre' => $m->delegado?->name ?: 'Sin delegado',
+                    'delegado_celular' => $m->delegado?->celular ?: 'Sin celular',
+                    'hora_apertura_mesa' => $resultado?->hora_apertura_mesa ?: 'Sin hora',
+                    'registrado_por' => $resultado?->registradoPor?->name ?: $resultado?->registradoPor?->username ?: 'Sin registro',
+                    'completo' => $isComplete,
+                ];
+            })
+            ->values();
+
+        $pdf = Pdf::loadView('pdf.mesas_apertura', [
+            'title' => 'Reporte de mesa abierta',
+            'rows' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i:s'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('mesas_abiertas.pdf');
+    }
+
     public function exportEnMesaCsv(Request $request)
     {
         @set_time_limit($this->PRINT_TIMEOUT_SECONDS);
@@ -485,11 +548,12 @@ class SuperAdminMesasController extends Controller
         $conResultado = $request->get('con_resultado', 'ALL');
         $enMesa = $request->get('en_mesa', 'ALL');
 
-        $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $recintoId) {
+        $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $localidadId, $recintoId) {
             $qq->whereNull('deleted_at')
                 ->where('departamento_id', $departamentoId)
                 ->when($provinciaId, fn($q) => $q->where('provincia_id', $provinciaId))
                 ->when($municipioId, fn($q) => $q->where('municipio_id', $municipioId))
+                ->when($localidadId, fn($q) => $q->where('localidad_id', $localidadId))
                 ->when($recintoId, fn($q) => $q->where('id', $recintoId));
         };
 
@@ -511,6 +575,7 @@ class SuperAdminMesasController extends Controller
             ])
             ->with([
                 'recinto:id,nombre',
+                'recinto.jefe:id,name,celular',
                 'provincia:id,nombre',
                 'municipio:id,nombre',
                 'delegado:id,name,username,celular,ci,fecha_nacimiento',
@@ -583,10 +648,23 @@ class SuperAdminMesasController extends Controller
     private function buildMesasPrintBaseQuery(Request $request)
     {
         $departamentoId = (int) $request->get('departamento_id', 5);
+        $provinciaId = $request->get('provincia_id');
+        $municipioId = $request->get('municipio_id');
+        $localidadId = $request->get('localidad_id');
+        $recintoId = $request->get('recinto_id');
+        $mesaId = $request->get('mesa_id');
+        $asignado = $request->get('asignado', 'ALL');
+        $delegadoId = $request->get('delegado_id');
+        $estado = $request->get('estado');
+        $conResultado = $request->get('con_resultado', 'ALL');
 
-        $scopeRecinto = function ($qq) use ($departamentoId) {
+        $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $localidadId, $recintoId) {
             $qq->whereNull('deleted_at')
-                ->where('departamento_id', $departamentoId);
+                ->where('departamento_id', $departamentoId)
+                ->when($provinciaId, fn($q) => $q->where('provincia_id', $provinciaId))
+                ->when($municipioId, fn($q) => $q->where('municipio_id', $municipioId))
+                ->when($localidadId, fn($q) => $q->where('localidad_id', $localidadId))
+                ->when($recintoId, fn($q) => $q->where('id', $recintoId));
         };
 
         return Mesa::query()
@@ -609,7 +687,26 @@ class SuperAdminMesasController extends Controller
                 'delegado:id,name,username,celular,ci,fecha_nacimiento',
                 'resultado:id,mesa_id',
             ])
-            ->whereHas('recinto', $scopeRecinto);
+            ->whereHas('recinto', $scopeRecinto)
+            ->when($mesaId, fn($qq) => $qq->where('mesas.id', $mesaId))
+            ->when($delegadoId, fn($qq) => $qq->where('mesas.delegado_id', $delegadoId))
+            ->when($estado, fn($qq) => $qq->where('mesas.estado', $estado))
+            ->when($asignado !== 'ALL', function ($qq) use ($asignado) {
+                if ($asignado === 'YES') {
+                    $qq->whereNotNull('mesas.delegado_id');
+                }
+                if ($asignado === 'NO') {
+                    $qq->whereNull('mesas.delegado_id');
+                }
+            })
+            ->when($conResultado !== 'ALL', function ($qq) use ($conResultado) {
+                if ($conResultado === 'YES') {
+                    $qq->whereHas('resultado');
+                }
+                if ($conResultado === 'NO') {
+                    $qq->whereDoesntHave('resultado');
+                }
+            });
     }
 
     // combos (mesas por recinto)
@@ -654,6 +751,10 @@ class SuperAdminMesasController extends Controller
                 ->get(),
             'municipios' => Municipio::query()
                 ->select('id', 'provincia_id', 'nombre')
+                ->orderBy('nombre')
+                ->get(),
+            'localidades' => Localidad::query()
+                ->select('id', 'municipio_id', 'nombre')
                 ->orderBy('nombre')
                 ->get(),
         ];

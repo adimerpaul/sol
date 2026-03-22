@@ -56,6 +56,21 @@
               />
             </div>
 
+            <div class="col-12 col-sm-3 col-md-2">
+              <q-select
+                v-model="filters.localidad_id"
+                :options="localidadesOpt"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                dense outlined clearable
+                label="Localidad"
+                :disable="!filters.municipio_id"
+                @update:model-value="onLocalidadChange"
+              />
+            </div>
+
             <div class="col-12 col-sm-6 col-md-3">
               <q-select
                 v-model="filters.municipio_full_id"
@@ -192,6 +207,10 @@
                   <q-item clickable v-close-popup @click="printNoEnMesa">
                     <q-item-section avatar><q-icon name="print" /></q-item-section>
                     <q-item-section><q-item-label>Imprimir no en mesa</q-item-label></q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="printMesaAbierta">
+                    <q-item-section avatar><q-icon name="schedule" /></q-item-section>
+                    <q-item-section><q-item-label>Imprimir mesa abierta</q-item-label></q-item-section>
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
@@ -955,9 +974,10 @@ export default {
 
       filters: {
         departamento_id: 5,
-        provincia_id: null,
-        municipio_id: null,
-        municipio_full_id: null,
+        provincia_id: 57,
+        municipio_id: 191,
+        localidad_id: 1988,
+        municipio_full_id: 191,
         recinto_id: null,
         mesa_id: null,
         asignado: 'ALL',
@@ -987,7 +1007,8 @@ export default {
       geoOptions: {
         departamentos: [],
         provincias: [],
-        municipios: []
+        municipios: [],
+        localidades: []
       },
       municipiosFullBase: [],
       municipiosFullOpt: [],
@@ -1130,6 +1151,15 @@ export default {
         .map(m => ({
           label: m.nombre,
           value: m.id
+        }))
+    },
+
+    localidadesOpt () {
+      return (this.geoOptions.localidades || [])
+        .filter(l => !this.filters.municipio_id || l.municipio_id === this.filters.municipio_id)
+        .map(l => ({
+          label: l.nombre,
+          value: l.id
         }))
     },
 
@@ -1330,6 +1360,7 @@ export default {
             departamento_id: this.filters.departamento_id || undefined,
             provincia_id: this.filters.provincia_id || undefined,
             municipio_id: this.filters.municipio_id || undefined,
+            localidad_id: this.filters.localidad_id || undefined,
             recinto_id: this.filters.recinto_id || undefined,
             mesa_id: this.filters.mesa_id || undefined,
             asignado: this.filters.asignado,
@@ -1346,7 +1377,8 @@ export default {
         this.geoOptions = {
           departamentos: Array.isArray(data?.geo?.departamentos) ? data.geo.departamentos : [],
           provincias: Array.isArray(data?.geo?.provincias) ? data.geo.provincias : [],
-          municipios: Array.isArray(data?.geo?.municipios) ? data.geo.municipios : []
+          municipios: Array.isArray(data?.geo?.municipios) ? data.geo.municipios : [],
+          localidades: Array.isArray(data?.geo?.localidades) ? data.geo.localidades : []
         }
         this.delegadosOpt = Array.isArray(data?.delegados) ? data.delegados : []
         this.recintosBase = (Array.isArray(data?.recintos) ? data.recintos : []).map(r => ({
@@ -1374,7 +1406,8 @@ export default {
         params: {
           departamento_id: this.filters.departamento_id || undefined,
           provincia_id: this.filters.provincia_id || undefined,
-          municipio_id: this.filters.municipio_id || undefined
+          municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined
         }
       }).then(r => r.data)
 
@@ -1414,6 +1447,7 @@ export default {
     buildRecintoLabel (recinto) {
       return [
         recinto?.nombre,
+        recinto?.localidad_nombre,
         recinto?.municipio_nombre,
         recinto?.provincia_nombre
       ].filter(Boolean).join(' · ')
@@ -1471,6 +1505,7 @@ export default {
     async onDepartamentoChange () {
       this.filters.provincia_id = null
       this.filters.municipio_id = null
+      this.filters.localidad_id = null
       this.filters.municipio_full_id = null
       this.filters.recinto_id = null
       this.filters.mesa_id = null
@@ -1481,6 +1516,7 @@ export default {
 
     async onProvinciaChange () {
       this.filters.municipio_id = null
+      this.filters.localidad_id = null
       this.filters.municipio_full_id = null
       this.filters.recinto_id = null
       this.filters.mesa_id = null
@@ -1490,7 +1526,15 @@ export default {
     },
 
     async onMunicipioChange () {
+      this.filters.localidad_id = null
       this.filters.municipio_full_id = this.filters.municipio_id || null
+      this.filters.recinto_id = null
+      this.filters.mesa_id = null
+      this.mesasOpt = []
+      await this.loadRecintosOptions()
+    },
+
+    async onLocalidadChange () {
       this.filters.recinto_id = null
       this.filters.mesa_id = null
       this.mesasOpt = []
@@ -1514,6 +1558,7 @@ export default {
       if (!municipioId) {
         this.filters.provincia_id = null
         this.filters.municipio_id = null
+        this.filters.localidad_id = null
         this.filters.recinto_id = null
         this.filters.mesa_id = null
         this.mesasOpt = []
@@ -1524,6 +1569,7 @@ export default {
       this.filters.departamento_id = picked?.departamento_id || this.filters.departamento_id
       this.filters.provincia_id = picked?.provincia_id || null
       this.filters.municipio_id = picked?.municipio_id || null
+      this.filters.localidad_id = null
       this.filters.recinto_id = null
       this.filters.mesa_id = null
       this.mesasOpt = []
@@ -1537,6 +1583,7 @@ export default {
         this.recintosOpt = (this.recintosBase || []).filter(r =>
           String(r.label || '').toLowerCase().includes(needle) ||
           String(r.nombre || '').toLowerCase().includes(needle) ||
+          String(r.localidad_nombre || '').toLowerCase().includes(needle) ||
           String(r.municipio_nombre || '').toLowerCase().includes(needle) ||
           String(r.provincia_nombre || '').toLowerCase().includes(needle) ||
           String(r.departamento_nombre || '').toLowerCase().includes(needle)
@@ -1550,6 +1597,7 @@ export default {
         this.filters.departamento_id = recinto.departamento_id || this.filters.departamento_id
         this.filters.provincia_id = recinto.provincia_id || null
         this.filters.municipio_id = recinto.municipio_id || null
+        this.filters.localidad_id = recinto.localidad_id || null
         this.filters.municipio_full_id = recinto.municipio_id || null
       }
       this.filters.mesa_id = null
@@ -1572,6 +1620,7 @@ export default {
         departamento_id: this.filters.departamento_id || undefined,
         provincia_id: this.filters.provincia_id || undefined,
         municipio_id: this.filters.municipio_id || undefined,
+        localidad_id: this.filters.localidad_id || undefined,
         recinto_id: this.filters.recinto_id || undefined,
         mesa_id: this.filters.mesa_id || undefined,
         asignado: this.filters.asignado,
@@ -1665,6 +1714,7 @@ export default {
           departamento_id: this.filters.departamento_id || undefined,
           provincia_id: this.filters.provincia_id || undefined,
           municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined,
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,
@@ -1684,6 +1734,7 @@ export default {
           departamento_id: this.filters.departamento_id || undefined,
           provincia_id: this.filters.provincia_id || undefined,
           municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined,
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,
@@ -1696,6 +1747,25 @@ export default {
       )
     },
 
+    async printMesaAbierta () {
+      await this.openPdfBlob(
+        'admin/mesas-print/apertura',
+        {
+          departamento_id: this.filters.departamento_id || undefined,
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined,
+          recinto_id: this.filters.recinto_id || undefined,
+          mesa_id: this.filters.mesa_id || undefined,
+          asignado: this.filters.asignado,
+          delegado_id: this.filters.delegado_id || undefined,
+          estado: this.filters.estado || undefined,
+          con_resultado: this.filters.con_resultado
+        },
+        'mesas_abiertas.pdf'
+      )
+    },
+
     async fetchAll () {
       this.loadingAll = true
       try {
@@ -1703,6 +1773,7 @@ export default {
           departamento_id: this.filters.departamento_id || undefined,
           provincia_id: this.filters.provincia_id || undefined,
           municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined,
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,
@@ -1764,6 +1835,7 @@ export default {
           departamento_id: this.filters.departamento_id || undefined,
           provincia_id: this.filters.provincia_id || undefined,
           municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined,
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
           asignado: this.filters.asignado,

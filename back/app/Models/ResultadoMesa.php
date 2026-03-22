@@ -51,4 +51,5 @@ class ResultadoMesa extends Model implements Auditable
 
     public function mesa()     { return $this->belongsTo(Mesa::class); }
     public function detalles() { return $this->hasMany(ResultadoMesaDetalle::class, 'resultado_mesa_id'); }
+    public function registradoPor() { return $this->belongsTo(User::class, 'registrado_por'); }
 }
