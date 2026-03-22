@@ -289,7 +289,7 @@
                     clearable
                     dense
                     outlined
-                    label="Jefe de Recinto"
+                    label="Jefe de Recinto o Delegado"
                     @filter="filterJefes"
                   />
                 </div>
@@ -677,8 +677,8 @@ export default {
     buildJefesOptions (list) {
       return (list || []).map(j => ({
         value: j.id,
-        label: `${j.name || '-'} · ${j.celular || 'Sin celular'}`,
-        search: `${j.name || ''} ${j.username || ''} ${j.celular || ''}`.toLowerCase()
+        label: `${j.name || '-'} · ${j.role || 'Sin rol'} · ${j.celular || 'Sin celular'}`,
+        search: `${j.name || ''} ${j.username || ''} ${j.celular || ''} ${j.role || ''}`.toLowerCase()
       }))
     },
 
