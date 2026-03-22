@@ -34,16 +34,16 @@
           <div class="col-12 col-md-auto">
             <q-btn flat color="grey-7" no-caps label="Limpiar" @click="clearFilters" />
           </div>
-          <div class="col-12 col-md-auto">
+          <div v-if="enableDialogViewers" class="col-12 col-md-auto">
             <q-btn color="secondary" icon="map" no-caps label="Ver Mapa" @click="openMapViewer" />
           </div>
-          <div class="col-12 col-md-auto">
+          <div v-if="enableDialogViewers" class="col-12 col-md-auto">
             <q-btn color="dark" icon="view_module" no-caps label="Ver Mesas" @click="openMesasViewer" />
           </div>
         </div>
       </q-card-section>
 
-      <q-card-section class="q-pa-md">
+      <q-card-section v-if="isChartRoute" class="q-pa-md">
         <div class="row items-center justify-between q-col-gutter-sm q-mb-md">
           <div class="col-auto">
             <div class="text-subtitle2 text-weight-medium">Vista de gráficos</div>
@@ -111,12 +111,177 @@
         </div>
       </q-card-section>
 
+      <q-card-section v-else-if="isMapRoute" class="q-pa-md">
+        <div class="row q-col-gutter-sm q-mb-sm">
+          <div class="col-12">
+            <q-tabs v-model="viewerCategory" dense class="text-grey-8" active-color="secondary" indicator-color="secondary" align="justify" narrow-indicator>
+              <q-tab v-for="cat in chartCards" :key="'route-map-' + cat.key" :name="cat.key" :label="cat.label" />
+            </q-tabs>
+          </div>
+          <div class="col-12">
+            <div class="row q-gutter-sm">
+              <q-chip outline color="grey-7">Recintos: {{ mapData.length }}</q-chip>
+              <q-chip outline color="grey-7">Pendientes: {{ mapStateCounts.pendiente }}</q-chip>
+              <q-chip outline color="warning">En proceso: {{ mapStateCounts.proceso }}</q-chip>
+              <q-chip outline color="positive">Ganados Jacha: {{ mapStateCounts.ganado }}</q-chip>
+              <q-chip outline color="primary">Realizados sin ganar: {{ mapStateCounts.perdido }}</q-chip>
+            </div>
+          </div>
+          <div class="col-12 col-md-8">
+            <q-card flat bordered class="overflow-hidden" style="height: calc(100vh - 230px)">
+              <l-map ref="mapRef" :zoom="zoom" :center="center" :use-global-leaflet="false" :options="{ attributionControl: false }">
+                <l-control-layers position="topright" />
+                <l-tile-layer layer-type="base" name="Mapa Claro" url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution="OpenStreetMap / CARTO" :max-zoom="20" :visible="true" />
+                <template v-for="recinto in mapData" :key="`route-${recinto.id}`">
+                  <l-marker :lat-lng="[recinto.lat, recinto.lng]" @click="selectMapRecinto(recinto)">
+                    <l-icon :icon-anchor="[10, 10]" :popup-anchor="[0, -10]" class-name="modern-marker-container">
+                      <div class="modern-marker" :class="{ 'modern-marker--active': selectedMapRecinto?.id === recinto.id }" :style="{ backgroundColor: markerState(recinto).color, boxShadow: `0 0 12px ${markerState(recinto).color}` }">
+                        <div class="inner-dot"></div>
+                      </div>
+                    </l-icon>
+                    <l-popup>
+                      <div class="text-weight-bold text-primary">{{ recinto.nombre }}</div>
+                      <div class="text-caption">Estado: {{ markerStateLabel(markerState(recinto).estado) }}</div>
+                      <div class="text-caption">Mesas: {{ recinto.mesas_total }} · Con resultado: {{ recinto.mesas_con_resultado }}</div>
+                      <div class="text-caption">Votos ganador: {{ markerState(recinto).votos }}</div>
+                    </l-popup>
+                  </l-marker>
+                </template>
+              </l-map>
+            </q-card>
+          </div>
+          <div class="col-12 col-md-4">
+            <q-card flat bordered class="map-panel route-panel">
+              <q-card-section v-if="!selectedMapRecinto">
+                <q-banner dense class="bg-grey-2">Selecciona un recinto para ver mesas, votos, supervisor, delegado y fotografías.</q-banner>
+              </q-card-section>
+              <template v-else>
+                <q-card-section class="q-pb-sm">
+                  <div class="text-subtitle1 text-weight-bold">{{ selectedMapRecinto.nombre }}</div>
+                  <div class="row q-gutter-xs q-mt-sm">
+                    <q-chip dense outline color="grey-8">Mesas: {{ selectedMapRecinto.mesas_total }}</q-chip>
+                    <q-chip dense outline color="positive">Con resultado: {{ selectedMapRecinto.mesas_con_resultado }}</q-chip>
+                    <q-chip dense outline :color="selectedMapRecinto.mesas_faltantes ? 'negative' : 'positive'">{{ selectedMapRecinto.mesas_faltantes ? `Faltan ${selectedMapRecinto.mesas_faltantes}` : 'Completo' }}</q-chip>
+                    <q-chip dense :color="markerState(selectedMapRecinto).estado === 'ganado' ? 'positive' : (markerState(selectedMapRecinto).estado === 'proceso' ? 'warning' : (markerState(selectedMapRecinto).estado === 'perdido' ? 'primary' : 'grey-6'))" text-color="white">
+                      {{ markerStateLabel(markerState(selectedMapRecinto).estado) }}
+                    </q-chip>
+                  </div>
+                </q-card-section>
+                <q-separator />
+                <q-card-section class="scroll map-panel-scroll route-panel-scroll">
+                  <q-expansion-item
+                    v-for="mesa in selectedMapRecinto.mesas"
+                    :key="`route-mesa-${mesa.id}`"
+                    dense
+                    expand-separator
+                    icon="how_to_vote"
+                    :label="`Mesa ${mesa.numero_mesa}`"
+                    :caption="mesa.tiene_resultado ? `${mesa.resultado?.total_votos ?? 0} votos registrados` : 'Pendiente'"
+                    :caption-class="mesa.tiene_resultado ? 'text-grey-7' : 'text-negative text-weight-bold'"
+                  >
+                    <div class="q-pa-sm">
+                      <div class="row q-gutter-xs q-mb-sm">
+                        <q-badge outline color="grey-8">Estado: {{ mesa.estado }}</q-badge>
+                        <q-badge outline color="primary">Total votos: {{ mesa.resultado?.total_votos ?? 0 }}</q-badge>
+                      </div>
+                    </div>
+                  </q-expansion-item>
+                </q-card-section>
+              </template>
+            </q-card>
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-card-section v-else-if="isMesasRoute" class="q-pa-md">
+        <div class="text-subtitle1 text-weight-bold">Historial en vivo</div>
+        <div class="text-caption text-grey-7 row items-center q-gutter-xs q-mb-md">
+          <span class="live-dot" />
+          <span>Actualización en tiempo real de las últimas mesas registradas</span>
+        </div>
+
+        <div class="row q-col-gutter-sm q-mb-md">
+          <div class="col-12 col-md-4">
+            <q-select v-model="monitorFilters.recinto_id" :options="monitorRecintoOptions" option-label="label" option-value="value" emit-value map-options use-input input-debounce="0" clearable dense outlined label="Filtrar por recinto" @filter="filterMonitorRecintos" />
+          </div>
+          <div class="col-12 col-md-4">
+            <q-select v-model="monitorFilters.confirmador" :options="monitorConfirmadorOptions" option-label="label" option-value="value" emit-value map-options use-input input-debounce="0" clearable dense outlined label="Filtrar por confirmador" @filter="filterMonitorConfirmadores" />
+          </div>
+          <div class="col-12 col-md-3">
+            <q-select v-model="monitorFilters.ganador" :options="monitorWinnerOptions" option-label="label" option-value="value" emit-value map-options use-input input-debounce="0" clearable dense outlined label="Filtrar por ganador" @filter="filterMonitorWinners" />
+          </div>
+          <div class="col-12 col-md-1">
+            <q-btn flat color="grey-7" no-caps label="Limpiar" @click="clearMesasViewerFilters" />
+          </div>
+        </div>
+
+        <div class="row q-col-gutter-md monitor-shell">
+          <div class="col-12 col-lg-9">
+            <div v-if="!filteredMonitorCards.length" class="q-pa-xl text-center text-grey-7">No hay mesas para mostrar.</div>
+            <div v-else class="monitor-grid">
+              <q-card v-for="card in filteredMonitorCards" :key="`route-card-${card.id}`" flat bordered class="monitor-card">
+                <q-card-section class="q-pa-sm">
+                  <div class="row items-start justify-between q-col-gutter-sm">
+                    <div class="col">
+                      <div class="text-h6 text-weight-bold">Mesa {{ card.numero }}</div>
+                      <div class="text-subtitle2 text-grey-8">{{ card.recinto }}</div>
+                    </div>
+                    <div class="col-auto">
+                      <q-chip dense square :color="card.tieneResultado ? 'positive' : 'negative'" text-color="white">
+                        {{ card.tieneResultado ? `${card.totalVotos} votos` : 'Pendiente' }}
+                      </q-chip>
+                    </div>
+                  </div>
+                  <div class="winner-box q-mt-sm" :style="{ borderColor: card.ganadorColor || '#d1d5db' }">
+                    <div class="row items-center no-wrap q-gutter-sm">
+                      <q-avatar v-if="card.ganadorIcono" size="28px" rounded><img :src="assetUrl(card.ganadorIcono)" alt="logo ganador"></q-avatar>
+                      <q-avatar v-else size="28px" rounded :style="{ backgroundColor: card.ganadorColor || '#cbd5e1' }" />
+                      <div class="col">
+                        <div class="text-caption text-grey-7">{{ card.tieneResultado ? 'Ganador' : 'Estado' }}</div>
+                        <div class="text-weight-bold" :style="{ color: card.ganadorColor || '#111827' }">{{ card.ganador }}</div>
+                      </div>
+                      <q-chip dense square :style="{ backgroundColor: card.ganadorColor || '#111827', color: '#fff' }">{{ card.tieneResultado ? card.ganadorVotos : '-' }}</q-chip>
+                    </div>
+                  </div>
+                  <div class="q-mt-sm text-caption text-grey-8">
+                    <div>Confirmó: {{ card.confirmador }}</div>
+                    <div>Hora: {{ card.hora }}</div>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </div>
+          <div class="col-12 col-lg-3">
+            <q-card flat bordered class="history-card">
+              <q-card-section class="q-pb-sm">
+                <div class="text-subtitle1 text-weight-bold">Historial</div>
+                <div class="text-caption text-grey-7">Últimas mesas que llegaron</div>
+              </q-card-section>
+              <q-separator />
+              <q-list separator class="history-list">
+                <q-item v-for="item in mesasHistory" :key="`route-history-${item.id}`">
+                  <q-item-section avatar>
+                    <q-avatar size="30px" rounded v-if="item.ganadorIcono"><img :src="assetUrl(item.ganadorIcono)" alt="logo ganador"></q-avatar>
+                    <q-avatar v-else size="30px" rounded :style="{ backgroundColor: item.ganadorColor || '#94a3b8' }" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label class="text-weight-medium">Mesa {{ item.numero }} · {{ item.ganador }}</q-item-label>
+                    <q-item-label caption>{{ item.recinto }}</q-item-label>
+                    <q-item-label caption>{{ item.hora }} · {{ item.confirmador }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-card>
+          </div>
+        </div>
+      </q-card-section>
+
       <q-inner-loading :showing="loading">
         <q-spinner />
       </q-inner-loading>
     </q-card>
 
-    <q-dialog v-model="mapViewerOpen" maximized transition-show="slide-up" transition-hide="slide-down">
+    <q-dialog v-if="enableDialogViewers" v-model="mapViewerOpen" maximized transition-show="slide-up" transition-hide="slide-down">
       <q-card class="bg-grey-1 text-dark">
         <q-toolbar class="bg-secondary text-white">
           <q-toolbar-title class="text-weight-bold">Visor de Mapa Ganadores</q-toolbar-title>
@@ -283,7 +448,7 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog v-model="mesasViewerOpen" maximized transition-show="slide-up" transition-hide="slide-down">
+    <q-dialog v-if="enableDialogViewers" v-model="mesasViewerOpen" maximized transition-show="slide-up" transition-hide="slide-down">
       <q-card class="bg-grey-1 text-dark">
         <q-toolbar class="bg-dark text-white">
           <q-toolbar-title class="text-weight-bold">Mesas del control</q-toolbar-title>
@@ -498,6 +663,21 @@ export default {
     }
   },
   computed: {
+    dashboardMode () {
+      return this.$route?.meta?.dashboardMode || 'both'
+    },
+    isChartRoute () {
+      return ['both', 'pie', 'bar'].includes(this.dashboardMode)
+    },
+    isMapRoute () {
+      return this.dashboardMode === 'mapa'
+    },
+    isMesasRoute () {
+      return this.dashboardMode === 'mesas'
+    },
+    enableDialogViewers () {
+      return false
+    },
     provinciaOptions () { return (this.geoOptions.provincias || []).map(p => ({ label: p.nombre, value: p.id })) },
     municipioOptions () { return (this.geoOptions.municipios || []).map(m => ({ label: m.nombre, value: m.id })) },
     localidadOptions () { return (this.geoOptions.localidades || []).map(l => ({ label: l.nombre, value: l.id })) },
@@ -557,6 +737,7 @@ export default {
     }
   },
   async mounted () {
+    this.syncDashboardMode()
     await this.loadDashboard()
     this.connectSocket()
   },
@@ -572,6 +753,11 @@ export default {
     }
   },
   methods: {
+    syncDashboardMode () {
+      this.chartsViewMode = ['both', 'pie', 'bar'].includes(this.dashboardMode) ? this.dashboardMode : 'both'
+      this.mapViewerOpen = false
+      this.mesasViewerOpen = false
+    },
     dashboardParams () { return { provincia_id: this.filters.provincia_id || undefined, municipio_id: this.filters.municipio_id || undefined, localidad_id: this.filters.localidad_id || undefined, delegado_id: this.filters.delegado_id || undefined } },
     onProvinciaChange () { this.filters.municipio_id = null; this.filters.localidad_id = null; this.loadDashboard() },
     onMunicipioChange () { this.filters.localidad_id = null; this.loadDashboard() },
@@ -700,11 +886,11 @@ export default {
       }
 
       const now = this.audioContext.currentTime
-      const playBeep = (startAt, fromFreq, toFreq, peakGain, duration) => {
+      const playBeep = (startAt, fromFreq, toFreq, peakGain, duration, type = 'square') => {
         const oscillator = this.audioContext.createOscillator()
         const gainNode = this.audioContext.createGain()
 
-        oscillator.type = 'sine'
+        oscillator.type = type
         oscillator.frequency.setValueAtTime(fromFreq, startAt)
         oscillator.frequency.exponentialRampToValueAtTime(toFreq, startAt + duration * 0.7)
 
@@ -718,8 +904,9 @@ export default {
         oscillator.stop(startAt + duration)
       }
 
-      playBeep(now, 880, 1320, 0.14, 0.24)
-      playBeep(now + 0.16, 1040, 1560, 0.11, 0.2)
+      playBeep(now, 740, 1180, 0.22, 0.28, 'square')
+      playBeep(now + 0.18, 740, 1180, 0.22, 0.28, 'square')
+      playBeep(now + 0.42, 820, 1320, 0.18, 0.22, 'triangle')
     },
     connectSocket () {
       const socketUrl = import.meta.env.VITE_API_SOCKET
@@ -762,6 +949,12 @@ export default {
         this.loading = false
         this.loadingMap = false
       }
+    }
+  }
+  ,
+  watch: {
+    '$route.fullPath' () {
+      this.syncDashboardMode()
     }
   }
 }

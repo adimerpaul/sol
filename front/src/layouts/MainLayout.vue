@@ -98,7 +98,7 @@
 
         <q-item
           dense
-          to="/"
+          to="/dashboard/ambos"
           exact
           clickable
           class="menu-item"
@@ -276,6 +276,37 @@
           </q-item-section>
         </q-item>
 
+        <template v-if="isAdministrator() && canPermission(PERM.DASHBOARD)">
+          <q-item-label header class="q-px-md text-grey-3 q-mt-sm">
+            Dashboard Admin
+          </q-item-label>
+
+          <q-item dense to="/dashboard/mapa" clickable class="menu-item" active-class="menu-active" v-close-popup>
+            <q-item-section avatar><q-icon name="map" class="text-white"/></q-item-section>
+            <q-item-section><q-item-label class="text-white">PerMapa</q-item-label></q-item-section>
+          </q-item>
+
+          <q-item dense to="/dashboard/mesas" clickable class="menu-item" active-class="menu-active" v-close-popup>
+            <q-item-section avatar><q-icon name="grid_view" class="text-white"/></q-item-section>
+            <q-item-section><q-item-label class="text-white">PerMesas</q-item-label></q-item-section>
+          </q-item>
+
+          <q-item dense to="/dashboard/ambos" clickable class="menu-item" active-class="menu-active" v-close-popup>
+            <q-item-section avatar><q-icon name="dashboard_customize" class="text-white"/></q-item-section>
+            <q-item-section><q-item-label class="text-white">Ambos</q-item-label></q-item-section>
+          </q-item>
+
+          <q-item dense to="/dashboard/tortas" clickable class="menu-item" active-class="menu-active" v-close-popup>
+            <q-item-section avatar><q-icon name="pie_chart" class="text-white"/></q-item-section>
+            <q-item-section><q-item-label class="text-white">Tortas</q-item-label></q-item-section>
+          </q-item>
+
+          <q-item dense to="/dashboard/histogramas" clickable class="menu-item" active-class="menu-active" v-close-popup>
+            <q-item-section avatar><q-icon name="bar_chart" class="text-white"/></q-item-section>
+            <q-item-section><q-item-label class="text-white">Histogramas</q-item-label></q-item-section>
+          </q-item>
+        </template>
+
         <q-item
           dense
           to="/reportes"
@@ -371,6 +402,10 @@ function canPermission (permission) {
 function canProfileRole () {
   const role = proxy.$store?.user?.role || ''
   return role === 'Administrador' || role === 'Supervisor'
+}
+
+function isAdministrator () {
+  return (proxy.$store?.user?.role || '') === 'Administrador'
 }
 
 function logout () {
