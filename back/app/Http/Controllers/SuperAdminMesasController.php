@@ -19,6 +19,28 @@ class SuperAdminMesasController extends Controller
     // límite duro
     private int $MAX_ROWS = 250;
     private int $PRINT_TIMEOUT_SECONDS = 600;
+
+    private function resolveSocketCategoriasFromRows(array $rows): array
+    {
+        $map = [
+            'votos_concejal' => 'Concejal',
+            'votos_gobernador' => 'Gobernador',
+            'votos_alcalde' => 'Alcalde',
+            'votos_asambleista_distrito' => 'Asambleista por distrito',
+            'votos_asambleista_poblacion' => 'Asambleista por poblacion',
+        ];
+
+        $categorias = [];
+
+        foreach ($map as $field => $label) {
+            $total = collect($rows)->sum(fn ($row) => (int) ($row[$field] ?? 0));
+            if ($total > 0) {
+                $categorias[] = $label;
+            }
+        }
+
+        return $categorias;
+    }
     /**
      * GET /api/admin/mesas?recinto_id=&mesa_id=&asignado=&delegado_id=&estado=&con_resultado=
      * Devuelve máximo 250 registros (front hace paginación local con QPagination).
@@ -1543,6 +1565,7 @@ class SuperAdminMesasController extends Controller
                 'total_validos' => (int) ($res->total_validos ?? 0),
                 'total_blancos' => (int) ($res->total_blancos ?? 0),
                 'total_nulos' => (int) ($res->total_nulos ?? 0),
+                'categorias' => $this->resolveSocketCategoriasFromRows($votos),
             ];
         });
 

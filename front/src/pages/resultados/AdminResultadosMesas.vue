@@ -1257,7 +1257,25 @@ export default {
       const title = data.title || 'Nuevo dato registrado'
       const caption = data.message || 'Se actualizó información de mesas'
 
-      this.$alert.info(title, caption)
+      const categorias = Array.isArray(data.categorias) ? data.categorias.filter(Boolean) : []
+
+      if (categorias.length) {
+        this.$q.notify({
+          type: 'info',
+          position: 'top',
+          timeout: 1800,
+          message: `Entro: ${categorias.join(' / ')}`
+        })
+      }
+
+      if (!categorias.length) {
+        this.$q.notify({
+          type: 'info',
+          position: 'top',
+          timeout: 1800,
+          message: caption
+        })
+      }
 
       if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
       this.socketRefreshTimer = setTimeout(() => {

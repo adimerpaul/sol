@@ -14,6 +14,27 @@ use Illuminate\Support\Facades\Storage;
 
 class MobileResultadosController extends Controller
 {
+    private function resolveSocketCategoriasFromTotals(array $totals): array
+    {
+        $map = [
+            'concejal' => 'Concejal',
+            'gobernador' => 'Gobernador',
+            'alcalde' => 'Alcalde',
+            'asambleista_distrito' => 'Asambleista por distrito',
+            'asambleista_poblacion' => 'Asambleista por poblacion',
+        ];
+
+        $categorias = [];
+
+        foreach ($map as $field => $label) {
+            if ((int) ($totals[$field] ?? 0) > 0) {
+                $categorias[] = $label;
+            }
+        }
+
+        return $categorias;
+    }
+
     private function partidoIconoBase64(?string $icono): ?string
     {
         if (empty($icono)) {
@@ -603,6 +624,7 @@ class MobileResultadosController extends Controller
             'total_validos' => array_sum($sum),
             'total_blancos' => array_sum($blancos),
             'total_nulos' => array_sum($nulos) + array_sum($pnu),
+            'categorias' => $this->resolveSocketCategoriasFromTotals($sum),
         ]);
 
         return response()->json([
@@ -785,6 +807,14 @@ class MobileResultadosController extends Controller
             }
         });
 
+        $socketCategorias = [
+            'gobernador' => collect($data['payload']['detalles'])->sum(fn ($row) => (int) ($row['votos_gobernador'] ?? 0)),
+            'asambleista_distrito' => collect($data['payload']['detalles'])->sum(fn ($row) => (int) ($row['votos_asambleista_distrito'] ?? 0)),
+            'asambleista_poblacion' => collect($data['payload']['detalles'])->sum(fn ($row) => (int) ($row['votos_asambleista_poblacion'] ?? 0)),
+            'concejal' => collect($data['payload']['detalles'])->sum(fn ($row) => (int) ($row['votos_concejal'] ?? 0)),
+            'alcalde' => collect($data['payload']['detalles'])->sum(fn ($row) => (int) ($row['votos_alcalde'] ?? 0)),
+        ];
+
         SocketEmitter::votacion([
             'title' => 'Nuevo dato sincronizado',
             'message' => trim(sprintf(
@@ -800,6 +830,7 @@ class MobileResultadosController extends Controller
             'total_validos' => (int) ($data['payload']['total_validos'] ?? 0),
             'total_blancos' => (int) ($data['payload']['total_blancos'] ?? 0),
             'total_nulos' => (int) ($data['payload']['total_nulos'] ?? 0),
+            'categorias' => $this->resolveSocketCategoriasFromTotals($socketCategorias),
         ]);
 
         return response()->json(['ok' => true]);

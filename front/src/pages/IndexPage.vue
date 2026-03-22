@@ -975,6 +975,17 @@ export default {
       playBeep(now + 0.18, 740, 1180, 0.22, 0.28, 'square')
       playBeep(now + 0.42, 820, 1320, 0.18, 0.22, 'triangle')
     },
+    notifySocketCategorias (payload) {
+      const categorias = Array.isArray(payload?.categorias) ? payload.categorias.filter(Boolean) : []
+      if (!categorias.length) return
+
+      this.$q.notify({
+        type: 'info',
+        position: 'top',
+        timeout: 1800,
+        message: `Entro: ${categorias.join(' / ')}`
+      })
+    },
     disconnectSocket () {
       const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
       if (!this.socket) return
@@ -988,8 +999,9 @@ export default {
       if (!socketUrl) return
       this.disconnectSocket()
       this.socket = io(socketUrl, { transports: ['websocket', 'polling'], reconnection: true })
-      this.socket.on(socketEvent, () => {
+      this.socket.on(socketEvent, (payload) => {
         if (!this.isAlive) return
+        this.notifySocketCategorias(payload)
         this.playVoteSound()
         if (this.socketRefreshTimer) clearTimeout(this.socketRefreshTimer)
         this.socketRefreshTimer = setTimeout(() => this.loadDashboard(), 400)
