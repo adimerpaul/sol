@@ -303,7 +303,8 @@ export default {
       savingMesaId: null,
       recintoPick: null,
       recintosOptions: [],
-      focusRecinto: null
+      focusRecinto: null,
+      loading: false
     }
   },
 
@@ -313,28 +314,30 @@ export default {
 
   methods: {
     async load () {
-      const [r, j, d] = await Promise.all([
-        this.$axios.get('admin/mapa-recintos/recintos'),
-        this.$axios.get('admin/mapa-recintos/jefes'),
-        this.$axios.get('admin/mesas/options/delegados')
-      ])
+      this.loading = true
+      try {
+        const { data } = await this.$axios.get('admin/mapa-recintos/bootstrap')
+        this.recintos = (Array.isArray(data?.recintos) ? data.recintos : []).map(this.normalizeRecinto)
+        this.jefes = Array.isArray(data?.jefes) ? data.jefes : []
+        this.jefesOptionsAll = this.buildJefesOptions(this.jefes)
+        this.jefesOptions = this.jefesOptionsAll
+        this.delegadosOptionsAll = (Array.isArray(data?.delegados) ? data.delegados : []).map(item => ({
+          value: item.id,
+          label: `${item.name} (${item.username})`
+        }))
+        this.delegadosOptions = this.delegadosOptionsAll
+        this.recintosOptions = this.buildOptions(this.recintos)
 
-      this.recintos = (Array.isArray(r.data) ? r.data : []).map(this.normalizeRecinto)
-      this.jefes = Array.isArray(j.data) ? j.data : []
-      this.jefesOptionsAll = this.buildJefesOptions(this.jefes)
-      this.jefesOptions = this.jefesOptionsAll
-      this.delegadosOptionsAll = (Array.isArray(d.data) ? d.data : []).map(item => ({
-        value: item.id,
-        label: `${item.name} (${item.username})`
-      }))
-      this.delegadosOptions = this.delegadosOptionsAll
-      this.recintosOptions = this.buildOptions(this.recintos)
-
-      if (this.selected?.id) {
-        const again = (this.recintos || []).find(x => x.id === this.selected.id)
-        if (again) {
-          await this.onSelectRecinto(again)
+        if (this.selected?.id) {
+          const again = (this.recintos || []).find(x => x.id === this.selected.id)
+          if (again) {
+            this.applySelectedRecinto(again)
+          }
         }
+      } catch (e) {
+        this.$alert?.error(e.response?.data?.message || 'No se pudo cargar el mapa de recintos')
+      } finally {
+        this.loading = false
       }
     },
 
@@ -380,6 +383,22 @@ export default {
           okDelegados
         }
       })
+    },
+
+    buildMesasFromRecinto (recinto) {
+      return (Array.isArray(recinto?.mesas) ? recinto.mesas : []).map(m => ({
+        ...m,
+        delegadoDraftId: m.delegado_id ?? null
+      }))
+    },
+
+    applySelectedRecinto (recinto) {
+      this.selected = this.normalizeRecinto(recinto)
+      this.jefeIdToAdd = null
+      this.jefesOptions = this.availableJefesOptions()
+      this.recintoPick = recinto.id
+      this.mesas = this.buildMesasFromRecinto(this.selected)
+      this.delegadosOptions = this.delegadosOptionsAll
     },
 
     filterRecintos (val, update) {
@@ -451,11 +470,7 @@ export default {
     },
 
     async onSelectRecinto (recinto) {
-      this.selected = this.normalizeRecinto(recinto)
-      this.jefeIdToAdd = null
-      this.jefesOptions = this.availableJefesOptions()
-      this.recintoPick = recinto.id
-      await this.loadMesas()
+      this.applySelectedRecinto(recinto)
     },
 
     currentJefesPayload (overrideJefes = null) {
@@ -537,22 +552,9 @@ export default {
 
       this.loadingMesas = true
       try {
-        const response = await this.$axios.get('admin/mesas', {
-          params: {
-            recinto_id: this.selected.id,
-            all: 1,
-            per_page: 500
-          }
-        })
-
-        this.mesas = (Array.isArray(response.data?.data) ? response.data.data : []).map(m => ({
-          ...m,
-          delegadoDraftId: m.delegado_id ?? null
-        }))
+        const recinto = (this.recintos || []).find(r => r.id === this.selected.id)
+        this.mesas = this.buildMesasFromRecinto(recinto || this.selected)
         this.delegadosOptions = this.delegadosOptionsAll
-      } catch (e) {
-        this.mesas = []
-        this.$alert?.error(e.response?.data?.message || 'No se pudo cargar mesas del recinto')
       } finally {
         this.loadingMesas = false
       }

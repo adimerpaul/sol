@@ -94,6 +94,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('admin/jerarquia/jefes/{jefe}/delegados', [AdminUserJerarquiaController::class, 'jefeDelegados']);
     Route::put('admin/jerarquia/jefes/{jefe}/delegados', [AdminUserJerarquiaController::class, 'syncJefeDelegados']);
 
+    Route::get('admin/mapa-recintos/bootstrap', [AdminRecintoJefeMapaController::class, 'bootstrap']);
     Route::get('admin/mapa-recintos/recintos', [AdminRecintoJefeMapaController::class, 'recintos']);
     Route::get('admin/mapa-recintos/jefes', [AdminRecintoJefeMapaController::class, 'jefes']);
     Route::put('admin/mapa-recintos/recintos/{recinto}/jefe', [AdminRecintoJefeMapaController::class, 'asignar']);
