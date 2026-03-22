@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\CarbonImmutable;
 use App\Services\SocketEmitter;
 use App\Models\Departamento;
 use App\Models\Localidad;
@@ -487,6 +488,69 @@ class SuperAdminMesasController extends Controller
         ])->setPaper('a4', 'landscape');
 
         return $pdf->stream('mesas_abiertas.pdf');
+    }
+
+    public function printMesaCierreEstimado(Request $request)
+    {
+        @set_time_limit($this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('max_execution_time', (string) $this->PRINT_TIMEOUT_SECONDS);
+        @ini_set('memory_limit', '1024M');
+        @ignore_user_abort(true);
+
+        $actor = $request->user();
+
+        $rows = $this->buildMesasPrintBaseQuery($request)
+            ->with([
+                'resultado:id,mesa_id,aviso_manana,hora_apertura_mesa,registrado_por',
+                'resultado.registradoPor:id,name,username',
+            ])
+            ->whereHas('resultado', function ($qq) {
+                $qq->where('aviso_manana', true)
+                    ->whereNotNull('hora_apertura_mesa')
+                    ->where('hora_apertura_mesa', '!=', '');
+            })
+            ->get()
+            ->map(function ($m) {
+                $jefes = collect($m->recinto?->jefe ?? []);
+                $jefeNombre = $jefes->pluck('name')->filter()->implode(', ');
+                $jefeCelular = $jefes->pluck('celular')->filter()->implode(', ');
+                $resultado = $m->resultado;
+                $apertura = $this->normalizeHoraAperturaToCarbon($resultado?->hora_apertura_mesa);
+                $cierre = $apertura?->addHours(8);
+
+                return [
+                    'recinto_nombre' => $m->recinto?->nombre,
+                    'mesa_numero' => $m->numero_mesa,
+                    'jefe_nombre' => $jefeNombre ?: 'Sin jefe',
+                    'jefe_celular' => $jefeCelular ?: 'Sin celular',
+                    'delegado_nombre' => $m->delegado?->name ?: 'Sin delegado',
+                    'delegado_celular' => $m->delegado?->celular ?: 'Sin celular',
+                    'hora_apertura_mesa' => $resultado?->hora_apertura_mesa ?: 'Sin hora',
+                    'hora_cierre_estimada' => $cierre?->format('H:i') ?: 'Sin hora',
+                    'registrado_por' => $resultado?->registradoPor?->name ?: $resultado?->registradoPor?->username ?: 'Sin registro',
+                    'sort_cierre' => $cierre?->timestamp ?? PHP_INT_MAX,
+                    'completo' => !empty($jefeNombre) && !empty($m->delegado?->name) && !empty($resultado?->hora_apertura_mesa),
+                ];
+            })
+            ->sortBy([
+                ['sort_cierre', 'asc'],
+                ['recinto_nombre', 'asc'],
+                ['mesa_numero', 'asc'],
+            ])
+            ->values()
+            ->map(function ($row) {
+                unset($row['sort_cierre']);
+                return $row;
+            });
+
+        $pdf = Pdf::loadView('pdf.mesas_cierre_estimado', [
+            'title' => 'Reporte de mesas abiertas con cierre estimado',
+            'rows' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i:s'),
+            'generatedBy' => $actor->name ?? $actor->username ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('mesas_cierre_estimado.pdf');
     }
 
     public function printRecintosPorSupervisor(Request $request)
@@ -1619,5 +1683,24 @@ class SuperAdminMesasController extends Controller
 
         $h = (int) $dt->format('G');
         return $h >= 8 || $h <= 4;
+    }
+
+    private function normalizeHoraAperturaToCarbon(?string $hora): ?CarbonImmutable
+    {
+        if (empty($hora)) {
+            return null;
+        }
+
+        $dt = CarbonImmutable::createFromFormat('Y-m-d H:i', '2000-01-01 ' . $hora);
+
+        if (!$dt || $dt->format('H:i') !== $hora) {
+            return null;
+        }
+
+        if ((int) $dt->format('H') <= 4) {
+            return $dt->addDay();
+        }
+
+        return $dt;
     }
 }

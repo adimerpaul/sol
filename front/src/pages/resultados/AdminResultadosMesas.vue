@@ -268,6 +268,10 @@
                     <q-item-section avatar><q-icon name="schedule" /></q-item-section>
                     <q-item-section><q-item-label>Imprimir mesa abierta</q-item-label></q-item-section>
                   </q-item>
+                  <q-item clickable v-close-popup @click="printMesaCierreEstimado">
+                    <q-item-section avatar><q-icon name="timer" /></q-item-section>
+                    <q-item-section><q-item-label>Imprimir cierre estimado</q-item-label></q-item-section>
+                  </q-item>
                   <q-item clickable v-close-popup @click="openSupervisorPrintDialog">
                     <q-item-section avatar><q-icon name="supervisor_account" /></q-item-section>
                     <q-item-section><q-item-label>Recintos por supervisor</q-item-label></q-item-section>
@@ -2047,6 +2051,29 @@ export default {
           acta_gobernacion: this.filters.acta_gobernacion
         },
         'mesas_abiertas.pdf'
+      )
+    },
+
+    async printMesaCierreEstimado () {
+      await this.openPdfBlob(
+        'admin/mesas-print/cierre-estimado',
+        {
+          departamento_id: this.filters.departamento_id || undefined,
+          provincia_id: this.filters.provincia_id || undefined,
+          municipio_id: this.filters.municipio_id || undefined,
+          localidad_id: this.filters.localidad_id || undefined,
+          recinto_id: this.filters.recinto_id || undefined,
+          mesa_id: this.filters.mesa_id || undefined,
+          asignado: this.filters.asignado,
+          delegado_id: this.filters.delegado_id || undefined,
+          jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
+          supervisor_id: this.filters.supervisor_id || undefined,
+          estado: this.filters.estado || undefined,
+          con_resultado: this.filters.con_resultado,
+          acta_alcaldia: this.filters.acta_alcaldia,
+          acta_gobernacion: this.filters.acta_gobernacion
+        },
+        'mesas_cierre_estimado.pdf'
       )
     },
 
