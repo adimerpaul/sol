@@ -44,22 +44,69 @@
       </q-card-section>
 
       <q-card-section class="q-pa-md">
-        <div v-for="card in chartCards" :key="card.key" class="category-block q-mb-md">
-          <div class="row items-center justify-between q-mb-sm">
-            <div class="text-subtitle1 text-weight-bold">{{ card.label }}</div>
-            <q-chip dense outline color="primary">Total: {{ card.total }}</q-chip>
+        <div class="row items-center justify-between q-col-gutter-sm q-mb-md">
+          <div class="col-auto">
+            <div class="text-subtitle2 text-weight-medium">Vista de gráficos</div>
           </div>
-          <div class="row q-col-gutter-md">
-            <div class="col-12 col-md-6">
-              <q-card flat bordered class="q-pa-sm chart-modern">
-                <apexchart type="pie" height="280" :options="pieOptions(card)" :series="card.series" />
-              </q-card>
+          <div class="col-auto">
+            <q-btn-toggle
+              v-model="chartsViewMode"
+              no-caps
+              unelevated
+              toggle-color="primary"
+              color="grey-3"
+              text-color="grey-8"
+              :options="[
+                { label: 'Ambos', value: 'both' },
+                { label: 'Tortas', value: 'pie' },
+                { label: 'Histogramas', value: 'bar' }
+              ]"
+            />
+          </div>
+        </div>
+        <template v-if="chartsViewMode === 'both'">
+          <div v-for="card in chartCards" :key="card.key" class="category-block q-mb-md">
+            <div class="row items-center justify-between q-mb-sm">
+              <div class="text-subtitle1 text-weight-bold">{{ card.label }}</div>
+              <q-chip dense outline color="primary">Total: {{ card.total }}</q-chip>
             </div>
-            <div class="col-12 col-md-6">
-              <q-card flat bordered class="q-pa-sm chart-modern">
-                <apexchart type="bar" height="280" :options="barOptions(card)" :series="[{ name: card.label, data: card.series }]" />
-              </q-card>
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-md-6">
+                <q-card flat bordered class="q-pa-sm chart-modern">
+                  <apexchart type="pie" height="280" :options="pieOptions(card)" :series="card.series" />
+                </q-card>
+              </div>
+              <div class="col-12 col-md-6">
+                <q-card flat bordered class="q-pa-sm chart-modern">
+                  <apexchart type="bar" height="280" :options="barOptions(card)" :series="[{ name: card.label, data: card.series }]" />
+                </q-card>
+              </div>
             </div>
+          </div>
+        </template>
+
+        <div v-else class="row q-col-gutter-md">
+          <div v-for="card in chartCards" :key="`single-${chartsViewMode}-${card.key}`" class="col-12 col-md-4">
+            <q-card flat bordered class="q-pa-sm chart-modern chart-grid-card q-mb-md">
+              <div class="row items-center justify-between q-mb-sm">
+                <div class="text-subtitle2 text-weight-bold">{{ card.label }}</div>
+                <q-chip dense outline color="primary">Total: {{ card.total }}</q-chip>
+              </div>
+              <apexchart
+                v-if="chartsViewMode === 'pie'"
+                type="pie"
+                height="250"
+                :options="pieOptions(card)"
+                :series="card.series"
+              />
+              <apexchart
+                v-else
+                type="bar"
+                height="250"
+                :options="barOptions(card)"
+                :series="[{ name: card.label, data: card.series }]"
+              />
+            </q-card>
           </div>
         </div>
       </q-card-section>
@@ -444,6 +491,7 @@ export default {
         confirmadores: [],
         ganadores: []
       },
+      chartsViewMode: 'both',
       audioContext: null,
       socket: null,
       socketRefreshTimer: null
@@ -722,6 +770,7 @@ export default {
 <style scoped>
 .category-block { background: #f8fafc; border: 1px solid #e6ebf2; border-radius: 12px; padding: 12px; }
 .chart-modern { border-radius: 10px; background: #fff; }
+.chart-grid-card { height: 100%; }
 .map-panel { height: calc(100vh - 180px); }
 .map-panel-scroll { height: calc(100vh - 280px); }
 .modern-marker-container { background: transparent !important; border: none !important; }
