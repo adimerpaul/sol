@@ -25,6 +25,7 @@ use App\Http\Controllers\ReportesController;
 //})->middleware('auth:sanctum');
 
 Route::post('/login', [App\Http\Controllers\UserController::class, 'login']);
+Route::get('/public/recintos-mapa', [RecintoController::class, 'publicMap']);
 Route::middleware('auth:sanctum')->group(callback: function () {
     Route::post('/logout', [App\Http\Controllers\UserController::class, 'logout']);
     Route::get('/me', [App\Http\Controllers\UserController::class, 'me']);

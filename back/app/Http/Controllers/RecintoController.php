@@ -8,6 +8,51 @@ use Illuminate\Http\Request;
 
 class RecintoController extends Controller
 {
+    public function publicMap()
+    {
+        $rows = Recinto::query()
+            ->with([
+                'jefe:id,name,username,celular',
+            ])
+            ->withCount('mesas')
+            ->where('departamento_id', 5)
+            ->where('provincia_id', 57)
+            ->where('municipio_id', 191)
+            ->where('localidad_id', 1988)
+            ->whereNotNull('latitud')
+            ->whereNotNull('longitud')
+            ->orderBy('nombre')
+            ->get([
+                'id',
+                'nombre',
+                'latitud',
+                'longitud',
+            ])
+            ->map(function (Recinto $recinto) {
+                return [
+                    'id' => $recinto->id,
+                    'nombre' => $recinto->nombre,
+                    'latitud' => $recinto->latitud !== null ? (float) $recinto->latitud : null,
+                    'longitud' => $recinto->longitud !== null ? (float) $recinto->longitud : null,
+                    'mesas_count' => (int) ($recinto->mesas_count ?? 0),
+                    'jefes' => $recinto->jefe
+                        ->map(fn ($jefe) => [
+                            'id' => $jefe->id,
+                            'name' => $jefe->name,
+                            'username' => $jefe->username,
+                            'celular' => $jefe->celular,
+                        ])
+                        ->values(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'total' => $rows->count(),
+            'data' => $rows,
+        ]);
+    }
+
     public function index(Request $request)
     {
         $search = trim((string)$request->get('search', ''));

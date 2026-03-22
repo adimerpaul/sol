@@ -211,6 +211,26 @@
               />
             </div>
 
+            <div class="col-6 col-sm-3 col-md-2">
+              <q-select
+                v-model="filters.acta_alcaldia"
+                dense outlined
+                label="Acta alcaldía"
+                :options="resultadoOptions"
+                emit-value map-options
+              />
+            </div>
+
+            <div class="col-6 col-sm-3 col-md-2">
+              <q-select
+                v-model="filters.acta_gobernacion"
+                dense outlined
+                label="Acta gobernación"
+                :options="resultadoOptions"
+                emit-value map-options
+              />
+            </div>
+
             <div class="col-12 col-sm-3">
               <q-btn
                 color="primary"
@@ -638,7 +658,24 @@
                 <q-card-section class="q-pt-sm">
                   <div class="row q-col-gutter-sm">
                     <div v-for="n in 10" :key="n" class="col-6">
-                      <q-card flat bordered class="q-pa-xs relative-position">
+                      <q-card flat bordered class="q-pa-xs relative-position foto-card">
+                        <input
+                          :id="`foto-input-${n}`"
+                          :ref="`fotoInput${n}`"
+                          class="hidden"
+                          type="file"
+                          accept="image/*"
+                          @change="onFotoSelected($event, n)"
+                        >
+                        <q-btn
+                          icon="upload"
+                          dense
+                          round
+                          color="blue-grey-7"
+                          class="absolute-top-left q-ma-xs"
+                          style="z-index: 1000"
+                          @click="triggerFotoInput(n)"
+                        />
                         <q-btn
                           v-if="fotoPreview(n)"
                           icon="open_in_new"
@@ -663,21 +700,11 @@
                         <q-img
                           v-if="fotoPreview(n)"
                           :src="fotoPreview(n)"
-                          style="height: 110px"
+                          class="foto-preview"
                           spinner-color="primary"
                         />
-                        <div v-else class="flex flex-center text-grey-6" style="height: 110px;">
+                        <div v-else class="flex flex-center text-grey-6 foto-preview-empty">
                           <q-icon name="image" size="28px" />
-                        </div>
-
-                        <div class="q-mt-xs">
-                          <q-file
-                            v-model="fotos[`foto${n}`]"
-                            dense outlined
-                            accept="image/*"
-                            label="Subir"
-                            clearable
-                          />
                         </div>
                       </q-card>
                     </div>
@@ -1142,7 +1169,9 @@ export default {
         supervisor_id: null,
         estado: null,
         con_resultado: 'ALL',
-        en_mesa: 'ALL'
+        en_mesa: 'ALL',
+        acta_alcaldia: 'ALL',
+        acta_gobernacion: 'ALL'
       },
 
       estadoOptions: ['PENDIENTE','ASIGNADA','EN_PROCESO','FINALIZADA','OBSERVADA'],
@@ -1538,6 +1567,8 @@ export default {
             estado: this.filters.estado || undefined,
             con_resultado: this.filters.con_resultado,
             en_mesa: this.filters.en_mesa,
+            acta_alcaldia: this.filters.acta_alcaldia,
+            acta_gobernacion: this.filters.acta_gobernacion,
             all: 1,
             per_page: perPage,
             page: this.page
@@ -1839,7 +1870,9 @@ export default {
         supervisor_id: this.filters.supervisor_id || undefined,
         estado: this.filters.estado || undefined,
         con_resultado: this.filters.con_resultado,
-        en_mesa: this.filters.en_mesa
+        en_mesa: this.filters.en_mesa,
+        acta_alcaldia: this.filters.acta_alcaldia,
+        acta_gobernacion: this.filters.acta_gobernacion
       }
     },
 
@@ -1935,7 +1968,9 @@ export default {
           supervisor_id: this.filters.supervisor_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
-          en_mesa: 'YES'
+          en_mesa: 'YES',
+          acta_alcaldia: this.filters.acta_alcaldia,
+          acta_gobernacion: this.filters.acta_gobernacion
         },
         'delegados_en_mesa.pdf'
       )
@@ -1957,7 +1992,9 @@ export default {
           supervisor_id: this.filters.supervisor_id || undefined,
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
-          en_mesa: 'NO'
+          en_mesa: 'NO',
+          acta_alcaldia: this.filters.acta_alcaldia,
+          acta_gobernacion: this.filters.acta_gobernacion
         },
         'delegados_no_en_mesa.pdf'
       )
@@ -1978,7 +2015,9 @@ export default {
           jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
           supervisor_id: this.filters.supervisor_id || undefined,
           estado: this.filters.estado || undefined,
-          con_resultado: this.filters.con_resultado
+          con_resultado: this.filters.con_resultado,
+          acta_alcaldia: this.filters.acta_alcaldia,
+          acta_gobernacion: this.filters.acta_gobernacion
         },
         'mesas_abiertas.pdf'
       )
@@ -2061,6 +2100,8 @@ export default {
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
           en_mesa: this.filters.en_mesa,
+          acta_alcaldia: this.filters.acta_alcaldia,
+          acta_gobernacion: this.filters.acta_gobernacion,
           all: 1,              // 🔥 activa paginate del backend
           per_page: 200        // lote (sube/baja)
         }
@@ -2125,6 +2166,8 @@ export default {
           estado: this.filters.estado || undefined,
           con_resultado: this.filters.con_resultado,
           en_mesa: this.filters.en_mesa,
+          acta_alcaldia: this.filters.acta_alcaldia,
+          acta_gobernacion: this.filters.acta_gobernacion,
           all: 1,
           per_page: perPage,
           page: this.page
@@ -2295,6 +2338,25 @@ export default {
         this.fotosToClear[key] = true
         this.fotosServer[serverKey] = null
       }
+    },
+
+    onFotoSelected (event, n) {
+      const key = `foto${n}`
+      const [file] = event?.target?.files || []
+      this.fotos[key] = file || null
+      this.fotosToClear[key] = false
+      if (event?.target) {
+        event.target.value = ''
+      }
+    },
+
+    triggerFotoInput (n) {
+      const input = this.$refs[`fotoInput${n}`]
+      if (Array.isArray(input)) {
+        input[0]?.click?.()
+        return
+      }
+      input?.click?.()
     },
 
     async openResultado (row) {
@@ -2548,4 +2610,15 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.foto-card {
+  min-height: 100px;
+}
+
+.foto-preview,
+.foto-preview-empty {
+  height: 88px;
+}
+</style>
 

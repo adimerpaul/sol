@@ -1,5 +1,12 @@
 const routes = [
   {
+    path: '/public',
+    component: () => import('layouts/PublicLayout.vue'),
+    children: [
+      { path: 'recintos', component: () => import('pages/public/PublicRecintosPage.vue') }
+    ]
+  },
+  {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [

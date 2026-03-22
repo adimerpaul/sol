@@ -62,6 +62,8 @@ class SuperAdminMesasController extends Controller
         $estado       = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
         $enMesa       = $request->get('en_mesa', 'ALL');
+        $actaAlcaldia = $request->get('acta_alcaldia', 'ALL');
+        $actaGobernacion = $request->get('acta_gobernacion', 'ALL');
 
         // NUEVO
         $all     = $request->boolean('all', false);          // all=1
@@ -105,6 +107,7 @@ class SuperAdminMesasController extends Controller
         $summaryPresenceBase = clone $summaryBase;
         $this->applyEnMesaFilter($summaryPresenceBase, 'YES');
         $this->applyEnMesaFilter($summaryBase, $enMesa);
+        $this->applyActaFilters($summaryBase, $actaAlcaldia, $actaGobernacion);
 
         $summary = [
             'total' => (clone $summaryBase)->count(),
@@ -162,6 +165,7 @@ class SuperAdminMesasController extends Controller
             });
 
         $this->applyEnMesaFilter($base, $enMesa);
+        $this->applyActaFilters($base, $actaAlcaldia, $actaGobernacion);
 
         $base = $base
             ->orderBy('mesas.numero_mesa');
@@ -743,6 +747,8 @@ class SuperAdminMesasController extends Controller
         $estado = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
         $enMesa = $request->get('en_mesa', 'ALL');
+        $actaAlcaldia = $request->get('acta_alcaldia', 'ALL');
+        $actaGobernacion = $request->get('acta_gobernacion', 'ALL');
 
         $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $localidadId, $recintoId) {
             $qq->whereNull('deleted_at')
@@ -801,6 +807,7 @@ class SuperAdminMesasController extends Controller
             });
 
         $this->applyEnMesaFilter($query, $enMesa);
+        $this->applyActaFilters($query, $actaAlcaldia, $actaGobernacion);
 
         return $query;
     }
@@ -843,6 +850,33 @@ class SuperAdminMesasController extends Controller
         }
     }
 
+    private function applyActaFilters($query, $actaAlcaldia, $actaGobernacion): void
+    {
+        if ($actaAlcaldia === 'YES') {
+            $query->whereHas('resultado', function ($qr) {
+                $qr->where('aviso_mediodia', true);
+            });
+        }
+
+        if ($actaAlcaldia === 'NO') {
+            $query->whereDoesntHave('resultado', function ($qr) {
+                $qr->where('aviso_mediodia', true);
+            });
+        }
+
+        if ($actaGobernacion === 'YES') {
+            $query->whereHas('resultado', function ($qr) {
+                $qr->where('aviso_tarde', true);
+            });
+        }
+
+        if ($actaGobernacion === 'NO') {
+            $query->whereDoesntHave('resultado', function ($qr) {
+                $qr->where('aviso_tarde', true);
+            });
+        }
+    }
+
     private function buildMesasPrintBaseQuery(Request $request)
     {
         $departamentoId = (int) $request->get('departamento_id', 5);
@@ -857,6 +891,8 @@ class SuperAdminMesasController extends Controller
         $supervisorId = $request->get('supervisor_id');
         $estado = $request->get('estado');
         $conResultado = $request->get('con_resultado', 'ALL');
+        $actaAlcaldia = $request->get('acta_alcaldia', 'ALL');
+        $actaGobernacion = $request->get('acta_gobernacion', 'ALL');
 
         $scopeRecinto = function ($qq) use ($departamentoId, $provinciaId, $municipioId, $localidadId, $recintoId) {
             $qq->whereNull('deleted_at')
@@ -867,7 +903,7 @@ class SuperAdminMesasController extends Controller
                 ->when($recintoId, fn($q) => $q->where('id', $recintoId));
         };
 
-        return Mesa::query()
+        $query = Mesa::query()
             ->select([
                 'mesas.id',
                 'mesas.departamento_id',
@@ -910,6 +946,10 @@ class SuperAdminMesasController extends Controller
                     $qq->whereDoesntHave('resultado');
                 }
             });
+
+        $this->applyActaFilters($query, $actaAlcaldia, $actaGobernacion);
+
+        return $query;
     }
 
     // combos (mesas por recinto)
