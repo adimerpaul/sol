@@ -20,6 +20,7 @@
 <table>
     <thead>
     <tr>
+        <th style="width: 38px;">Nro</th>
         <th>Provincia</th>
         <th>Municipio</th>
         <th>Localidad</th>
@@ -33,6 +34,7 @@
     <tbody>
     @forelse($rows as $row)
         <tr>
+            <td>{{ $loop->iteration }}</td>
             <td>{{ $row['provincia'] ?: '-' }}</td>
             <td>{{ $row['municipio'] ?: '-' }}</td>
             <td>{{ $row['localidad'] ?: '-' }}</td>
@@ -44,7 +46,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="8">No hay mesas sin delegado para los filtros actuales.</td>
+            <td colspan="9">No hay mesas sin delegado para los filtros actuales.</td>
         </tr>
     @endforelse
     </tbody>
