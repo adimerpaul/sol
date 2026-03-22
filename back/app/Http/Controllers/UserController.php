@@ -12,6 +12,7 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class UserController extends Controller
 {
@@ -117,6 +118,99 @@ class UserController extends Controller
             'jefes' => $jefes,
             'supervisores' => $supervisores,
         ];
+    }
+
+    private function enrichUser(User $user): User
+    {
+        $user->ci_anverso_url = $user->ci_anverso ? Storage::url($user->ci_anverso) : null;
+        $user->ci_reverso_url = $user->ci_reverso ? Storage::url($user->ci_reverso) : null;
+        $user->foto_personal_url = $user->foto_personal ? Storage::url($user->foto_personal) : null;
+        $user->permissions = $this->resolvedPermissions($user);
+        $user->recinto_nombre = $user->recinto?->nombre;
+        $user->creator_name = $user->creator?->name;
+        $user->creator_username = $user->creator?->username;
+        $user->jerarquia = $this->buildDelegadoJerarquiaPayload($user);
+
+        return $user;
+    }
+
+    private function applyIndexSearch($query, string $search): void
+    {
+        $needle = trim($search);
+        if ($needle === '') {
+            return;
+        }
+
+        $like = '%' . $needle . '%';
+
+        $query->where(function ($qq) use ($like) {
+            $qq->where('username', 'like', $like)
+                ->orWhere('nombres', 'like', $like)
+                ->orWhere('apellido_paterno', 'like', $like)
+                ->orWhere('apellido_materno', 'like', $like)
+                ->orWhere('name', 'like', $like)
+                ->orWhere('ci', 'like', $like)
+                ->orWhere('numero_mesa', 'like', $like)
+                ->orWhere('celular', 'like', $like)
+                ->orWhere('fecha_nacimiento', 'like', $like)
+                ->orWhere('bloque', 'like', $like)
+                ->orWhere('role', 'like', $like)
+                ->orWhereHas('recinto', fn ($recinto) => $recinto->where('nombre', 'like', $like))
+                ->orWhereHas('creator', function ($creator) use ($like) {
+                    $creator->where('name', 'like', $like)
+                        ->orWhere('username', 'like', $like);
+                })
+                ->orWhereHas('jefes', function ($jefes) use ($like) {
+                    $jefes->where('users.name', 'like', $like)
+                        ->orWhere('users.username', 'like', $like)
+                        ->orWhere('users.celular', 'like', $like);
+                })
+                ->orWhereHas('jefes.supervisores', function ($supervisores) use ($like) {
+                    $supervisores->where('users.name', 'like', $like)
+                        ->orWhere('users.username', 'like', $like)
+                        ->orWhere('users.celular', 'like', $like);
+                });
+        });
+    }
+
+    private function applyIndexSorting($query, string $sortBy, bool $descending): void
+    {
+        $direction = $descending ? 'desc' : 'asc';
+
+        $sortableColumns = [
+            'id' => 'users.id',
+            'username' => 'users.username',
+            'celular' => 'users.celular',
+            'numero_mesa' => 'users.numero_mesa',
+            'fecha_nacimiento' => 'users.fecha_nacimiento',
+            'bloque' => 'users.bloque',
+            'role' => 'users.role',
+        ];
+
+        if ($sortBy === 'created_by') {
+            $query
+                ->leftJoin('users as creators', 'creators.id', '=', 'users.created_by')
+                ->select('users.*')
+                ->orderByRaw("COALESCE(users.nombres, users.name, '') {$direction}")
+                ->orderByRaw("COALESCE(users.apellido_paterno, '') {$direction}")
+                ->orderByRaw("COALESCE(users.apellido_materno, '') {$direction}")
+                ->orderBy('users.id', 'desc');
+
+            return;
+        }
+
+        if ($sortBy === 'recinto_nombre') {
+            $query
+                ->leftJoin('recintos', 'recintos.id', '=', 'users.recinto_id')
+                ->select('users.*')
+                ->orderBy('recintos.nombre', $direction)
+                ->orderBy('users.id', 'desc');
+
+            return;
+        }
+
+        $column = $sortableColumns[$sortBy] ?? 'users.id';
+        $query->orderBy($column, $direction)->orderBy('users.id', 'desc');
     }
 
     function permissions()
@@ -295,16 +389,18 @@ class UserController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $actor = request()->user();
+        $actor = $request->user();
         $q = User::query()->where('id', '!=', 0);
 
         if (!$this->isAdmin($actor)) {
             $q->where('created_by', $actor->id);
         }
 
-        return $q
+        $this->applyIndexSearch($q, (string) $request->query('search', ''));
+
+        $q
             ->with([
                 'permissions:id,name',
                 'recinto:id,nombre',
@@ -315,21 +411,31 @@ class UserController extends Controller
                         'supervisores:id,name,username,celular',
                         'recintosComoJefe:id,nombre',
                     ]),
-            ])
-            ->orderBy('id', 'desc')
-            ->get()
-            ->map(function ($u) {
-                $u->ci_anverso_url = $u->ci_anverso ? Storage::url($u->ci_anverso) : null;
-                $u->ci_reverso_url = $u->ci_reverso ? Storage::url($u->ci_reverso) : null;
-                $u->foto_personal_url = $u->foto_personal ? Storage::url($u->foto_personal) : null;
-                $u->permissions = $this->resolvedPermissions($u);
-                $u->recinto_nombre = $u->recinto?->nombre;
-                $u->creator_name = $u->creator?->name;
-                $u->creator_username = $u->creator?->username;
-                $u->jerarquia = $this->buildDelegadoJerarquiaPayload($u);
+            ]);
 
-                return $u;
-            });
+        $sortBy = (string) $request->query('sortBy', 'id');
+        $descending = filter_var($request->query('descending', true), FILTER_VALIDATE_BOOLEAN);
+        $this->applyIndexSorting($q, $sortBy, $descending);
+
+        $paginate = !filter_var($request->query('paginate', true), FILTER_VALIDATE_BOOLEAN) ? false : true;
+
+        if (!$paginate) {
+            return $q->get()->map(fn ($u) => $this->enrichUser($u));
+        }
+
+        $rowsPerPage = (int) $request->query('rowsPerPage', 15);
+        if ($rowsPerPage <= 0) {
+            $rowsPerPage = 15;
+        }
+        $rowsPerPage = min($rowsPerPage, 100);
+
+        /** @var LengthAwarePaginator $users */
+        $users = $q->paginate($rowsPerPage)->appends($request->query());
+        $users->setCollection(
+            $users->getCollection()->map(fn ($u) => $this->enrichUser($u))
+        );
+
+        return response()->json($users);
     }
 
 //    function update(Request $request, $id){

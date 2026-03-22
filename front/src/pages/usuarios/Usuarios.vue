@@ -12,8 +12,9 @@
       v-model:pagination="pagination"
       :rows-per-page-options="[15, 30, 50, 100]"
       title="Usuarios"
-      :filter="filter"
-      :filter-method="filterUsers"
+      :loading="loading"
+      binary-state-sort
+      @request="onTableRequest"
     >
       <template v-slot:top-right>
         <q-btn-dropdown
@@ -528,7 +529,8 @@ export default {
         sortBy: 'id',
         descending: true,
         page: 1,
-        rowsPerPage: 15
+        rowsPerPage: 15,
+        rowsNumber: 0
       },
 
       // archivos nuevos (temporal)
@@ -583,6 +585,12 @@ export default {
     this.usersGet()
   },
 
+  watch: {
+    filter () {
+      this.debouncedUsersGet()
+    }
+  },
+
   computed: {
     isAdminOrSupervisor() {
       const role = this.$store?.user?.role
@@ -619,38 +627,6 @@ export default {
         : (recinto?.nombre || 'Recinto')
     },
 
-    filterUsers (rows, terms) {
-      const needle = String(terms || '').toLowerCase().trim()
-      if (!needle) return rows
-
-      return (rows || []).filter(row => {
-        const fullName = [row.nombres, row.apellido_paterno, row.apellido_materno]
-          .filter(Boolean)
-          .join(' ')
-        const values = [
-          row.username,
-          row.nombres,
-          row.apellido_paterno,
-          row.apellido_materno,
-          fullName,
-          row.name,
-          row.ci,
-          row.numero_mesa,
-          row.celular,
-          row.fecha_nacimiento,
-          row.bloque,
-          row.recinto_nombre,
-          row.recinto?.nombre,
-          ...(row.jerarquia?.jefes || []).flatMap(j => [j.name, j.username, j.celular, j.super_jefe ? 'superjefe' : 'subjefe']),
-          ...(row.jerarquia?.supervisores || []).flatMap(s => [s.name, s.username, s.celular]),
-          row.role,
-          row.creator_name
-        ]
-
-        return values.some(value => String(value || '').toLowerCase().includes(needle))
-      })
-    },
-
     closeUserDialog () {
       this.userDialog = false
       this.files = { ci_anverso: null, ci_reverso: null, foto_personal: null }
@@ -684,11 +660,52 @@ export default {
       this.userDialog = true
     },
 
-    usersGet() {
+    buildUsersParams (overrides = {}) {
+      const pagination = {
+        ...this.pagination,
+        ...overrides
+      }
+
+      return {
+        page: pagination.page,
+        rowsPerPage: pagination.rowsPerPage,
+        sortBy: pagination.sortBy || 'id',
+        descending: pagination.descending,
+        search: this.filter || undefined
+      }
+    },
+
+    debouncedUsersGet () {
+      clearTimeout(this._usersSearchTimer)
+      this._usersSearchTimer = setTimeout(() => {
+        this.usersGet({ page: 1 })
+      }, 300)
+    },
+
+    onTableRequest ({ pagination }) {
+      this.usersGet(pagination)
+    },
+
+    usersGet(overrides = {}) {
+      const nextPagination = {
+        ...this.pagination,
+        ...overrides
+      }
+
       this.loading = true
-      this.users = []
-      this.$axios.get('users')
-        .then(res => { this.users = res.data })
+      this.$axios.get('users', {
+        params: this.buildUsersParams(nextPagination)
+      })
+        .then(res => {
+          const payload = res.data || {}
+          this.users = Array.isArray(payload.data) ? payload.data : []
+          this.pagination = {
+            ...nextPagination,
+            page: payload.current_page ?? nextPagination.page,
+            rowsPerPage: payload.per_page ?? nextPagination.rowsPerPage,
+            rowsNumber: payload.total ?? 0
+          }
+        })
         .catch(err => { this.$alert.error(err.response?.data?.message || 'Error') })
         .finally(() => { this.loading = false })
     },
@@ -765,7 +782,7 @@ export default {
 
         this.userDialog = false
         this.$alert.success('Usuario creado')
-        this.usersGet()
+        this.usersGet({ page: 1 })
       } catch (e) {
         this.$alert.error(e.response?.data?.message || 'No se pudo crear')
       } finally {
@@ -797,7 +814,8 @@ export default {
           this.loading = true
           this.$axios.delete('users/' + id)
             .then(() => {
-              this.usersGet()
+              const shouldGoPrevPage = this.users.length === 1 && this.pagination.page > 1
+              this.usersGet({ page: shouldGoPrevPage ? this.pagination.page - 1 : this.pagination.page })
               this.$alert.success('Usuario eliminado')
             })
             .catch(err => this.$alert.error(err.response?.data?.message || 'Error'))
@@ -908,6 +926,10 @@ export default {
     },
 
     getUsersByType (type) {
+      return this.getUsersByTypeFromRows(this.users || [], type)
+    },
+
+    getUsersByTypeFromRows (rows, type) {
       const roleMap = {
         administradores: 'Administrador',
         supervisores: 'Supervisor',
@@ -915,12 +937,12 @@ export default {
         delegados: 'Delegado de Mesa'
       }
 
-      if (!type || type === 'todos') return this.users || []
+      if (!type || type === 'todos') return rows || []
 
       const role = roleMap[String(type).toLowerCase()]
-      if (!role) return this.users || []
+      if (!role) return rows || []
 
-      return (this.users || []).filter(u => String(u.role || '').trim() === role)
+      return (rows || []).filter(u => String(u.role || '').trim() === role)
     },
 
     excelTitleByType (type) {
@@ -935,14 +957,14 @@ export default {
     },
 
     async exportUsersExcel (type) {
-      const rows = this.getUsersByType(type)
-      if (!rows.length) {
-        this.$alert.error('No hay usuarios para exportar')
-        return
-      }
-
       this.loading = true
       try {
+        const rows = await this.fetchUsersForExport(type)
+        if (!rows.length) {
+          this.$alert.error('No hay usuarios para exportar')
+          return
+        }
+
         const { Excel } = await import('src/addons/Excel')
         const title = this.excelTitleByType(type)
         const content = rows.map(u => ({
@@ -988,6 +1010,20 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+
+    async fetchUsersForExport (type) {
+      const res = await this.$axios.get('users', {
+        params: {
+          sortBy: this.pagination.sortBy || 'id',
+          descending: this.pagination.descending,
+          search: this.filter || undefined,
+          paginate: false
+        }
+      })
+
+      const rows = Array.isArray(res.data) ? res.data : []
+      return this.getUsersByTypeFromRows(rows, type)
     },
   }
 }
