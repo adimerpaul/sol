@@ -11,38 +11,49 @@
             <div class="text-caption text-grey-7">Selecciona un recinto en el mapa y asigna sus jefes</div>
           </div>
           <div class="col-auto">
-            <q-btn-dropdown
-              color="primary"
-              icon="print"
-              label="Impresiones"
-              no-caps
-              :disable="loading"
-              :loading="printing"
-            >
-              <q-list>
-                <q-item clickable v-close-popup @click="openPrint('mesas-sin-delegado')">
-                  <q-item-section avatar><q-icon name="groups" /></q-item-section>
-                  <q-item-section>
-                    <q-item-label>Mesas sin delegado</q-item-label>
-                    <q-item-label caption>Incluye jefe de recinto y celulares</q-item-label>
-                  </q-item-section>
-                </q-item>
-                <q-item clickable v-close-popup @click="openPrint('recintos-sin-jefe')">
-                  <q-item-section avatar><q-icon name="domain_disabled" /></q-item-section>
-                  <q-item-section>
-                    <q-item-label>Recintos sin jefe</q-item-label>
-                    <q-item-label caption>Resumen por recinto y mesas faltantes</q-item-label>
-                  </q-item-section>
-                </q-item>
-                <q-item clickable v-close-popup @click="openPrint('jefes-mesas-delegados')">
-                  <q-item-section avatar><q-icon name="badge" /></q-item-section>
-                  <q-item-section>
-                    <q-item-label>Jefes, mesas y delegados</q-item-label>
-                    <q-item-label caption>Formato agrupado por jefe de recinto</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-btn-dropdown>
+            <div class="row items-center no-wrap q-gutter-sm">
+              <q-btn-dropdown
+                color="primary"
+                icon="print"
+                label="Impresiones"
+                no-caps
+                :disable="loading"
+                :loading="printing"
+              >
+                <q-list>
+                  <q-item clickable v-close-popup @click="openPrint('mesas-sin-delegado')">
+                    <q-item-section avatar><q-icon name="groups" /></q-item-section>
+                    <q-item-section>
+                      <q-item-label>Mesas sin delegado</q-item-label>
+                      <q-item-label caption>Incluye jefe de recinto y celulares</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="openPrint('recintos-sin-jefe')">
+                    <q-item-section avatar><q-icon name="domain_disabled" /></q-item-section>
+                    <q-item-section>
+                      <q-item-label>Recintos sin jefe</q-item-label>
+                      <q-item-label caption>Resumen por recinto y mesas faltantes</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="openPrint('jefes-mesas-delegados')">
+                    <q-item-section avatar><q-icon name="badge" /></q-item-section>
+                    <q-item-section>
+                      <q-item-label>Jefes, mesas y delegados</q-item-label>
+                      <q-item-label caption>Formato agrupado por jefe de recinto</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
+
+              <q-btn
+                color="positive"
+                icon="person_add"
+                label="Agregar delegado"
+                no-caps
+                :disable="loading"
+                @click="openDelegadoDialog"
+              />
+            </div>
           </div>
         </div>
 
@@ -373,6 +384,123 @@
         </div>
       </q-card-section>
     </q-card>
+
+    <q-dialog v-model="delegadoDialog" persistent>
+      <q-card style="width: 760px; max-width: 96vw">
+        <q-card-section class="q-pb-none row items-center">
+          <div class="text-weight-bold">Alta rapida de delegado de mesa</div>
+          <q-space />
+          <q-btn icon="close" flat round dense @click="closeDelegadoDialog" />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section>
+          <q-form @submit="createDelegadoRapido">
+            <div class="row q-col-gutter-sm">
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="delegadoForm.nombres"
+                  label="Nombre(s) *"
+                  dense
+                  outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="delegadoForm.apellido_paterno"
+                  label="Apellido paterno"
+                  dense
+                  outlined
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="delegadoForm.apellido_materno"
+                  label="Apellido materno *"
+                  dense
+                  outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="delegadoForm.ci"
+                  label="CI *"
+                  dense
+                  outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="delegadoForm.fecha_nacimiento"
+                  type="date"
+                  label="Fecha de nacimiento *"
+                  dense
+                  outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="delegadoForm.celular"
+                  label="Celular"
+                  dense
+                  outlined
+                />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="delegadoForm.bloque"
+                  label="Bloque / agrupacion / organizacion *"
+                  dense
+                  outlined
+                  :rules="[v => !!v || 'Campo requerido']"
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-input
+                  v-model="delegadoForm.numero_mesa"
+                  label="Numero de mesa"
+                  dense
+                  outlined
+                />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select
+                  v-model="delegadoForm.recinto_id"
+                  :options="recintosDialogOptions"
+                  option-label="label"
+                  option-value="value"
+                  emit-value
+                  map-options
+                  use-input
+                  input-debounce="0"
+                  clearable
+                  dense
+                  outlined
+                  label="Recinto"
+                  @filter="filterRecintosDialog"
+                />
+              </div>
+            </div>
+
+            <div class="text-caption text-grey-7 q-mt-sm">
+              El rol se guardara como Delegado de Mesa y el codigo de ingreso se generara automaticamente si no existe uno.
+            </div>
+
+            <div class="text-right q-mt-md">
+              <q-btn color="negative" label="Cancelar" no-caps :disable="savingDelegado" @click="closeDelegadoDialog" />
+              <q-btn color="primary" label="Guardar delegado" type="submit" no-caps :loading="savingDelegado" class="q-ml-sm" />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -417,7 +545,11 @@ export default {
       recintosOptions: [],
       focusRecinto: null,
       loading: false,
-      printing: false
+      printing: false,
+      delegadoDialog: false,
+      savingDelegado: false,
+      delegadoForm: this.emptyDelegadoForm(),
+      recintosDialogOptions: []
     }
   },
 
@@ -449,10 +581,31 @@ export default {
           label: item.nombre,
           value: item.id
         }))
+    },
+
+    recintosSelectableOptions () {
+      return (this.recintos || []).map(x => ({
+        value: x.id,
+        label: `${x.nombre} - ${x.localidad_nombre || x.municipio_nombre || 'Sin ubicacion'}`
+      }))
     }
   },
 
   methods: {
+    emptyDelegadoForm () {
+      return {
+        nombres: '',
+        apellido_paterno: '',
+        apellido_materno: '',
+        ci: '',
+        fecha_nacimiento: '',
+        bloque: '',
+        celular: '',
+        numero_mesa: '',
+        recinto_id: this.selected?.id || null
+      }
+    },
+
     buildLoadParams () {
       return {
         provincia_id: this.filters.provincia_id || undefined,
@@ -489,6 +642,7 @@ export default {
         }))
         this.delegadosOptions = this.delegadosOptionsAll
         this.recintosOptions = this.buildOptions(this.recintos)
+        this.recintosDialogOptions = this.recintosSelectableOptions
 
         if (this.selected?.id) {
           const again = (this.recintos || []).find(x => x.id === this.selected.id)
@@ -569,6 +723,9 @@ export default {
       this.recintoPick = recinto.id
       this.mesas = this.buildMesasFromRecinto(this.selected)
       this.delegadosOptions = this.delegadosOptionsAll
+      if (this.delegadoDialog) {
+        this.delegadoForm.recinto_id = recinto.id
+      }
     },
 
     filterRecintos (val, update) {
@@ -638,6 +795,35 @@ export default {
 
         this.delegadosOptions = (this.delegadosOptionsAll || []).filter(d =>
           String(d.label || '').toLowerCase().includes(needle)
+        )
+      })
+    },
+
+    openDelegadoDialog () {
+      this.delegadoForm = this.emptyDelegadoForm()
+      this.recintosDialogOptions = this.recintosSelectableOptions
+      this.delegadoDialog = true
+    },
+
+    closeDelegadoDialog () {
+      if (this.savingDelegado) return
+      this.delegadoDialog = false
+      this.delegadoForm = this.emptyDelegadoForm()
+      this.recintosDialogOptions = this.recintosSelectableOptions
+    },
+
+    filterRecintosDialog (val, update) {
+      update(() => {
+        const needle = String(val || '').toLowerCase().trim()
+        const base = this.recintosSelectableOptions
+
+        if (!needle) {
+          this.recintosDialogOptions = base
+          return
+        }
+
+        this.recintosDialogOptions = base.filter(item =>
+          String(item.label || '').toLowerCase().includes(needle)
         )
       })
     },
@@ -769,6 +955,26 @@ export default {
     async clearMesa (mesa) {
       mesa.delegadoDraftId = null
       await this.saveMesa(mesa)
+    },
+
+    async createDelegadoRapido () {
+      this.savingDelegado = true
+      try {
+        const payload = {
+          ...this.delegadoForm,
+          role: 'Delegado de Mesa'
+        }
+        const response = await this.$axios.post('users', payload)
+        const created = response?.data || {}
+
+        this.$alert.success(`Delegado creado${created.username ? `: ${created.username}` : ''}`)
+        this.delegadoDialog = false
+        await this.load()
+      } catch (e) {
+        this.$alert?.error(e.response?.data?.message || 'No se pudo crear el delegado')
+      } finally {
+        this.savingDelegado = false
+      }
     },
 
     async openPrint (type) {

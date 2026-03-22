@@ -11,7 +11,6 @@
         td { border: 1px solid #d1d5db; padding: 5px 6px; vertical-align: top; }
         .left { width: 38%; color: #0f172a; }
         .right { width: 62%; }
-        .muted { color: #6b7280; }
         .header { background: #f3f4f6; font-weight: bold; }
     </style>
 </head>
@@ -26,26 +25,26 @@
     <tbody>
     @forelse($rows as $row)
         <tr class="header">
-            <td class="left">{{ $row['jefe_nombre'] }}</td>
-            <td class="right">{{ $row['recintos']->implode(' · ') ?: 'Sin recintos asignados' }}</td>
+            <td class="left">Recinto</td>
+            <td class="right">{{ $row['recinto_nombre'] ?: 'Sin recinto' }}</td>
         </tr>
         <tr>
-            <td class="left">
-                {{ $row['jefe_username'] ?: '-' }}<br>
-                <span class="muted">Celular</span><br>
-                {{ $row['jefe_celular'] }}
-            </td>
+            <td class="left">Jefes asignados</td>
             <td class="right">
-                @forelse($row['recintos'] as $recinto)
-                    {{ $recinto }}<br>
+                @forelse($row['jefes'] as $jefe)
+                    <strong>{{ $jefe['name'] }}</strong>
+                    @if(!empty($jefe['username']))
+                        | {{ $jefe['username'] }}
+                    @endif
+                    | {{ $jefe['celular'] }}<br>
                 @empty
-                    Sin recintos asignados
+                    Sin jefes asignados
                 @endforelse
             </td>
         </tr>
     @empty
         <tr>
-            <td colspan="2">Sin jefes o recintos asignados para este supervisor.</td>
+            <td colspan="2">Sin recintos asignados para este supervisor.</td>
         </tr>
     @endforelse
     </tbody>

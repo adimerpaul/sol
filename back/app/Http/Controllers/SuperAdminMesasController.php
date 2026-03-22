@@ -551,21 +551,56 @@ class SuperAdminMesasController extends Controller
         }
 
         $rows = $supervisor->jefesAsignados
-            ->sortBy('name')
-            ->map(function ($jefe) {
-                $recintos = $jefe->recintosComoJefe
-                    ->sortBy('nombre')
-                    ->pluck('nombre')
-                    ->filter()
-                    ->values();
+            ->flatMap(function ($jefe) {
+                return $jefe->recintosComoJefe
+                    ->filter(fn ($recinto) => !empty($recinto->id))
+                    ->map(function ($recinto) use ($jefe) {
+                        return [
+                            'recinto_id' => $recinto->id,
+                            'recinto_nombre' => $recinto->nombre,
+                            'jefe' => [
+                                'name' => $jefe->name,
+                                'username' => $jefe->username,
+                                'celular' => $jefe->celular ?: 'Sin celular',
+                            ],
+                        ];
+                    });
+            })
+            ->groupBy('recinto_id')
+            ->map(function ($items) {
+                $first = $items->first();
 
                 return [
-                    'jefe_nombre' => $jefe->name,
-                    'jefe_username' => $jefe->username,
-                    'jefe_celular' => $jefe->celular ?: 'Sin celular',
-                    'recintos' => $recintos,
+                    'recinto_id' => $first['recinto_id'],
+                    'recinto_nombre' => $first['recinto_nombre'],
+                    'jefes' => $items
+                        ->pluck('jefe')
+                        ->unique('username')
+                        ->sortBy('name')
+                        ->values(),
+                    'jefe_nombre' => $first['recinto_nombre'],
+                    'jefe_username' => $items
+                        ->pluck('jefe.name')
+                        ->filter()
+                        ->unique()
+                        ->implode(' | '),
+                    'jefe_celular' => '',
+                    'recintos' => $items
+                        ->pluck('jefe')
+                        ->unique('username')
+                        ->sortBy('name')
+                        ->map(function ($jefe) {
+                            $parts = array_filter([
+                                $jefe['username'] ?? null,
+                                $jefe['celular'] ?? null,
+                            ]);
+
+                            return !empty($parts) ? implode(' | ', $parts) : ($jefe['name'] ?? 'Sin jefe');
+                        })
+                        ->values(),
                 ];
             })
+            ->sortBy('recinto_nombre')
             ->values();
 
         return [
