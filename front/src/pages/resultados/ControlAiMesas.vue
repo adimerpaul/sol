@@ -302,8 +302,8 @@
                   <thead>
                     <tr>
                       <th class="text-left">Partido</th>
-                      <th class="text-right">Concejal</th>
                       <th class="text-right">Alcalde</th>
+                      <th class="text-right">Concejal</th>
                       <th class="text-right">Conf.</th>
                     </tr>
                   </thead>
@@ -327,10 +327,10 @@
                         </div>
                       </td>
                       <td>
-                        <q-input v-model.number="row.votos_concejal" type="number" dense outlined class="vote-input" input-class="text-right" />
+                        <q-input v-model.number="row.votos_alcalde" type="number" dense outlined class="vote-input" input-class="text-right" />
                       </td>
                       <td>
-                        <q-input v-model.number="row.votos_alcalde" type="number" dense outlined class="vote-input" input-class="text-right" />
+                        <q-input v-model.number="row.votos_concejal" type="number" dense outlined class="vote-input" input-class="text-right" />
                       </td>
                       <td>
                         <q-input v-model.number="row.confianza" type="number" dense outlined class="vote-input vote-input-confidence" input-class="text-right" />
@@ -509,8 +509,8 @@
 
 <script>
 const CATEGORY_CARDS = [
-  { key: 'concejal', label: 'Concejal' },
-  { key: 'alcalde', label: 'Alcalde' }
+  { key: 'alcalde', label: 'Alcalde' },
+  { key: 'concejal', label: 'Concejal' }
 ]
 
 const EMPTY_CATEGORIES = () => ({
@@ -550,7 +550,7 @@ export default {
         title: '',
         zoom: 1
       },
-      chartTab: 'concejal',
+      chartTab: 'alcalde',
       form: {
         fuente_tipo: 'upload',
         fuente_slot_departamental: null,
