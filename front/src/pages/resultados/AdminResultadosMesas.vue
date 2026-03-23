@@ -303,6 +303,11 @@
                   </span>
                 </div>
               </div>
+              <div class="q-mt-xs" v-if="r.origen_registro">
+                <q-chip dense size="11px" :color="r.origen_registro === 'sistema' ? 'primary' : 'deep-orange'" text-color="white">
+                  {{ r.origen_registro === 'sistema' ? 'Registrado por sistema' : 'Registrado por app' }}
+                </q-chip>
+              </div>
             </td>
 
             <td class="text-left">
@@ -1189,9 +1194,7 @@ export default {
         foto6: false, foto7: false, foto8: false, foto9: false, foto10: false
       },
       dlgFotoPreview: false,
-      fotoPreviewSrc: null,
-      socket: null,
-      socketRefreshTimer: null
+      fotoPreviewSrc: null
     }
   },
 
@@ -1337,10 +1340,6 @@ export default {
   },
 
   beforeUnmount () {
-    if (this.socketRefreshTimer) {
-      clearTimeout(this.socketRefreshTimer)
-      this.socketRefreshTimer = null
-    }
   },
 
   methods: {

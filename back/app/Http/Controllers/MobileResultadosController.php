@@ -531,6 +531,7 @@ class MobileResultadosController extends Controller
                 ['mesa_id' => $mesa->id],
                 [
                     'registrado_por' => $user->id,
+                    'origen_registro' => 'app',
                     'observacion' => $data['observacion'] ?? null,
                     'observacion_gobernador' => $data['observacion_gobernador'] ?? null,
                     'observacion_asambleista_distrito' => $data['observacion_asambleista_distrito'] ?? null,
@@ -775,6 +776,7 @@ class MobileResultadosController extends Controller
                 ['mesa_id' => $data['mesa_id']],
                 [
                     'registrado_por' => $user->id,
+                    'origen_registro' => 'app',
                     'total_votos' => $data['payload']['total_votos'],
                     'total_validos' => $data['payload']['total_validos'],
                     'total_blancos' => $data['payload']['total_blancos'],

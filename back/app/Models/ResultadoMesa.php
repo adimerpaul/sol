@@ -14,7 +14,7 @@ class ResultadoMesa extends Model implements Auditable
     protected $table = 'resultados_mesa';
 
     protected $fillable = [
-        'mesa_id','registrado_por',
+        'mesa_id','registrado_por','origen_registro',
         'aviso_antes','aviso_manana','aviso_mediodia','aviso_tarde',
         'etapa_1','etapa_2',
         'hora_apertura_mesa',

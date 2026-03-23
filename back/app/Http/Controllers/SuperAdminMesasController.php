@@ -156,7 +156,7 @@ class SuperAdminMesasController extends Controller
                 'provincia:id,nombre',
                 'municipio:id,nombre',
                 'delegado:id,name,username,celular,ci,fecha_nacimiento',
-                'resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos',
+                'resultado:id,mesa_id,origen_registro,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos',
                 'resultado.detalles:id,resultado_mesa_id,partido_id,votos_gobernador,votos_asambleista_distrito,votos_asambleista_poblacion,votos_concejal,votos_alcalde',
                 'resultado.detalles.partido:id,nombre,sigla,icono'
             ])
@@ -233,6 +233,7 @@ class SuperAdminMesasController extends Controller
                     'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
                     'total_blancos' => (int) (optional($m->resultado)->total_blancos ?? 0),
                     'total_nulos' => (int) (optional($m->resultado)->total_nulos ?? 0),
+                    'origen_registro' => optional($m->resultado)->origen_registro,
                     'ganadores' => $this->resolveGanadoresPorCategoria($m),
                 ];
             })->values();
@@ -293,6 +294,7 @@ class SuperAdminMesasController extends Controller
                 'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
                 'total_blancos' => (int) (optional($m->resultado)->total_blancos ?? 0),
                 'total_nulos' => (int) (optional($m->resultado)->total_nulos ?? 0),
+                'origen_registro' => optional($m->resultado)->origen_registro,
                 'ganadores' => $this->resolveGanadoresPorCategoria($m),
             ];
         })->values();
@@ -490,7 +492,7 @@ class SuperAdminMesasController extends Controller
 
         $rows = $this->buildMesasPrintBaseQuery($request)
             ->with([
-                'resultado:id,mesa_id,aviso_manana,hora_apertura_mesa,registrado_por',
+                'resultado:id,mesa_id,origen_registro,aviso_manana,hora_apertura_mesa,registrado_por',
                 'resultado.registradoPor:id,name,username',
             ])
             ->whereHas('resultado', function ($qq) {
@@ -540,7 +542,7 @@ class SuperAdminMesasController extends Controller
 
         $rows = $this->buildMesasPrintBaseQuery($request)
             ->with([
-                'resultado:id,mesa_id,aviso_manana,hora_apertura_mesa,registrado_por',
+                'resultado:id,mesa_id,origen_registro,aviso_manana,hora_apertura_mesa,registrado_por',
                 'resultado.registradoPor:id,name,username',
             ])
             ->whereHas('resultado', function ($qq) {
@@ -1458,10 +1460,14 @@ class SuperAdminMesasController extends Controller
             $res = ResultadoMesa::with('detalles')
                 ->firstOrCreate(
                     ['mesa_id' => $mesa->id],
-                    ['registrado_por' => $request->user()->id]
+                    [
+                        'registrado_por' => $request->user()->id,
+                        'origen_registro' => 'sistema',
+                    ]
                 );
 
             $res->registrado_por = $request->user()->id;
+            $res->origen_registro = 'sistema';
 
             foreach (['aviso_antes', 'aviso_manana', 'aviso_mediodia', 'aviso_tarde'] as $k) {
                 if ($request->has($k)) {
