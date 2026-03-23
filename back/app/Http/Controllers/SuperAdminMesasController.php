@@ -48,7 +48,27 @@ class SuperAdminMesasController extends Controller
     public function bootstrap(Request $request)
     {
         return response()->json([
-            'mesas' => $this->buildMesasIndexPayload($request),
+            'mesas' => $this->buildMesasIndexPayload($request, true),
+            'geo' => [
+                'provincias' => DB::table('provincias')
+                    ->select('id', 'nombre', 'departamento_id')
+                    ->whereNull('deleted_at')
+                    ->where('departamento_id', 5)
+                    ->orderBy('nombre')
+                    ->get(),
+                'municipios' => DB::table('municipios')
+                    ->select('id', 'nombre', 'provincia_id')
+                    ->whereNull('deleted_at')
+                    ->orderBy('nombre')
+                    ->get(),
+                'localidades' => DB::table('localidades')
+                    ->select('id', 'nombre', 'municipio_id')
+                    ->whereNull('deleted_at')
+                    ->orderBy('nombre')
+                    ->get(),
+            ],
+            'recintos' => $this->buildRecintosOptionsPayload($request),
+            'delegados' => $this->buildDelegadosOptionsPayload(),
         ]);
     }
 
@@ -188,55 +208,9 @@ class SuperAdminMesasController extends Controller
         if ($all) {
             $pag = $base->paginate($perPage, ['*'], 'page', $page);
 
-            $data = collect($pag->items())->map(function ($m) {
-                return [
-                    'id' => $m->id,
-                    'departamento_id' => $m->departamento_id,
-                    'departamento_nombre' => $m->departamento?->nombre,
-                    'provincia_id' => $m->provincia_id,
-                    'provincia_nombre' => $m->provincia?->nombre,
-                    'municipio_id' => $m->municipio_id,
-                    'municipio_nombre' => $m->municipio?->nombre,
-                    'recinto_id' => $m->recinto_id,
-                    'recinto_nombre' => $m->recinto?->nombre,
-                    'recinto_latitud' => $m->recinto?->latitud !== null ? (string) $m->recinto?->latitud : null,
-                    'recinto_longitud' => $m->recinto?->longitud !== null ? (string) $m->recinto?->longitud : null,
-
-                    'numero_mesa' => $m->numero_mesa,
-                    'habilitados' => (int) ($m->habilitados ?? 260),
-                    'delegado_id' => $m->delegado_id,
-                    'delegado' => $m->delegado ? [
-                        'id' => $m->delegado->id,
-                        'name' => $m->delegado->name,
-                        'username' => $m->delegado->username,
-                        'celular' => $m->delegado->celular,
-                        'ci' => $m->delegado->ci,
-                        'fecha_nacimiento' => $m->delegado->fecha_nacimiento,
-                    ] : null,
-
-                    'estado' => $m->estado,
-                    'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
-                    'delegado_latitud' => $m->delegado_latitud !== null ? (string) $m->delegado_latitud : null,
-                    'delegado_longitud' => $m->delegado_longitud !== null ? (string) $m->delegado_longitud : null,
-                    'delegado_presente_at' => $m->delegado_presente_at?->toIso8601String(),
-
-                    'tiene_resultado' => $this->mesaTieneResultado($m),
-                    'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
-                    'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
-                    'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
-                    'aviso_tarde' => (bool) optional($m->resultado)->aviso_tarde,
-                    'hora_apertura_mesa' => optional($m->resultado)->hora_apertura_mesa,
-                    'etapa_1' => null,
-                    'etapa_2' => null,
-
-                    'total_votos' => (int) (optional($m->resultado)->total_votos ?? 0),
-                    'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
-                    'total_blancos' => (int) (optional($m->resultado)->total_blancos ?? 0),
-                    'total_nulos' => (int) (optional($m->resultado)->total_nulos ?? 0),
-                    'origen_registro' => optional($m->resultado)->origen_registro,
-                    'ganadores' => $this->resolveGanadoresPorCategoria($m),
-                ];
-            })->values();
+            $data = collect($pag->items())
+                ->map(fn ($m) => $this->mapMesaIndexRow($m))
+                ->values();
 
             return [
                 'mode' => 'paginate',
@@ -253,51 +227,9 @@ class SuperAdminMesasController extends Controller
         $total = (clone $base)->toBase()->getCountForPagination();
         $rows  = (clone $base)->limit($this->MAX_ROWS)->get();
 
-        $data = $rows->map(function ($m) {
-            return [
-                'id' => $m->id,
-                'departamento_id' => $m->departamento_id,
-                'departamento_nombre' => $m->departamento?->nombre,
-                'provincia_id' => $m->provincia_id,
-                'provincia_nombre' => $m->provincia?->nombre,
-                'municipio_id' => $m->municipio_id,
-                'municipio_nombre' => $m->municipio?->nombre,
-                'recinto_id' => $m->recinto_id,
-                'recinto_nombre' => $m->recinto?->nombre,
-                'recinto_latitud' => $m->recinto?->latitud !== null ? (string) $m->recinto?->latitud : null,
-                'recinto_longitud' => $m->recinto?->longitud !== null ? (string) $m->recinto?->longitud : null,
-                'numero_mesa' => $m->numero_mesa,
-                'habilitados' => (int) ($m->habilitados ?? 260),
-                'delegado_id' => $m->delegado_id,
-                    'delegado' => $m->delegado ? [
-                        'id' => $m->delegado->id,
-                        'name' => $m->delegado->name,
-                        'username' => $m->delegado->username,
-                        'celular' => $m->delegado->celular,
-                        'ci' => $m->delegado->ci,
-                        'fecha_nacimiento' => $m->delegado->fecha_nacimiento,
-                    ] : null,
-                'estado' => $m->estado,
-                'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
-                'delegado_latitud' => $m->delegado_latitud !== null ? (string) $m->delegado_latitud : null,
-                'delegado_longitud' => $m->delegado_longitud !== null ? (string) $m->delegado_longitud : null,
-                'delegado_presente_at' => $m->delegado_presente_at?->toIso8601String(),
-                'tiene_resultado' => $this->mesaTieneResultado($m),
-                'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
-                'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
-                'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
-                'aviso_tarde' => (bool) optional($m->resultado)->aviso_tarde,
-                'hora_apertura_mesa' => optional($m->resultado)->hora_apertura_mesa,
-                'etapa_1' => null,
-                'etapa_2' => null,
-                'total_votos' => (int) (optional($m->resultado)->total_votos ?? 0),
-                'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
-                'total_blancos' => (int) (optional($m->resultado)->total_blancos ?? 0),
-                'total_nulos' => (int) (optional($m->resultado)->total_nulos ?? 0),
-                'origen_registro' => optional($m->resultado)->origen_registro,
-                'ganadores' => $this->resolveGanadoresPorCategoria($m),
-            ];
-        })->values();
+        $data = $rows
+            ->map(fn ($m) => $this->mapMesaIndexRow($m))
+            ->values();
 
         return [
             'mode' => 'cap',
@@ -328,6 +260,72 @@ class SuperAdminMesasController extends Controller
             'provincia_id' => $provinciaId,
             'municipio_id' => $municipioId,
         ];
+    }
+
+    private function mapMesaIndexRow(Mesa $m): array
+    {
+        return [
+            'id' => $m->id,
+            'departamento_id' => $m->departamento_id,
+            'departamento_nombre' => $m->departamento?->nombre,
+            'provincia_id' => $m->provincia_id,
+            'provincia_nombre' => $m->provincia?->nombre,
+            'municipio_id' => $m->municipio_id,
+            'municipio_nombre' => $m->municipio?->nombre,
+            'localidad_id' => $m->localidad_id,
+            'localidad_nombre' => $m->localidad?->nombre,
+            'recinto_id' => $m->recinto_id,
+            'recinto_nombre' => $m->recinto?->nombre,
+            'recinto_latitud' => $m->recinto?->latitud !== null ? (string) $m->recinto?->latitud : null,
+            'recinto_longitud' => $m->recinto?->longitud !== null ? (string) $m->recinto?->longitud : null,
+            'numero_mesa' => $m->numero_mesa,
+            'habilitados' => (int) ($m->habilitados ?? 260),
+            'delegado_id' => $m->delegado_id,
+            'delegado' => $m->delegado ? [
+                'id' => $m->delegado->id,
+                'name' => $m->delegado->name,
+                'username' => $m->delegado->username,
+                'celular' => $m->delegado->celular,
+                'ci' => $m->delegado->ci,
+                'fecha_nacimiento' => $m->delegado->fecha_nacimiento,
+            ] : null,
+            'estado' => $m->estado,
+            'asistencia_capacitacion' => (bool) $m->asistencia_capacitacion,
+            'delegado_latitud' => $m->delegado_latitud !== null ? (string) $m->delegado_latitud : null,
+            'delegado_longitud' => $m->delegado_longitud !== null ? (string) $m->delegado_longitud : null,
+            'delegado_presente_at' => $m->delegado_presente_at?->toIso8601String(),
+            'tiene_resultado' => $this->mesaTieneResultado($m),
+            'aviso_antes' => (bool) optional($m->resultado)->aviso_antes,
+            'aviso_manana' => (bool) optional($m->resultado)->aviso_manana,
+            'aviso_mediodia' => (bool) optional($m->resultado)->aviso_mediodia,
+            'aviso_tarde' => (bool) optional($m->resultado)->aviso_tarde,
+            'hora_apertura_mesa' => optional($m->resultado)->hora_apertura_mesa,
+            'etapa_1' => null,
+            'etapa_2' => null,
+            'total_votos' => (int) (optional($m->resultado)->total_votos ?? 0),
+            'total_validos' => (int) (optional($m->resultado)->total_validos ?? 0),
+            'total_blancos' => (int) (optional($m->resultado)->total_blancos ?? 0),
+            'total_nulos' => (int) (optional($m->resultado)->total_nulos ?? 0),
+            'origen_registro' => optional($m->resultado)->origen_registro,
+            'ganadores' => $this->resolveGanadoresPorCategoria($m),
+        ];
+    }
+
+    private function buildMesaIndexRowPayload(Mesa $mesa): array
+    {
+        $mesa->load([
+            'departamento:id,nombre',
+            'provincia:id,nombre',
+            'municipio:id,nombre',
+            'localidad:id,nombre',
+            'recinto:id,nombre,latitud,longitud',
+            'delegado:id,name,username,celular,ci,fecha_nacimiento',
+            'resultado:id,mesa_id,origen_registro,aviso_antes,aviso_manana,aviso_mediodia,hora_apertura_mesa,aviso_tarde,etapa_1,etapa_2,total_votos,total_validos,total_blancos,total_nulos',
+            'resultado.detalles:id,resultado_mesa_id,partido_id,votos_gobernador,votos_asambleista_distrito,votos_asambleista_poblacion,votos_concejal,votos_alcalde',
+            'resultado.detalles.partido:id,nombre,sigla,icono',
+        ]);
+
+        return $this->mapMesaIndexRow($mesa);
     }
 
 
@@ -1255,7 +1253,10 @@ class SuperAdminMesasController extends Controller
             $mesa->estado = $data['estado'] ?? 'ASIGNADA';
             $mesa->save();
 
-            return response()->json(['message' => 'Delegado asignado']);
+            return response()->json([
+                'message' => 'Delegado asignado',
+                'row' => $this->buildMesaIndexRowPayload($mesa),
+            ]);
         }
 
         $mesa->delegado_id = null;
@@ -1265,7 +1266,10 @@ class SuperAdminMesasController extends Controller
         $mesa->delegado_presente_at = null;
         $mesa->save();
 
-        return response()->json(['message' => 'Mesa liberada']);
+        return response()->json([
+            'message' => 'Mesa liberada',
+            'row' => $this->buildMesaIndexRowPayload($mesa),
+        ]);
     }
 
     public function asistenciaCapacitacion(Request $request, Mesa $mesa)
@@ -1607,7 +1611,10 @@ class SuperAdminMesasController extends Controller
 
         SocketEmitter::votacion($socketPayload);
 
-        return response()->json(['message' => 'Resultado guardado']);
+        return response()->json([
+            'message' => 'Resultado guardado',
+            'row' => $this->buildMesaIndexRowPayload($mesa),
+        ]);
     }
 
     private function partidosPorMesa(Mesa $mesa)

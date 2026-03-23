@@ -1353,6 +1353,89 @@ export default {
       this.maxCap = this.rowsPerPage === 0 ? 250 : this.rowsPerPage
     },
 
+    rowMatchesCurrentFilters (row) {
+      if (!row) return false
+      if (this.filters.provincia_id && Number(row.provincia_id) !== Number(this.filters.provincia_id)) return false
+      if (this.filters.municipio_id && Number(row.municipio_id) !== Number(this.filters.municipio_id)) return false
+      if (this.filters.localidad_id && Number(row.localidad_id) !== Number(this.filters.localidad_id)) return false
+      if (this.filters.recinto_id && Number(row.recinto_id) !== Number(this.filters.recinto_id)) return false
+      if (this.filters.delegado_id && Number(row.delegado_id) !== Number(this.filters.delegado_id)) return false
+      if (this.filters.asignado === 'YES' && !row.delegado_id) return false
+      if (this.filters.asignado === 'NO' && row.delegado_id) return false
+      if (this.filters.con_resultado === 'YES' && !row.tiene_resultado) return false
+      if (this.filters.con_resultado === 'NO' && row.tiene_resultado) return false
+      return true
+    },
+
+    summarizeRowFlags (row) {
+      return {
+        total: row ? 1 : 0,
+        asignadas: row?.delegado_id ? 1 : 0,
+        sin_delegado: row && !row?.delegado_id ? 1 : 0,
+        con_resultado: row?.tiene_resultado ? 1 : 0
+      }
+    },
+
+    patchSummaryWithRowChange (previousRow, nextRow) {
+      const prev = this.summarizeRowFlags(previousRow)
+      const next = this.summarizeRowFlags(nextRow)
+      this.summary = {
+        total: Math.max(0, Number(this.summary?.total || 0) - prev.total + next.total),
+        asignadas: Math.max(0, Number(this.summary?.asignadas || 0) - prev.asignadas + next.asignadas),
+        sin_delegado: Math.max(0, Number(this.summary?.sin_delegado || 0) - prev.sin_delegado + next.sin_delegado),
+        con_resultado: Math.max(0, Number(this.summary?.con_resultado || 0) - prev.con_resultado + next.con_resultado)
+      }
+      this.totalReal = this.summary.total
+      this.backendTotal = this.summary.total
+    },
+
+    applyPatchedRow (row) {
+      if (!row?.id) return
+      const index = this.allRows.findIndex(item => Number(item.id) === Number(row.id))
+      const previousRow = index >= 0 ? this.allRows[index] : null
+      const nextRow = this.rowMatchesCurrentFilters(row) ? row : null
+
+      this.patchSummaryWithRowChange(previousRow, nextRow)
+
+      if (index >= 0 && nextRow) {
+        this.allRows.splice(index, 1, nextRow)
+      } else if (index >= 0 && !nextRow) {
+        this.allRows.splice(index, 1)
+      } else if (index < 0 && nextRow) {
+        this.allRows.unshift(nextRow)
+      }
+
+      if (this.curMesa?.id && Number(this.curMesa.id) === Number(row.id)) {
+        this.curMesa = nextRow || row
+      }
+      if (this.resMesa?.id && Number(this.resMesa.id) === Number(row.id)) {
+        this.resMesa = nextRow || row
+      }
+    },
+
+    applyBootstrapPayload (payload) {
+      this.geoOptions = {
+        provincias: Array.isArray(payload?.geo?.provincias) ? payload.geo.provincias : [],
+        municipios: Array.isArray(payload?.geo?.municipios) ? payload.geo.municipios : [],
+        localidades: Array.isArray(payload?.geo?.localidades) ? payload.geo.localidades : []
+      }
+      this.applyDefaultGeoFilters()
+
+      this.recintosBase = (Array.isArray(payload?.recintos) ? payload.recintos : []).map(r => ({
+        ...r,
+        value: r.id,
+        label: this.buildRecintoLabel(r)
+      }))
+      this.syncRecintosByGeo()
+
+      this.delegadosOpt = Array.isArray(payload?.delegados) ? payload.delegados : []
+      const delegadosBase = this.buildDelegadosOptions()
+      this.delegadosOptFiltered = delegadosBase
+      this.delegadosAsignarOptFiltered = delegadosBase
+
+      this.applyMesasResponse(payload?.mesas || {})
+    },
+
     onSocketVotacion (evt) {
       const data = typeof evt === 'string' ? { message: evt } : (evt || {})
       const title = data.title || 'Nuevo dato registrado'
@@ -1482,20 +1565,7 @@ export default {
 
     async bootstrapPageData () {
       this.normalizeHiddenFilters()
-      await this.loadGeoOptions()
-      this.applyDefaultGeoFilters()
-      await this.ensureRecintosOptions()
-      await this.ensureDelegadosOptions()
       await this.refresh()
-    },
-
-    async loadGeoOptions () {
-      const data = await this.$axios.get('geo/options').then(r => r.data)
-      this.geoOptions = {
-        provincias: Array.isArray(data?.provincias) ? data.provincias : [],
-        municipios: Array.isArray(data?.municipios) ? data.municipios : [],
-        localidades: Array.isArray(data?.localidades) ? data.localidades : []
-      }
     },
 
     applyDefaultGeoFilters () {
@@ -1516,16 +1586,15 @@ export default {
     },
 
     async loadRecintosOptions () {
-      const data = await this.$axios.get('admin/mesas/options/recintos', {
-        params: this.buildMesaQueryParams()
-      }).then(r => r.data)
-
-      this.recintosBase = (Array.isArray(data) ? data : []).map(r => ({
-        ...r,
-        value: r.id,
-        label: this.buildRecintoLabel(r)
-      }))
-      this.recintosOpt = this.recintosBase
+      const { data } = await this.$axios.get('admin/mesas/bootstrap', {
+        params: {
+          ...this.buildMesaQueryParams(),
+          all: 1,
+          per_page: this.rowsPerPage === 0 ? 250 : this.rowsPerPage,
+          page: this.page
+        }
+      })
+      this.applyBootstrapPayload(data)
       return this.recintosBase
     },
 
@@ -1540,11 +1609,7 @@ export default {
 
     async ensureDelegadosOptions () {
       if (this.delegadosOpt.length) return
-      const data = await this.$axios.get('admin/mesas/options/delegados').then(r => r.data)
-      this.delegadosOpt = Array.isArray(data) ? data : []
-      const base = this.buildDelegadosOptions()
-      this.delegadosOptFiltered = base
-      this.delegadosAsignarOptFiltered = base
+      await this.loadRecintosOptions()
     },
 
     async ensureSupervisoresOptions () {
@@ -1970,8 +2035,8 @@ export default {
           page: this.page
         }
 
-        const res = await this.$axios.get('admin/mesas/resultados-index', { params }).then(r => r.data)
-        this.applyMesasResponse(res)
+        const res = await this.$axios.get('admin/mesas/bootstrap', { params }).then(r => r.data)
+        this.applyBootstrapPayload(res)
       } finally {
         this.loading = false
       }
@@ -2088,13 +2153,13 @@ export default {
       if (!this.curMesa?.id) return
       this.saving = true
       try {
-        await this.$axios.put(`admin/mesas/${this.curMesa.id}/delegado`, {
+        const res = await this.$axios.put(`admin/mesas/${this.curMesa.id}/delegado`, {
           delegado_id: this.delegadoPick,
           estado: this.estadoPick
         })
         this.$alert.success(this.delegadoPick ? 'Delegado asignado' : 'Mesa liberada')
         this.dlgAsignar = false
-        this.refresh()
+        this.applyPatchedRow(res?.data?.row)
       } catch (e) {
         this.$alert.error(e.response?.data?.message || 'No se pudo asignar')
       } finally {
@@ -2426,7 +2491,7 @@ export default {
         if (this.fotosToClear.foto9) fd.append('clear_foto9', '1')
         if (this.fotosToClear.foto10) fd.append('clear_foto10', '1')
 
-        await this.$axios.post(
+        const res = await this.$axios.post(
           `admin/mesas/${this.resMesa.id}/resultado?_method=PUT`,
           fd,
           { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -2434,7 +2499,7 @@ export default {
 
         this.$alert.success('Resultado guardado')
         this.dlgResultado = false
-        this.refresh()
+        this.applyPatchedRow(res?.data?.row)
       } catch (e) {
         this.$alert.error(e.response?.data?.message || 'No se pudo guardar')
       } finally {
