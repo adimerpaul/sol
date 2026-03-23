@@ -57,13 +57,23 @@ class SuperAdminMesasController extends Controller
         return response()->json($this->buildMesasIndexPayload($request));
     }
 
-    private function buildMesasIndexPayload(Request $request): array
+    public function resultadosIndex(Request $request)
+    {
+        return response()->json($this->buildMesasIndexPayload($request, true));
+    }
+
+    private function buildMesasIndexPayload(Request $request, bool $useAdminResultadosDefaultScope = false): array
     {
         $departamentoId = $request->get('departamento_id', 5);
         $provinciaId  = $request->get('provincia_id');
         $municipioId  = $request->get('municipio_id');
         $localidadId  = $request->get('localidad_id');
         $recintoId    = $request->get('recinto_id');
+        if ($useAdminResultadosDefaultScope && !$provinciaId && !$municipioId && !$localidadId && !$recintoId) {
+            $defaultScope = $this->resolveAdminResultadosDefaultScope((int) $departamentoId);
+            $provinciaId = $defaultScope['provincia_id'];
+            $municipioId = $defaultScope['municipio_id'];
+        }
         $mesaId       = $request->get('mesa_id');
         $asignado     = $request->get('asignado', 'ALL');
         $delegadoId   = $request->get('delegado_id');
@@ -295,6 +305,26 @@ class SuperAdminMesasController extends Controller
             'truncated' => $total > $this->MAX_ROWS,
             'max' => $this->MAX_ROWS,
             'data' => $data,
+        ];
+    }
+
+    private function resolveAdminResultadosDefaultScope(int $departamentoId): array
+    {
+        $provinciaId = DB::table('provincias')
+            ->where('departamento_id', $departamentoId)
+            ->whereRaw('LOWER(nombre) = ?', ['cercado'])
+            ->value('id');
+
+        $municipioId = $provinciaId
+            ? DB::table('municipios')
+                ->where('provincia_id', $provinciaId)
+                ->whereRaw('LOWER(nombre) = ?', ['oruro'])
+                ->value('id')
+            : null;
+
+        return [
+            'provincia_id' => $provinciaId,
+            'municipio_id' => $municipioId,
         ];
     }
 

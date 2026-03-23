@@ -13,6 +13,94 @@
           <div class="row q-col-gutter-sm justify-end items-center">
 
             <div class="col-12 col-sm-3">
+              <q-select
+                v-model="filters.provincia_id"
+                :options="provinciaOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                clearable
+                dense
+                outlined
+                label="Provincia"
+                @update:model-value="onProvinciaChange"
+              />
+            </div>
+
+            <div class="col-12 col-sm-3">
+              <q-select
+                v-model="filters.municipio_id"
+                :options="municipioOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                clearable
+                dense
+                outlined
+                label="Municipio"
+                :disable="!filters.provincia_id"
+                @update:model-value="onMunicipioChange"
+              />
+            </div>
+
+            <div class="col-12 col-sm-3">
+              <q-select
+                v-model="filters.localidad_id"
+                :options="localidadOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                clearable
+                dense
+                outlined
+                label="Localidad"
+                :disable="!filters.municipio_id"
+                @update:model-value="onChangeMainFilters"
+              />
+            </div>
+
+            <div class="col-12 col-sm-3">
+              <q-select
+                v-model="filters.recinto_id"
+                :options="recintosOpt"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                use-input
+                input-debounce="200"
+                clearable
+                dense
+                outlined
+                label="Recinto"
+                @filter="filterRecintos"
+                @update:model-value="onChangeMainFilters"
+              />
+            </div>
+
+            <div class="col-12 col-sm-3">
+              <q-select
+                v-model="filters.delegado_id"
+                :options="delegadosOptFiltered"
+                option-label="label"
+                option-value="id"
+                emit-value
+                map-options
+                use-input
+                input-debounce="200"
+                clearable
+                dense
+                outlined
+                label="Delegado"
+                @filter="filterDelegados"
+                @update:model-value="onChangeMainFilters"
+              />
+            </div>
+
+            <div class="col-12 col-sm-2">
               <q-btn
                 color="primary"
                 icon="refresh"
@@ -23,7 +111,18 @@
                 @click="refresh"
               />
             </div>
-            <div class="col-12 col-sm-3">
+            <div class="col-12 col-sm-2">
+              <q-btn
+                flat
+                color="grey-7"
+                icon="filter_alt_off"
+                label="Limpiar"
+                no-caps
+                class="full-width"
+                @click="clearMainFilters"
+              />
+            </div>
+            <div class="col-12 col-sm-2">
               <q-btn-dropdown
                 color="teal"
                 label="Imprimir"
@@ -929,7 +1028,6 @@
 
 <script>
 import PresenceLeafletMap from 'components/PresenceLeafletMap.vue'
-import { io } from 'socket.io-client'
 
 export default {
   name: 'AdminResultadosMesas',
@@ -971,6 +1069,9 @@ export default {
       showAll: false,
 
       filters: {
+        provincia_id: null,
+        municipio_id: null,
+        localidad_id: null,
         recinto_id: null,
         mesa_id: null,
         asignado: 'ALL',
@@ -1001,6 +1102,11 @@ export default {
         { label: 'No en mesa', value: 'NO' }
       ],
 
+      geoOptions: {
+        provincias: [],
+        municipios: [],
+        localidades: []
+      },
       recintosOpt: [],
       recintosBase: [],
       mesasOpt: [],
@@ -1138,6 +1244,24 @@ export default {
     countEnMesa () { return Number(this.summary?.en_mesa || 0) },
     countAsignadas () { return Number(this.summary?.asignadas || 0) },
     countConResultado () { return Number(this.summary?.con_resultado || 0) },
+    provinciaOptions () {
+      return (this.geoOptions.provincias || [])
+        .filter(p => Number(p.departamento_id) === 5)
+        .map(p => ({ label: p.nombre, value: p.id }))
+        .sort((a, b) => String(a.label || '').localeCompare(String(b.label || '')))
+    },
+    municipioOptions () {
+      return (this.geoOptions.municipios || [])
+        .filter(m => !this.filters.provincia_id || Number(m.provincia_id) === Number(this.filters.provincia_id))
+        .map(m => ({ label: m.nombre, value: m.id }))
+        .sort((a, b) => String(a.label || '').localeCompare(String(b.label || '')))
+    },
+    localidadOptions () {
+      return (this.geoOptions.localidades || [])
+        .filter(l => !this.filters.municipio_id || Number(l.municipio_id) === Number(this.filters.municipio_id))
+        .map(l => ({ label: l.nombre, value: l.id }))
+        .sort((a, b) => String(a.label || '').localeCompare(String(b.label || '')))
+    },
 
     partidosGobernador () {
       return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_gobernador), 'orden_departamental')
@@ -1210,19 +1334,12 @@ export default {
 
   async mounted () {
     await this.bootstrapPageData()
-    this.connectSocket()
   },
 
   beforeUnmount () {
-    const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
     if (this.socketRefreshTimer) {
       clearTimeout(this.socketRefreshTimer)
       this.socketRefreshTimer = null
-    }
-    if (this.socket) {
-      this.socket.off(socketEvent)
-      this.socket.disconnect()
-      this.socket = null
     }
   },
 
@@ -1235,21 +1352,6 @@ export default {
       this.backendLast = res?.last_page || 1
       this.truncated = false
       this.maxCap = this.rowsPerPage === 0 ? 250 : this.rowsPerPage
-    },
-
-    connectSocket () {
-      const socketUrl = import.meta.env.VITE_API_SOCKET
-      const socketEvent = import.meta.env.VITE_SOCKET_EVENT || 'votacion'
-      if (!socketUrl) return
-
-      this.socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
-        reconnection: true
-      })
-
-      this.socket.on(socketEvent, (evt) => {
-        this.onSocketVotacion(evt)
-      })
     },
 
     onSocketVotacion (evt) {
@@ -1333,12 +1435,91 @@ export default {
       if (!this.showAll) this.refresh()
     },
 
-    async bootstrapPageData () {
+    normalizeHiddenFilters () {
+      this.filters.mesa_id = null
+      this.filters.asignado = 'ALL'
+      this.filters.jefe_recinto_id = null
+      this.filters.supervisor_id = null
+      this.filters.estado = null
+      this.filters.con_resultado = 'ALL'
+      this.filters.en_mesa = 'ALL'
+      this.filters.acta_alcaldia = 'ALL'
+      this.filters.acta_gobernacion = 'ALL'
+    },
+
+    onChangeMainFilters () {
+      this.syncRecintosByGeo()
+      this.page = 1
+    },
+
+    onProvinciaChange () {
+      this.filters.municipio_id = null
+      this.filters.localidad_id = null
+      this.filters.recinto_id = null
+      this.syncRecintosByGeo()
+      this.loadRecintosOptions()
+      this.page = 1
+    },
+
+    onMunicipioChange () {
+      this.filters.localidad_id = null
+      this.filters.recinto_id = null
+      this.syncRecintosByGeo()
+      this.loadRecintosOptions()
+      this.page = 1
+    },
+
+    async clearMainFilters () {
+      this.filters.provincia_id = null
+      this.filters.municipio_id = null
+      this.filters.localidad_id = null
+      this.filters.recinto_id = null
+      this.filters.delegado_id = null
+      this.normalizeHiddenFilters()
+      this.syncRecintosByGeo()
+      this.page = 1
       await this.refresh()
     },
 
+    async bootstrapPageData () {
+      this.normalizeHiddenFilters()
+      await this.loadGeoOptions()
+      this.applyDefaultGeoFilters()
+      await this.ensureRecintosOptions()
+      await this.ensureDelegadosOptions()
+      await this.refresh()
+    },
+
+    async loadGeoOptions () {
+      const data = await this.$axios.get('geo/options').then(r => r.data)
+      this.geoOptions = {
+        provincias: Array.isArray(data?.provincias) ? data.provincias : [],
+        municipios: Array.isArray(data?.municipios) ? data.municipios : [],
+        localidades: Array.isArray(data?.localidades) ? data.localidades : []
+      }
+    },
+
+    applyDefaultGeoFilters () {
+      if (!this.filters.provincia_id) {
+        const provincia = (this.geoOptions.provincias || []).find(p =>
+          Number(p.departamento_id) === 5 && String(p.nombre || '').toLowerCase() === 'cercado'
+        )
+        this.filters.provincia_id = provincia?.id || null
+      }
+
+      if (!this.filters.municipio_id) {
+        const municipio = (this.geoOptions.municipios || []).find(m =>
+          Number(m.provincia_id) === Number(this.filters.provincia_id) &&
+          String(m.nombre || '').toLowerCase() === 'oruro'
+        )
+        this.filters.municipio_id = municipio?.id || null
+      }
+    },
+
     async loadRecintosOptions () {
-      const data = await this.$axios.get('admin/mesas/options/recintos').then(r => r.data)
+      const data = await this.$axios.get('admin/mesas/options/recintos', {
+        params: this.buildMesaQueryParams()
+      }).then(r => r.data)
 
       this.recintosBase = (Array.isArray(data) ? data : []).map(r => ({
         ...r,
@@ -1347,6 +1528,15 @@ export default {
       }))
       this.recintosOpt = this.recintosBase
       return this.recintosBase
+    },
+
+    syncRecintosByGeo () {
+      this.recintosOpt = (this.recintosBase || []).filter(r => {
+        if (this.filters.provincia_id && Number(r.provincia_id) !== Number(this.filters.provincia_id)) return false
+        if (this.filters.municipio_id && Number(r.municipio_id) !== Number(this.filters.municipio_id)) return false
+        if (this.filters.localidad_id && Number(r.localidad_id) !== Number(this.filters.localidad_id)) return false
+        return true
+      })
     },
 
     async ensureDelegadosOptions () {
@@ -1518,23 +1708,18 @@ export default {
     },
     buildMesaQueryParams () {
       return {
+        departamento_id: 5,
+        provincia_id: this.filters.provincia_id || undefined,
+        municipio_id: this.filters.municipio_id || undefined,
+        localidad_id: this.filters.localidad_id || undefined,
         recinto_id: this.filters.recinto_id || undefined,
-        mesa_id: this.filters.mesa_id || undefined,
-        asignado: this.filters.asignado,
-        delegado_id: this.filters.delegado_id || undefined,
-        jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
-        supervisor_id: this.filters.supervisor_id || undefined,
-        estado: this.filters.estado || undefined,
-        con_resultado: this.filters.con_resultado,
-        en_mesa: this.filters.en_mesa,
-        acta_alcaldia: this.filters.acta_alcaldia,
-        acta_gobernacion: this.filters.acta_gobernacion
+        delegado_id: this.filters.delegado_id || undefined
       }
     },
 
     buildPrintUrl (path, extraParams = {}) {
       const params = new URLSearchParams()
-      const query = { departamento_id: 5, ...extraParams }
+      const query = { ...this.buildMesaQueryParams(), ...extraParams }
 
       Object.entries(query).forEach(([key, value]) => {
         if (value === undefined || value === null || value === '') return
@@ -1611,19 +1796,7 @@ export default {
     async printEnMesa () {
       await this.openPdfBlob(
         'admin/mesas-print/en-mesa',
-        {
-          recinto_id: this.filters.recinto_id || undefined,
-          mesa_id: this.filters.mesa_id || undefined,
-          asignado: this.filters.asignado,
-          delegado_id: this.filters.delegado_id || undefined,
-          jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
-          supervisor_id: this.filters.supervisor_id || undefined,
-          estado: this.filters.estado || undefined,
-          con_resultado: this.filters.con_resultado,
-          en_mesa: 'YES',
-          acta_alcaldia: this.filters.acta_alcaldia,
-          acta_gobernacion: this.filters.acta_gobernacion
-        },
+        { en_mesa: 'YES' },
         'delegados_en_mesa.pdf'
       )
     },
@@ -1631,19 +1804,7 @@ export default {
     async printNoEnMesa () {
       await this.openPdfBlob(
         'admin/mesas-print/en-mesa',
-        {
-          recinto_id: this.filters.recinto_id || undefined,
-          mesa_id: this.filters.mesa_id || undefined,
-          asignado: this.filters.asignado,
-          delegado_id: this.filters.delegado_id || undefined,
-          jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
-          supervisor_id: this.filters.supervisor_id || undefined,
-          estado: this.filters.estado || undefined,
-          con_resultado: this.filters.con_resultado,
-          en_mesa: 'NO',
-          acta_alcaldia: this.filters.acta_alcaldia,
-          acta_gobernacion: this.filters.acta_gobernacion
-        },
+        { en_mesa: 'NO' },
         'delegados_no_en_mesa.pdf'
       )
     },
@@ -1651,18 +1812,7 @@ export default {
     async printMesaAbierta () {
       await this.openPdfBlob(
         'admin/mesas-print/apertura',
-        {
-          recinto_id: this.filters.recinto_id || undefined,
-          mesa_id: this.filters.mesa_id || undefined,
-          asignado: this.filters.asignado,
-          delegado_id: this.filters.delegado_id || undefined,
-          jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
-          supervisor_id: this.filters.supervisor_id || undefined,
-          estado: this.filters.estado || undefined,
-          con_resultado: this.filters.con_resultado,
-          acta_alcaldia: this.filters.acta_alcaldia,
-          acta_gobernacion: this.filters.acta_gobernacion
-        },
+        {},
         'mesas_abiertas.pdf'
       )
     },
@@ -1670,18 +1820,7 @@ export default {
     async printMesaCierreEstimado () {
       await this.openPdfBlob(
         'admin/mesas-print/cierre-estimado',
-        {
-          recinto_id: this.filters.recinto_id || undefined,
-          mesa_id: this.filters.mesa_id || undefined,
-          asignado: this.filters.asignado,
-          delegado_id: this.filters.delegado_id || undefined,
-          jefe_recinto_id: this.filters.jefe_recinto_id || undefined,
-          supervisor_id: this.filters.supervisor_id || undefined,
-          estado: this.filters.estado || undefined,
-          con_resultado: this.filters.con_resultado,
-          acta_alcaldia: this.filters.acta_alcaldia,
-          acta_gobernacion: this.filters.acta_gobernacion
-        },
+        {},
         'mesas_cierre_estimado.pdf'
       )
     },
@@ -1751,6 +1890,7 @@ export default {
     async fetchAll () {
       this.loadingAll = true
       try {
+        this.normalizeHiddenFilters()
         const baseParams = {
           recinto_id: this.filters.recinto_id || undefined,
           mesa_id: this.filters.mesa_id || undefined,
@@ -1773,7 +1913,7 @@ export default {
         let last = 1
 
         do {
-          const res = await this.$axios.get('admin/mesas', {
+          const res = await this.$axios.get('admin/mesas/resultados-index', {
             params: { ...baseParams, page }
           }).then(r => r.data)
 
@@ -1811,6 +1951,7 @@ export default {
     async refresh () {
       this.loading = true
       try {
+        this.normalizeHiddenFilters()
         this.showAll = false
         const perPage = this.rowsPerPage === 0 ? 250 : this.rowsPerPage
         const params = {
@@ -1830,7 +1971,7 @@ export default {
           page: this.page
         }
 
-        const res = await this.$axios.get('admin/mesas', { params }).then(r => r.data)
+        const res = await this.$axios.get('admin/mesas/resultados-index', { params }).then(r => r.data)
         this.applyMesasResponse(res)
       } finally {
         this.loading = false

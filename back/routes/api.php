@@ -123,6 +123,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('admin/mesas/options/mesas', [SuperAdminMesasController::class, 'mesasOptions']);
     Route::get('admin/mesas/bootstrap', [SuperAdminMesasController::class, 'bootstrap']);
     Route::get('admin/mesas', [SuperAdminMesasController::class, 'index']);
+    Route::get('admin/mesas/resultados-index', [SuperAdminMesasController::class, 'resultadosIndex']);
     Route::get('admin/mesas/options/recintos', [SuperAdminMesasController::class, 'recintosOptions']);
     Route::get('admin/mesas/options/mesas', [SuperAdminMesasController::class, 'mesasOptions']); // ✅ NUEVO
     Route::get('admin/mesas/options/delegados', [SuperAdminMesasController::class, 'delegadosOptions']);
