@@ -260,6 +260,24 @@
 
         <q-item
           dense
+          to="/admin-resultados-mesas-segunda-vuelta"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.SUPERADMIN_MESAS)"
+        >
+          <q-item-section avatar>
+            <q-icon name="how_to_vote" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Mesas Segunda Vuelta</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          dense
           to="/control-ia-mesas"
           exact
           clickable

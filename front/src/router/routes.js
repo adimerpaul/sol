@@ -26,6 +26,7 @@ const routes = [
       { path: 'admin-jerarquia-usuarios', component: () => import('pages/usuarios/AdminJerarquiaUsuarios.vue'), meta: { requiresAuth: true } },
       { path: 'admin-recinto-jefe-mapa', component: () => import('pages/usuarios/AdminRecintoJefeMapa.vue'), meta: { requiresAuth: true } },
       { path: 'admin-resultados-mesas', component: () => import('pages/resultados/AdminResultadosMesas.vue'), meta: { requiresAuth: true } },
+      { path: 'admin-resultados-mesas-segunda-vuelta', component: () => import('pages/resultados/AdminResultadosMesasSegundaVuelta.vue'), meta: { requiresAuth: true } },
       { path: 'control-ia-mesas', component: () => import('pages/resultados/ControlAiMesas.vue'), meta: { requiresAuth: true } },
       { path: 'reportes', component: () => import('pages/usuarios/Reportes.vue'), meta: { requiresAuth: true } },
       { path: 'mi-perfil', component: () => import('pages/usuarios/MiPerfil.vue'), meta: { requiresAuth: true } },
