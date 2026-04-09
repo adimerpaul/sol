@@ -23,6 +23,7 @@ return [
         'http://localhost:9000',
         'http://localhost',
         'https://jacha.tuprogam.com',
+        'https://patria.tuprogam.com',
     ],
 
     'allowed_origins_patterns' => [],
