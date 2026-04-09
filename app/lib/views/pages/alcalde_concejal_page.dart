@@ -30,6 +30,8 @@ enum _VotacionTab {
   asambleistaPoblacion,
 }
 
+const Set<int> _segundaVueltaPartidos = {11, 15};
+
 class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final MobileAuthLocalStore _localStore = MobileAuthLocalStore.instance;
   final MobileVotacionService _service = MobileVotacionService();
@@ -42,7 +44,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool _saving = false;
   bool _syncing = false;
   bool _datosBloqueados = false;
-  _VotacionTab _activeTab = _VotacionTab.alcalde;
+  _VotacionTab _activeTab = _VotacionTab.gobernador;
   final Map<_VotacionTab, bool> _tabLocks = {
     _VotacionTab.alcalde: false,
     _VotacionTab.concejal: false,
@@ -88,25 +90,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   };
   DateTime? _lastLimitAlertAt;
 
-  static const List<Map<String, String>> _fotoAlcaldeConfig = [
-    {'slot': 'foto1', 'label': 'Hoja trabajo - Alcalde'},
-    {'slot': 'foto2', 'label': 'Acta electoral - Alcalde'},
-  ];
-  static const List<Map<String, String>> _fotoConcejalConfig = [
-    {'slot': 'foto3', 'label': 'Hoja trabajo - Concejal'},
-    {'slot': 'foto4', 'label': 'Acta electoral - Concejal'},
-  ];
   static const List<Map<String, String>> _fotoGobernadorConfig = [
     {'slot': 'foto5', 'label': 'Hoja trabajo - Gobernador'},
     {'slot': 'foto6', 'label': 'Acta electoral - Gobernador'},
-  ];
-  static const List<Map<String, String>> _fotoAsdConfig = [
-    {'slot': 'foto7', 'label': 'Hoja trabajo - Asam. Territorio'},
-    {'slot': 'foto8', 'label': 'Acta electoral - Asam. Territorio'},
-  ];
-  static const List<Map<String, String>> _fotoAspConfig = [
-    {'slot': 'foto9', 'label': 'Hoja trabajo - Asam. Poblacion'},
-    {'slot': 'foto10', 'label': 'Acta electoral - Asam. Poblacion'},
   ];
 
   @override
@@ -172,6 +158,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             },
           )
           .toList();
+      partidos = _normalizePartidosSegundaVuelta(partidos);
 
       if (partidos.isEmpty) {
         try {
@@ -180,11 +167,14 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
               .whereType<Map>()
               .map((e) => Map<String, dynamic>.from(e))
               .toList();
+          partidos = _normalizePartidosSegundaVuelta(partidos);
         } catch (_) {}
       }
 
       if (partidos.isEmpty) {
-        partidos = await _buildPartidosFromLocalDrafts();
+        partidos = _normalizePartidosSegundaVuelta(
+          await _buildPartidosFromLocalDrafts(),
+        );
       }
       _ensureControllers(partidos);
 
@@ -198,6 +188,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         _mesas = localMesas;
         _partidos = partidos;
         _mesaId = mesaId;
+        _activeTab = _VotacionTab.gobernador;
       });
 
       if (mesaId != null) {
@@ -226,6 +217,35 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       }
     }
     return set.values.toList();
+  }
+
+  List<Map<String, dynamic>> _normalizePartidosSegundaVuelta(
+    List<Map<String, dynamic>> partidos,
+  ) {
+    final filtered = partidos
+        .where((p) => _segundaVueltaPartidos.contains(_toInt(p['id']) ?? -1))
+        .map((p) {
+          final row = Map<String, dynamic>.from(p);
+          row['habilitado_gobernador'] = true;
+          row['habilitado_asambleista_poblacion'] = false;
+          row['habilitado_asambleista_distrito'] = false;
+          row['habilitado_concejal'] = false;
+          row['habilitado_alcalde'] = false;
+          return row;
+        })
+        .toList();
+
+    filtered.sort((a, b) {
+      final order = {
+        11: 1,
+        15: 2,
+      };
+      final aId = _toInt(a['id']) ?? 999;
+      final bId = _toInt(b['id']) ?? 999;
+      return (order[aId] ?? 999).compareTo(order[bId] ?? 999);
+    });
+
+    return filtered;
   }
 
   void _ensureControllers(List<Map<String, dynamic>> partidos) {
@@ -281,6 +301,8 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           .where((p) => p['habilitado_alcalde'] != false)
           .toList();
 
+  List<_VotacionTab> get _enabledTabs => const [_VotacionTab.gobernador];
+
   int _ival(TextEditingController c) => int.tryParse(c.text.trim()) ?? 0;
 
   int _sum(
@@ -305,55 +327,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool get _okGob =>
       _sumGob + _ival(_bgCtrl) + _ival(_ngCtrl) + _ival(_pnuGobCtrl) ==
       _targetTotalPorCategoria;
-  bool get _okAsd =>
-      _sumAsd + _ival(_basdCtrl) + _ival(_nasdCtrl) + _ival(_pnuAsdCtrl) ==
-      _targetTotalPorCategoria;
-  bool get _okAsp =>
-      _sumAsp + _ival(_baspCtrl) + _ival(_naspCtrl) + _ival(_pnuAspCtrl) ==
-      _targetTotalPorCategoria;
-  bool get _okCon =>
-      _sumCon + _ival(_bconCtrl) + _ival(_nconCtrl) + _ival(_pnuConCtrl) ==
-      _targetTotalPorCategoria;
-  bool get _okAlc =>
-      _sumAlc + _ival(_balcCtrl) + _ival(_nalcCtrl) + _ival(_pnuAlcCtrl) ==
-      _targetTotalPorCategoria;
-
-  bool get _allFotosReady {
-    for (final slot in votacionFotoSlots) {
-      if (!_hasFoto(slot)) return false;
-    }
-    return true;
-  }
-
-  bool get _fotosAlcaldeReady => _hasFoto('foto1') && _hasFoto('foto2');
-  bool get _fotosConcejalReady => _hasFoto('foto3') && _hasFoto('foto4');
-  bool get _allRequiredFotosReady => _fotosAlcaldeReady && _fotosConcejalReady;
-
   bool get _readyFinalizar => _mesaId != null;
-  bool get _hasVotosCargados {
-    final total =
-        _sumGob +
-        _sumAsd +
-        _sumAsp +
-        _sumCon +
-        _sumAlc +
-        _ival(_bgCtrl) +
-        _ival(_ngCtrl) +
-        _ival(_pnuGobCtrl) +
-        _ival(_basdCtrl) +
-        _ival(_nasdCtrl) +
-        _ival(_pnuAsdCtrl) +
-        _ival(_baspCtrl) +
-        _ival(_naspCtrl) +
-        _ival(_pnuAspCtrl) +
-        _ival(_bconCtrl) +
-        _ival(_nconCtrl) +
-        _ival(_pnuConCtrl) +
-        _ival(_balcCtrl) +
-        _ival(_nalcCtrl) +
-        _ival(_pnuAlcCtrl);
-    return total > 0;
-  }
 
   MobileMesa? get _mesaActual {
     final id = _mesaId;
@@ -390,7 +364,8 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   bool get _activeTabBloqueada => _tabBloqueada(_activeTab);
 
-  bool get _allTabsBloqueadas => _tabLocks.values.every((v) => v);
+  bool get _allTabsBloqueadas =>
+      _enabledTabs.every((tab) => _tabLocks[tab] == true);
 
   String _tabLabel(_VotacionTab tab) {
     switch (tab) {
@@ -586,8 +561,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           remote['bloqueada_mobile'] == true ||
           ((remote['resultado'] as Map?)?['etapa_2'] == true);
       if (partidos.isNotEmpty) {
-        _ensureControllers(partidos);
-        _partidos = partidos;
+        final partidosSegundaVuelta = _normalizePartidosSegundaVuelta(partidos);
+        _ensureControllers(partidosSegundaVuelta);
+        _partidos = partidosSegundaVuelta;
       }
     } catch (_) {}
 
@@ -613,7 +589,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
     await _loadCachedFotosFromDisk(mesaId);
     if (!mounted) return;
-    setState(() {});
+    setState(() {
+      _activeTab = _VotacionTab.gobernador;
+    });
   }
 
   void _applyDraft(VotacionDraft d) {
@@ -1062,53 +1040,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         const SizedBox(height: 8),
         _buildTabs(),
         const SizedBox(height: 8),
-        if (_activeTab == _VotacionTab.alcalde) ...[
+        if (_activeTab == _VotacionTab.gobernador) ...[
           _buildCategoryCard(
-            title: '1) Alcalde',
-            tab: _VotacionTab.alcalde,
-            partidos: _partidosAlcalde,
-            voteMap: _alcCtrl,
-            blancosCtrl: _balcCtrl,
-            nulosCtrl: _nalcCtrl,
-            papeletasNoUtilizadasCtrl: _pnuAlcCtrl,
-            sum: _sumAlc,
-            ok: _okAlc,
-            editable: _tabEditable(_VotacionTab.alcalde),
-          ),
-          _buildFotosCard(
-            title: 'Fotos - Alcalde',
-            config: _fotoAlcaldeConfig,
-            editable: _tabEditable(_VotacionTab.alcalde),
-          ),
-          _buildObsCard(
-            _obsAlcCtrl,
-            editable: _tabEditable(_VotacionTab.alcalde),
-          ),
-        ] else if (_activeTab == _VotacionTab.concejal) ...[
-          _buildCategoryCard(
-            title: '2) Concejal',
-            tab: _VotacionTab.concejal,
-            partidos: _partidosConcejal,
-            voteMap: _conCtrl,
-            blancosCtrl: _bconCtrl,
-            nulosCtrl: _nconCtrl,
-            papeletasNoUtilizadasCtrl: _pnuConCtrl,
-            sum: _sumCon,
-            ok: _okCon,
-            editable: _tabEditable(_VotacionTab.concejal),
-          ),
-          _buildFotosCard(
-            title: 'Fotos - Concejal',
-            config: _fotoConcejalConfig,
-            editable: _tabEditable(_VotacionTab.concejal),
-          ),
-          _buildObsCard(
-            _obsConCtrl,
-            editable: _tabEditable(_VotacionTab.concejal),
-          ),
-        ] else if (_activeTab == _VotacionTab.gobernador) ...[
-          _buildCategoryCard(
-            title: '3) Gobernador',
+            title: 'Segunda vuelta - Gobernador',
             tab: _VotacionTab.gobernador,
             partidos: _partidosGobernador,
             voteMap: _gobCtrl,
@@ -1127,50 +1061,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           _buildObsCard(
             _obsGobCtrl,
             editable: _tabEditable(_VotacionTab.gobernador),
-          ),
-        ] else if (_activeTab == _VotacionTab.asambleistaDistrito) ...[
-          _buildCategoryCard(
-            title: '4) Asambleista por Territorio',
-            tab: _VotacionTab.asambleistaDistrito,
-            partidos: _partidosAsd,
-            voteMap: _asdCtrl,
-            blancosCtrl: _basdCtrl,
-            nulosCtrl: _nasdCtrl,
-            papeletasNoUtilizadasCtrl: _pnuAsdCtrl,
-            sum: _sumAsd,
-            ok: _okAsd,
-            editable: _tabEditable(_VotacionTab.asambleistaDistrito),
-          ),
-          _buildFotosCard(
-            title: 'Fotos - Asambleista por Territorio',
-            config: _fotoAsdConfig,
-            editable: _tabEditable(_VotacionTab.asambleistaDistrito),
-          ),
-          _buildObsCard(
-            _obsAsdCtrl,
-            editable: _tabEditable(_VotacionTab.asambleistaDistrito),
-          ),
-        ] else ...[
-          _buildCategoryCard(
-            title: '5) Asambleista por Poblacion',
-            tab: _VotacionTab.asambleistaPoblacion,
-            partidos: _partidosAsp,
-            voteMap: _aspCtrl,
-            blancosCtrl: _baspCtrl,
-            nulosCtrl: _naspCtrl,
-            papeletasNoUtilizadasCtrl: _pnuAspCtrl,
-            sum: _sumAsp,
-            ok: _okAsp,
-            editable: _tabEditable(_VotacionTab.asambleistaPoblacion),
-          ),
-          _buildFotosCard(
-            title: 'Fotos - Asambleista por Poblacion',
-            config: _fotoAspConfig,
-            editable: _tabEditable(_VotacionTab.asambleistaPoblacion),
-          ),
-          _buildObsCard(
-            _obsAspCtrl,
-            editable: _tabEditable(_VotacionTab.asambleistaPoblacion),
           ),
         ],
         _buildGuardarMandarActions(),
@@ -1241,33 +1131,9 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       child: Row(
         children: [
           _tabButton(
-            tab: _VotacionTab.alcalde,
-            label: 'Alcalde',
-            done: _tabBloqueada(_VotacionTab.alcalde),
-          ),
-          const SizedBox(width: 8),
-          _tabButton(
-            tab: _VotacionTab.concejal,
-            label: 'Concejal',
-            done: _tabBloqueada(_VotacionTab.concejal),
-          ),
-          const SizedBox(width: 8),
-          _tabButton(
             tab: _VotacionTab.gobernador,
-            label: 'Gobernador',
+            label: 'Gobernador 2V',
             done: _tabBloqueada(_VotacionTab.gobernador),
-          ),
-          const SizedBox(width: 8),
-          _tabButton(
-            tab: _VotacionTab.asambleistaDistrito,
-            label: 'Asam. Territorio',
-            done: _tabBloqueada(_VotacionTab.asambleistaDistrito),
-          ),
-          const SizedBox(width: 8),
-          _tabButton(
-            tab: _VotacionTab.asambleistaPoblacion,
-            label: 'Asam. Poblacion',
-            done: _tabBloqueada(_VotacionTab.asambleistaPoblacion),
           ),
         ],
       ),
@@ -1394,7 +1260,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Bloqueo por pestaña: se bloquea cuando tiene hoja y acta de esa categoria.',
+              'Segunda vuelta: solo se registra Gobernador para Patria y Jacha.',
               style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
             ),
           ],

@@ -6,6 +6,8 @@ use App\Models\Mesa;
 use App\Models\Partido;
 use App\Models\ResultadoMesa;
 use App\Models\ResultadoMesaDetalle;
+use App\Models\ResultadoMesaSegundaVuelta;
+use App\Models\ResultadoMesaSegundaVueltaDetalle;
 use App\Services\SocketEmitter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -14,6 +16,16 @@ use Illuminate\Support\Facades\Storage;
 
 class MobileResultadosController extends Controller
 {
+    private const PARTIDOS_SEGUNDA_VUELTA = [11, 15];
+
+    private array $asistenciaFields = [
+        'aviso_antes',
+        'aviso_manana',
+        'aviso_mediodia',
+        'aviso_tarde',
+        'hora_apertura_mesa',
+    ];
+
     private function resolveSocketCategoriasFromTotals(array $totals): array
     {
         $map = [
@@ -93,14 +105,6 @@ class MobileResultadosController extends Controller
         return 'data:image/jpeg;base64,' . base64_encode($jpg);
     }
 
-    private array $asistenciaFields = [
-        'aviso_antes',
-        'aviso_manana',
-        'aviso_mediodia',
-        'aviso_tarde',
-        'hora_apertura_mesa',
-    ];
-
     public function asistencia(Request $request)
     {
         $user = $request->user();
@@ -175,7 +179,6 @@ class MobileResultadosController extends Controller
             return response()->json(['message' => 'No hay mesas asignadas al delegado'], 422);
         }
 
-        // Regla irreversible: una vez que un campo pasa a true, no puede volver a false.
         if ((bool) $data['value'] === false) {
             $alreadyTrue = ResultadoMesa::query()
                 ->whereIn('mesa_id', $mesas->pluck('id'))
@@ -236,24 +239,23 @@ class MobileResultadosController extends Controller
 
         $labels = [
             'aviso_antes' => 'Estoy presente en mi mesa',
-            'aviso_manana' => 'Abrí la mesa',
+            'aviso_manana' => 'Abrio la mesa',
             'aviso_mediodia' => 'Tengo el acta de la alcaldia en mi poder',
             'aviso_tarde' => 'Tengo el acta de la gobernacion en mi poder',
         ];
         $field = $data['field'];
-        $message = trim(sprintf(
-            '%s actualizó "%s" en %d mesa(s)%s',
-            $user->name ?? 'Usuario',
-            $labels[$field] ?? $field,
-            $mesas->count(),
-            (!empty($data['hora_apertura_mesa']) && $field === 'aviso_manana')
-                ? (' · Hora: ' . $data['hora_apertura_mesa'])
-                : ''
-        ));
 
         SocketEmitter::votacion([
             'title' => 'Nuevo dato registrado',
-            'message' => $message,
+            'message' => trim(sprintf(
+                '%s actualizo "%s" en %d mesa(s)%s',
+                $user->name ?? 'Usuario',
+                $labels[$field] ?? $field,
+                $mesas->count(),
+                (!empty($data['hora_apertura_mesa']) && $field === 'aviso_manana')
+                    ? (' · Hora: ' . $data['hora_apertura_mesa'])
+                    : ''
+            )),
             'kind' => 'asistencia',
             'field' => $field,
             'field_label' => $labels[$field] ?? $field,
@@ -300,106 +302,47 @@ class MobileResultadosController extends Controller
         $user = $request->user();
 
         $mesasCollection = Mesa::query()
-            ->where('delegado_id', $user->id)
+            ->where('delegado_segunda_vuelta_id', $user->id)
             ->with([
                 'recinto:id,nombre',
-                'resultado:id,mesa_id,total_validos,total_blancos,total_nulos,etapa_2',
+                'resultadoSegundaVuelta:id,mesa_id',
             ])
             ->orderBy('numero_mesa')
             ->get();
 
         $mesas = $mesasCollection
-            ->map(function ($m) {
-                return [
-                    'id' => $m->id,
-                    'numero_mesa' => $m->numero_mesa,
-                    'estado' => $m->estado,
-                    'recinto_nombre' => $m->recinto?->nombre,
-                    'tiene_resultado' => (bool) $m->resultado,
-                    'finalizada' => (bool) optional($m->resultado)->etapa_2,
-                ];
-            })
-            ->values();
-
-        $partidos = $this->partidosPorMesa($mesasCollection->first())
-            ->map(function ($p) {
-                $iconoBase64 = $this->partidoIconoBase64($p->icono);
-                return [
-                    'id' => $p->id,
-                    'sigla' => $p->sigla,
-                    'nombre' => $p->nombre,
-                    'color' => $p->color,
-                    'icono' => $p->icono,
-                    'icono_url' => null,
-                    'icono_base64' => $iconoBase64,
-                    'orden_municipal' => (int) ($p->orden_municipal ?? 0),
-                    'orden_departamental' => (int) ($p->orden_departamental ?? 0),
-                    'habilitado_gobernador' => (bool) ($p->habilitado_gobernador ?? true),
-                    'habilitado_asambleista_poblacion' => (bool) ($p->habilitado_asambleista_poblacion ?? true),
-                    'habilitado_asambleista_distrito' => (bool) ($p->habilitado_asambleista_distrito ?? true),
-                    'habilitado_concejal' => (bool) ($p->habilitado_concejal ?? true),
-                    'habilitado_alcalde' => (bool) ($p->habilitado_alcalde ?? true),
-                ];
-            })
+            ->map(fn ($m) => [
+                'id' => $m->id,
+                'numero_mesa' => $m->numero_mesa,
+                'estado' => $m->estado_segunda_vuelta,
+                'recinto_nombre' => $m->recinto?->nombre,
+                'tiene_resultado' => (bool) $m->resultadoSegundaVuelta,
+                'finalizada' => (bool) $m->resultadoSegundaVuelta,
+            ])
             ->values();
 
         return response()->json([
             'mesas' => $mesas,
-            'partidos' => $partidos,
+            'partidos' => $this->mobilePartidosSegundaVuelta(),
         ]);
     }
 
     public function votacionMesa(Request $request, Mesa $mesa)
     {
         $user = $request->user();
-        if ((int) $mesa->delegado_id !== (int) $user->id) {
+        if ((int) $mesa->delegado_segunda_vuelta_id !== (int) $user->id) {
             return response()->json(['message' => 'Mesa no asignada al usuario'], 403);
         }
 
-        $resultado = ResultadoMesa::query()
+        $resultado = ResultadoMesaSegundaVuelta::query()
             ->with('detalles')
             ->where('mesa_id', $mesa->id)
             ->first();
 
-        if ($resultado) {
-            $resultado->foto1_url = $resultado->foto1 ? Storage::url($resultado->foto1) : null;
-            $resultado->foto2_url = $resultado->foto2 ? Storage::url($resultado->foto2) : null;
-            $resultado->foto3_url = $resultado->foto3 ? Storage::url($resultado->foto3) : null;
-            $resultado->foto4_url = $resultado->foto4 ? Storage::url($resultado->foto4) : null;
-            $resultado->foto5_url = $resultado->foto5 ? Storage::url($resultado->foto5) : null;
-            $resultado->foto6_url = $resultado->foto6 ? Storage::url($resultado->foto6) : null;
-            $resultado->foto7_url = $resultado->foto7 ? Storage::url($resultado->foto7) : null;
-            $resultado->foto8_url = $resultado->foto8 ? Storage::url($resultado->foto8) : null;
-            $resultado->foto9_url = $resultado->foto9 ? Storage::url($resultado->foto9) : null;
-            $resultado->foto10_url = $resultado->foto10 ? Storage::url($resultado->foto10) : null;
-        }
-
-        $partidos = $this->partidosPorMesa($mesa)
-            ->map(function ($p) {
-                $iconoBase64 = $this->partidoIconoBase64($p->icono);
-                return [
-                    'id' => $p->id,
-                    'sigla' => $p->sigla,
-                    'nombre' => $p->nombre,
-                    'color' => $p->color,
-                    'icono' => $p->icono,
-                    'icono_url' => null,
-                    'icono_base64' => $iconoBase64,
-                    'orden_municipal' => (int) ($p->orden_municipal ?? 0),
-                    'orden_departamental' => (int) ($p->orden_departamental ?? 0),
-                    'habilitado_gobernador' => (bool) ($p->habilitado_gobernador ?? true),
-                    'habilitado_asambleista_poblacion' => (bool) ($p->habilitado_asambleista_poblacion ?? true),
-                    'habilitado_asambleista_distrito' => (bool) ($p->habilitado_asambleista_distrito ?? true),
-                    'habilitado_concejal' => (bool) ($p->habilitado_concejal ?? true),
-                    'habilitado_alcalde' => (bool) ($p->habilitado_alcalde ?? true),
-                ];
-            })
-            ->values();
-
         return response()->json([
             'mesa_id' => $mesa->id,
-            'resultado' => $resultado,
-            'partidos' => $partidos,
+            'resultado' => $resultado ? $this->mapResultadoSegundaVueltaForMobile($resultado) : null,
+            'partidos' => $this->mobilePartidosSegundaVuelta(),
             'bloqueada_mobile' => $this->mesaYaFinalizadaParaMovil($mesa, $resultado),
         ]);
     }
@@ -407,56 +350,29 @@ class MobileResultadosController extends Controller
     public function votacionGuardar(Request $request, Mesa $mesa)
     {
         $user = $request->user();
-        if ((int) $mesa->delegado_id !== (int) $user->id) {
+        if ((int) $mesa->delegado_segunda_vuelta_id !== (int) $user->id) {
             return response()->json(['message' => 'Mesa no asignada al usuario'], 403);
         }
 
-        $resultadoExistente = ResultadoMesa::query()
+        $resultadoExistente = ResultadoMesaSegundaVuelta::query()
             ->where('mesa_id', $mesa->id)
             ->first();
 
         if ($this->mesaYaFinalizadaParaMovil($mesa, $resultadoExistente)) {
             return response()->json([
-                'message' => 'Esta mesa ya llenó y envió sus datos. No se puede volver a modificar desde la app.',
+                'message' => 'Esta mesa ya registro su segunda vuelta. No se puede volver a modificar desde la app.',
             ], 422);
         }
 
         $data = $request->validate([
-            'finalizar' => 'nullable|boolean',
             'observacion' => 'nullable|string',
             'observacion_gobernador' => 'nullable|string',
-            'observacion_asambleista_distrito' => 'nullable|string',
-            'observacion_asambleista_poblacion' => 'nullable|string',
-            'observacion_concejal' => 'nullable|string',
-            'observacion_alcalde' => 'nullable|string',
             'votos' => 'required',
-
             'blancos_gobernador' => 'nullable|integer|min:0',
             'nulos_gobernador' => 'nullable|integer|min:0',
             'papeletas_no_utilizadas_gobernador' => 'nullable|integer|min:0',
-            'blancos_asambleista_distrito' => 'nullable|integer|min:0',
-            'nulos_asambleista_distrito' => 'nullable|integer|min:0',
-            'papeletas_no_utilizadas_asambleista_distrito' => 'nullable|integer|min:0',
-            'blancos_asambleista_poblacion' => 'nullable|integer|min:0',
-            'nulos_asambleista_poblacion' => 'nullable|integer|min:0',
-            'papeletas_no_utilizadas_asambleista_poblacion' => 'nullable|integer|min:0',
-            'blancos_concejal' => 'nullable|integer|min:0',
-            'nulos_concejal' => 'nullable|integer|min:0',
-            'papeletas_no_utilizadas_concejal' => 'nullable|integer|min:0',
-            'blancos_alcalde' => 'nullable|integer|min:0',
-            'nulos_alcalde' => 'nullable|integer|min:0',
-            'papeletas_no_utilizadas_alcalde' => 'nullable|integer|min:0',
-
-            'foto1' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'foto2' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'foto3' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'foto4' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'foto5' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'foto6' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'foto7' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'foto8' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'foto9' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'foto10' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
         ]);
 
         $votos = $request->input('votos');
@@ -467,280 +383,207 @@ class MobileResultadosController extends Controller
             return response()->json(['message' => 'Formato de votos invalido'], 422);
         }
 
-        $partidosPermitidos = $this->partidosPorMesa($mesa)->pluck('id')->map(fn ($id) => (int) $id)->values();
-
-        $sum = [
-            'gobernador' => 0,
-            'asambleista_distrito' => 0,
-            'asambleista_poblacion' => 0,
-            'concejal' => 0,
-            'alcalde' => 0,
-        ];
+        $permitidos = collect(self::PARTIDOS_SEGUNDA_VUELTA);
+        $votosNormalizados = [];
 
         foreach ($votos as $row) {
             $pid = (int) ($row['partido_id'] ?? 0);
-            if (!$partidosPermitidos->contains($pid)) {
+            $votosGobernador = (int) ($row['votos_gobernador'] ?? 0);
+
+            if (!$permitidos->contains($pid)) {
                 return response()->json(['message' => "Partido no habilitado para esta mesa: {$pid}"], 422);
             }
-            foreach ([
-                'votos_gobernador',
-                'votos_asambleista_distrito',
-                'votos_asambleista_poblacion',
-                'votos_concejal',
-                'votos_alcalde'
-            ] as $k) {
-                if (!isset($row[$k]) || (int) $row[$k] < 0) {
-                    return response()->json(['message' => "Voto invalido en {$k}"], 422);
-                }
+
+            if ($votosGobernador < 0) {
+                return response()->json(['message' => 'Voto invalido en votos_gobernador'], 422);
             }
 
-            $sum['gobernador'] += (int) $row['votos_gobernador'];
-            $sum['asambleista_distrito'] += (int) $row['votos_asambleista_distrito'];
-            $sum['asambleista_poblacion'] += (int) $row['votos_asambleista_poblacion'];
-            $sum['concejal'] += (int) $row['votos_concejal'];
-            $sum['alcalde'] += (int) $row['votos_alcalde'];
+            $votosNormalizados[$pid] = $votosGobernador;
         }
 
-        $blancos = [
-            'gobernador' => (int) ($data['blancos_gobernador'] ?? 0),
-            'asambleista_distrito' => (int) ($data['blancos_asambleista_distrito'] ?? 0),
-            'asambleista_poblacion' => (int) ($data['blancos_asambleista_poblacion'] ?? 0),
-            'concejal' => (int) ($data['blancos_concejal'] ?? 0),
-            'alcalde' => (int) ($data['blancos_alcalde'] ?? 0),
-        ];
-        $nulos = [
-            'gobernador' => (int) ($data['nulos_gobernador'] ?? 0),
-            'asambleista_distrito' => (int) ($data['nulos_asambleista_distrito'] ?? 0),
-            'asambleista_poblacion' => (int) ($data['nulos_asambleista_poblacion'] ?? 0),
-            'concejal' => (int) ($data['nulos_concejal'] ?? 0),
-            'alcalde' => (int) ($data['nulos_alcalde'] ?? 0),
-        ];
-        $pnu = [
-            'gobernador' => (int) ($data['papeletas_no_utilizadas_gobernador'] ?? 0),
-            'asambleista_distrito' => (int) ($data['papeletas_no_utilizadas_asambleista_distrito'] ?? 0),
-            'asambleista_poblacion' => (int) ($data['papeletas_no_utilizadas_asambleista_poblacion'] ?? 0),
-            'concejal' => (int) ($data['papeletas_no_utilizadas_concejal'] ?? 0),
-            'alcalde' => (int) ($data['papeletas_no_utilizadas_alcalde'] ?? 0),
-        ];
+        foreach (self::PARTIDOS_SEGUNDA_VUELTA as $partidoId) {
+            if (!array_key_exists($partidoId, $votosNormalizados)) {
+                $votosNormalizados[$partidoId] = 0;
+            }
+        }
 
-        $finalizar = (bool) $request->boolean('finalizar');
-        $hayVotosOCifras = (array_sum($sum) + array_sum($blancos) + array_sum($nulos) + array_sum($pnu)) > 0;
+        $blancos = (int) ($data['blancos_gobernador'] ?? 0);
+        $nulos = (int) ($data['nulos_gobernador'] ?? 0);
+        $pnu = (int) ($data['papeletas_no_utilizadas_gobernador'] ?? 0);
+        $totalValidos = collect($votosNormalizados)->sum();
+        $totalVotos = $totalValidos + $blancos + $nulos;
 
-        $finalizadaReal = DB::transaction(function () use ($mesa, $user, $data, $votos, $sum, $blancos, $nulos, $pnu, $finalizar, $hayVotosOCifras, $request) {
-            $rm = ResultadoMesa::updateOrCreate(
+        DB::transaction(function () use ($mesa, $user, $data, $request, $votosNormalizados, $blancos, $nulos, $pnu, $totalValidos, $totalVotos) {
+            $rm = ResultadoMesaSegundaVuelta::query()->updateOrCreate(
                 ['mesa_id' => $mesa->id],
                 [
                     'registrado_por' => $user->id,
                     'origen_registro' => 'app',
-                    'observacion' => $data['observacion'] ?? null,
-                    'observacion_gobernador' => $data['observacion_gobernador'] ?? null,
-                    'observacion_asambleista_distrito' => $data['observacion_asambleista_distrito'] ?? null,
-                    'observacion_asambleista_poblacion' => $data['observacion_asambleista_poblacion'] ?? null,
-                    'observacion_concejal' => $data['observacion_concejal'] ?? null,
-                    'observacion_alcalde' => $data['observacion_alcalde'] ?? null,
-
-                    'etapa_1' => true,
-                    'etapa_2' => false,
-
-                    'blancos_gobernador' => $blancos['gobernador'],
-                    'nulos_gobernador' => $nulos['gobernador'],
-                    'papeletas_no_utilizadas_gobernador' => $pnu['gobernador'],
-                    'blancos_asambleista_distrito' => $blancos['asambleista_distrito'],
-                    'nulos_asambleista_distrito' => $nulos['asambleista_distrito'],
-                    'papeletas_no_utilizadas_asambleista_distrito' => $pnu['asambleista_distrito'],
-                    'blancos_asambleista_poblacion' => $blancos['asambleista_poblacion'],
-                    'nulos_asambleista_poblacion' => $nulos['asambleista_poblacion'],
-                    'papeletas_no_utilizadas_asambleista_poblacion' => $pnu['asambleista_poblacion'],
-                    'blancos_concejal' => $blancos['concejal'],
-                    'nulos_concejal' => $nulos['concejal'],
-                    'papeletas_no_utilizadas_concejal' => $pnu['concejal'],
-                    'blancos_alcalde' => $blancos['alcalde'],
-                    'nulos_alcalde' => $nulos['alcalde'],
-                    'papeletas_no_utilizadas_alcalde' => $pnu['alcalde'],
-
-                    'total_validos' => array_sum($sum),
-                    'total_blancos' => array_sum($blancos),
-                    'total_nulos' => array_sum($nulos) + array_sum($pnu),
-                    'total_votos' => array_sum($sum),
+                    'observacion' => $data['observacion_gobernador'] ?? $data['observacion'] ?? null,
+                    'blancos' => $blancos,
+                    'nulos' => $nulos,
+                    'papeletas_no_utilizadas' => $pnu,
+                    'total_validos' => $totalValidos,
+                    'total_blancos' => $blancos,
+                    'total_nulos' => $nulos,
+                    'total_votos' => $totalVotos,
                 ]
             );
 
-            $dir = "resultados_mesa/mesa_{$mesa->id}";
-            foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto5', 'foto6', 'foto7', 'foto8', 'foto9', 'foto10'] as $f) {
-                if ($request->hasFile($f)) {
-                    if (!empty($rm->{$f})) {
-                        Storage::disk('public')->delete($rm->{$f});
-                    }
-                    $rm->{$f} = $request->file($f)->store($dir, 'public');
+            $dir = "resultados_segunda_vuelta/mesa_{$mesa->id}";
+            foreach (['foto5' => 'foto_pizarra', 'foto6' => 'foto_acta'] as $field => $column) {
+                if (!$request->hasFile($field)) {
+                    continue;
                 }
+                if (!empty($rm->{$column})) {
+                    Storage::disk('public')->delete($rm->{$column});
+                }
+                $rm->{$column} = $request->file($field)->store($dir, 'public');
             }
-            $puedeFinalizar = $finalizar && $hayVotosOCifras && $this->tieneFotosMinimasFinalizacion($rm);
-            $rm->etapa_2 = $puedeFinalizar;
             $rm->save();
 
-            $partidosEnviados = collect($votos)->pluck('partido_id')->map(fn ($id) => (int) $id)->values();
-
-            ResultadoMesaDetalle::query()
-                ->where('resultado_mesa_id', $rm->id)
-                ->whereNotIn('partido_id', $partidosEnviados)
+            ResultadoMesaSegundaVueltaDetalle::query()
+                ->where('resultado_mesa_segunda_vuelta_id', $rm->id)
+                ->whereNotIn('partido_id', array_keys($votosNormalizados))
                 ->delete();
 
-            foreach ($votos as $row) {
-                ResultadoMesaDetalle::updateOrCreate(
+            foreach ($votosNormalizados as $partidoId => $votosGobernador) {
+                ResultadoMesaSegundaVueltaDetalle::updateOrCreate(
                     [
-                        'resultado_mesa_id' => $rm->id,
-                        'partido_id' => (int) $row['partido_id'],
+                        'resultado_mesa_segunda_vuelta_id' => $rm->id,
+                        'partido_id' => (int) $partidoId,
                     ],
                     [
-                        'votos_gobernador' => (int) $row['votos_gobernador'],
-                        'votos_asambleista_distrito' => (int) $row['votos_asambleista_distrito'],
-                        'votos_asambleista_poblacion' => (int) $row['votos_asambleista_poblacion'],
-                        'votos_concejal' => (int) $row['votos_concejal'],
-                        'votos_alcalde' => (int) $row['votos_alcalde'],
+                        'votos_gobernador' => (int) $votosGobernador,
                     ]
                 );
             }
 
-            $mesa->estado = $puedeFinalizar ? 'FINALIZADA' : 'EN_PROCESO';
+            $mesa->estado_segunda_vuelta = 'RESULTADO_REGISTRADO';
             $mesa->save();
-            return $puedeFinalizar;
         });
 
         SocketEmitter::votacion([
             'title' => 'Nuevo dato registrado',
             'message' => trim(sprintf(
-                '%s registró votación en Mesa %s%s',
+                '%s registro segunda vuelta en Mesa %s',
                 $user->name ?? 'Usuario',
-                $mesa->numero_mesa,
-                $finalizadaReal ? ' · Finalizada' : ''
+                $mesa->numero_mesa
             )),
             'kind' => 'resultado_mobile',
             'mesa_id' => $mesa->id,
             'mesa_numero' => $mesa->numero_mesa,
-            'estado' => $finalizadaReal ? 'FINALIZADA' : 'EN_PROCESO',
-            'finalizada' => $finalizadaReal,
+            'estado' => 'RESULTADO_REGISTRADO',
+            'finalizada' => true,
             'user_id' => $user->id ?? null,
             'user_name' => $user->name ?? null,
             'username' => $user->username ?? null,
-            'total_validos' => array_sum($sum),
-            'total_blancos' => array_sum($blancos),
-            'total_nulos' => array_sum($nulos) + array_sum($pnu),
-            'categorias' => $this->resolveSocketCategoriasFromTotals($sum),
+            'total_validos' => $totalValidos,
+            'total_blancos' => $blancos,
+            'total_nulos' => $nulos,
+            'categorias' => ['Gobernador'],
         ]);
 
         return response()->json([
             'ok' => true,
             'mesa_id' => $mesa->id,
-            'finalizada' => $finalizadaReal,
+            'finalizada' => true,
         ]);
     }
 
-    private function tieneFotosMinimasFinalizacion(ResultadoMesa $resultado): bool
+    private function mapResultadoSegundaVueltaForMobile(ResultadoMesaSegundaVuelta $resultado): array
     {
-        foreach (['foto1', 'foto2', 'foto3', 'foto4'] as $slot) {
-            if (empty($resultado->{$slot})) {
-                return false;
-            }
+        $data = [
+            'etapa_1' => true,
+            'etapa_2' => true,
+            'observacion' => $resultado->observacion,
+            'observacion_gobernador' => $resultado->observacion,
+            'observacion_asambleista_distrito' => null,
+            'observacion_asambleista_poblacion' => null,
+            'observacion_concejal' => null,
+            'observacion_alcalde' => null,
+            'blancos_gobernador' => (int) ($resultado->blancos ?? 0),
+            'nulos_gobernador' => (int) ($resultado->nulos ?? 0),
+            'papeletas_no_utilizadas_gobernador' => (int) ($resultado->papeletas_no_utilizadas ?? 0),
+            'blancos_asambleista_distrito' => 0,
+            'nulos_asambleista_distrito' => 0,
+            'papeletas_no_utilizadas_asambleista_distrito' => 0,
+            'blancos_asambleista_poblacion' => 0,
+            'nulos_asambleista_poblacion' => 0,
+            'papeletas_no_utilizadas_asambleista_poblacion' => 0,
+            'blancos_concejal' => 0,
+            'nulos_concejal' => 0,
+            'papeletas_no_utilizadas_concejal' => 0,
+            'blancos_alcalde' => 0,
+            'nulos_alcalde' => 0,
+            'papeletas_no_utilizadas_alcalde' => 0,
+            'detalles' => collect($resultado->detalles)
+                ->map(fn ($d) => [
+                    'partido_id' => (int) $d->partido_id,
+                    'votos_gobernador' => (int) ($d->votos_gobernador ?? 0),
+                    'votos_asambleista_distrito' => 0,
+                    'votos_asambleista_poblacion' => 0,
+                    'votos_concejal' => 0,
+                    'votos_alcalde' => 0,
+                ])
+                ->values()
+                ->all(),
+        ];
+
+        foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto7', 'foto8', 'foto9', 'foto10'] as $slot) {
+            $data[$slot . '_base64'] = null;
         }
-        return true;
+        $data['foto5_url'] = $resultado->foto_pizarra ? Storage::url($resultado->foto_pizarra) : null;
+        $data['foto6_url'] = $resultado->foto_acta ? Storage::url($resultado->foto_acta) : null;
+
+        return $data;
     }
 
-    private function mesaYaFinalizadaParaMovil(Mesa $mesa, ?ResultadoMesa $resultado): bool
+    private function mobilePartidosSegundaVuelta()
+    {
+        return Partido::query()
+            ->whereNull('deleted_at')
+            ->whereIn('id', self::PARTIDOS_SEGUNDA_VUELTA)
+            ->select([
+                'id',
+                'sigla',
+                'nombre',
+                'color',
+                'icono',
+                DB::raw('0 as orden_municipal'),
+                DB::raw('0 as orden_departamental'),
+            ])
+            ->orderByRaw('CASE id WHEN 11 THEN 1 WHEN 15 THEN 2 ELSE 99 END')
+            ->get()
+            ->map(function ($p) {
+                $iconoBase64 = $this->partidoIconoBase64($p->icono);
+                return [
+                    'id' => $p->id,
+                    'sigla' => $p->sigla,
+                    'nombre' => $p->nombre,
+                    'color' => $p->color,
+                    'icono' => $p->icono,
+                    'icono_url' => null,
+                    'icono_base64' => $iconoBase64,
+                    'orden_municipal' => 0,
+                    'orden_departamental' => 0,
+                    'habilitado_gobernador' => true,
+                    'habilitado_asambleista_poblacion' => false,
+                    'habilitado_asambleista_distrito' => false,
+                    'habilitado_concejal' => false,
+                    'habilitado_alcalde' => false,
+                ];
+            })
+            ->values();
+    }
+
+    private function mesaYaFinalizadaParaMovil(Mesa $mesa, ?ResultadoMesaSegundaVuelta $resultado): bool
     {
         if (!$resultado) {
             return false;
         }
 
-        if ((bool) $resultado->etapa_2) {
-            return true;
-        }
-
-        return strtoupper((string) ($mesa->estado ?? '')) === 'FINALIZADA';
-    }
-
-    private function partidosPorMesa(?Mesa $mesa)
-    {
-        $municipioId = $mesa?->municipio_id ?: $mesa?->recinto?->municipio_id;
-
-        $baseQuery = Partido::query()
-            ->whereNull('deleted_at')
-            ->orderByRaw('CASE WHEN orden_municipal IS NULL OR orden_municipal = 0 THEN 1 ELSE 0 END')
-            ->orderBy('orden_municipal')
-            ->orderBy('sigla');
-
-        if (!$municipioId) {
-            return $baseQuery
-                ->select([
-                    'id',
-                    'sigla',
-                    'nombre',
-                    'color',
-                    'icono',
-                    'orden_municipal',
-                    'orden_departamental',
-                    DB::raw('1 as habilitado_gobernador'),
-                    DB::raw('1 as habilitado_asambleista_poblacion'),
-                    DB::raw('1 as habilitado_asambleista_distrito'),
-                    DB::raw('1 as habilitado_concejal'),
-                    DB::raw('1 as habilitado_alcalde'),
-                ])
-                ->get();
-        }
-
-        $tieneConfig = DB::table('municipio_partido')
-            ->where('municipio_id', $municipioId)
-            ->exists();
-
-        if (!$tieneConfig) {
-            return $baseQuery
-                ->select([
-                    'id',
-                    'sigla',
-                    'nombre',
-                    'color',
-                    'icono',
-                    'orden_municipal',
-                    'orden_departamental',
-                    DB::raw('1 as habilitado_gobernador'),
-                    DB::raw('1 as habilitado_asambleista_poblacion'),
-                    DB::raw('1 as habilitado_asambleista_distrito'),
-                    DB::raw('1 as habilitado_concejal'),
-                    DB::raw('1 as habilitado_alcalde'),
-                ])
-                ->get();
-        }
-
-        return Partido::query()
-            ->join('municipio_partido as mp', function ($join) use ($municipioId) {
-                $join->on('mp.partido_id', '=', 'partidos.id')
-                    ->where('mp.municipio_id', '=', $municipioId);
-            })
-            ->whereNull('partidos.deleted_at')
-            ->select([
-                'partidos.id',
-                'partidos.sigla',
-                'partidos.nombre',
-                'partidos.color',
-                'partidos.icono',
-                'partidos.orden_municipal',
-                'partidos.orden_departamental',
-                'mp.habilitado_gobernador',
-                'mp.habilitado_asambleista_poblacion',
-                'mp.habilitado_asambleista_distrito',
-                'mp.habilitado_concejal',
-                'mp.habilitado_alcalde',
-            ])
-            ->where(function ($qq) {
-                $qq->where('mp.habilitado_gobernador', true)
-                    ->orWhere('mp.habilitado_asambleista_poblacion', true)
-                    ->orWhere('mp.habilitado_asambleista_distrito', true)
-                    ->orWhere('mp.habilitado_concejal', true)
-                    ->orWhere('mp.habilitado_alcalde', true);
-            })
-            ->orderByRaw('CASE WHEN partidos.orden_municipal IS NULL OR partidos.orden_municipal = 0 THEN 1 ELSE 0 END')
-            ->orderBy('partidos.orden_municipal')
-            ->orderBy('partidos.sigla')
-            ->get();
+        return strtoupper((string) ($mesa->estado_segunda_vuelta ?? '')) === 'RESULTADO_REGISTRADO';
     }
 
     public function sync(Request $request)
@@ -820,7 +663,7 @@ class MobileResultadosController extends Controller
         SocketEmitter::votacion([
             'title' => 'Nuevo dato sincronizado',
             'message' => trim(sprintf(
-                '%s sincronizó datos offline en mesa %s',
+                '%s sincronizo datos offline en mesa %s',
                 $user->name ?? 'Usuario',
                 $data['mesa_id']
             )),

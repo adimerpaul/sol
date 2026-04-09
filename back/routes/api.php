@@ -19,6 +19,7 @@ use App\Http\Controllers\AdminUserJerarquiaController;
 use App\Http\Controllers\AdminRecintoJefeMapaController;
 use App\Http\Controllers\MesaAiControlController;
 use App\Http\Controllers\SuperAdminMesasController;
+use App\Http\Controllers\SuperAdminMesasSegundaVueltaController;
 use App\Http\Controllers\ReportesController;
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -141,6 +142,12 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('admin/mesas/{mesa}/asistencia-capacitacion', [SuperAdminMesasController::class, 'asistenciaCapacitacion']);
     Route::get('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'resultado']);
     Route::put('admin/mesas/{mesa}/resultado', [SuperAdminMesasController::class, 'guardarResultado']);
+
+    Route::get('admin/mesas-segunda-vuelta/bootstrap', [SuperAdminMesasSegundaVueltaController::class, 'bootstrap']);
+    Route::put('admin/mesas-segunda-vuelta/asignacion-masiva', [SuperAdminMesasSegundaVueltaController::class, 'asignacionMasiva']);
+    Route::put('admin/mesas-segunda-vuelta/{mesa}/delegado', [SuperAdminMesasSegundaVueltaController::class, 'asignarDelegado']);
+    Route::get('admin/mesas-segunda-vuelta/{mesa}/resultado', [SuperAdminMesasSegundaVueltaController::class, 'resultado']);
+    Route::put('admin/mesas-segunda-vuelta/{mesa}/resultado', [SuperAdminMesasSegundaVueltaController::class, 'guardarResultado']);
 
     Route::get('admin/ia-control/bootstrap', [MesaAiControlController::class, 'bootstrap']);
     Route::get('admin/ia-control/mesas-options', [MesaAiControlController::class, 'mesasOptions']);

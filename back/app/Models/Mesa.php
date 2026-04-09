@@ -13,7 +13,7 @@ class Mesa extends Model implements Auditable
 
     protected $fillable = [
         'recinto_id','localidad_id','municipio_id','provincia_id','departamento_id','pais_id',
-        'numero_mesa','habilitados','delegado_id','estado','asistencia_capacitacion',
+        'numero_mesa','habilitados','delegado_id','delegado_segunda_vuelta_id','estado','estado_segunda_vuelta','asistencia_capacitacion',
         'delegado_latitud','delegado_longitud','delegado_presente_at'
     ];
 
@@ -31,6 +31,8 @@ class Mesa extends Model implements Auditable
 
     public function recinto()   { return $this->belongsTo(Recinto::class); }
     public function delegado()  { return $this->belongsTo(User::class, 'delegado_id'); }
+    public function delegadoSegundaVuelta() { return $this->belongsTo(User::class, 'delegado_segunda_vuelta_id'); }
     public function resultado() { return $this->hasOne(ResultadoMesa::class, 'mesa_id'); }
+    public function resultadoSegundaVuelta() { return $this->hasOne(ResultadoMesaSegundaVuelta::class, 'mesa_id'); }
     public function aiControles() { return $this->hasMany(MesaAiControl::class, 'mesa_id'); }
 }
