@@ -276,23 +276,23 @@
           </q-item-section>
         </q-item>
 
-        <q-item
-          dense
-          to="/control-ia-mesas"
-          exact
-          clickable
-          class="menu-item"
-          active-class="menu-active"
-          v-close-popup
-          v-if="canPermission(PERM.CONTROL_IA_MESAS) || canProfileRole()"
-        >
-          <q-item-section avatar>
-            <q-icon name="auto_awesome" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Control IA Mesas</q-item-label>
-          </q-item-section>
-        </q-item>
+<!--        <q-item-->
+<!--          dense-->
+<!--          to="/control-ia-mesas"-->
+<!--          exact-->
+<!--          clickable-->
+<!--          class="menu-item"-->
+<!--          active-class="menu-active"-->
+<!--          v-close-popup-->
+<!--          v-if="canPermission(PERM.CONTROL_IA_MESAS) || canProfileRole()"-->
+<!--        >-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="auto_awesome" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Control IA Mesas</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
 
         <template v-if="isAdministrator() && canPermission(PERM.DASHBOARD)">
           <q-item-label header class="q-px-md text-grey-3 q-mt-sm">
