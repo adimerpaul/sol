@@ -91,6 +91,26 @@
           class="q-mr-sm"
         />
 
+        <q-select
+          v-model="selectedRecintoId"
+          label="Filtrar por recinto"
+          dense
+          outlined
+          use-input
+          clearable
+          map-options
+          emit-value
+          option-label="label"
+          option-value="value"
+          :options="filterRecintoOptions"
+          :loading="loadingFilterRecintos"
+          input-debounce="300"
+          style="width: 320px"
+          class="q-mr-sm"
+          @filter="filterRecintosList"
+          @update:model-value="onRecintoFilterChange"
+        />
+
         <q-input v-model="filter" label="Buscar" dense outlined style="width: 260px">
           <template v-slot:append><q-icon name="search"/></template>
         </q-input>
@@ -524,6 +544,9 @@ export default {
       roles: ['Administrador', 'Supervisor', 'Jefe de Recinto', 'Delegado de Mesa'],
       recintoOptions: [],
       loadingRecintos: false,
+      selectedRecintoId: null,
+      filterRecintoOptions: [],
+      loadingFilterRecintos: false,
       pagination: {
         sortBy: 'id',
         descending: true,
@@ -581,6 +604,7 @@ export default {
   },
 
   async mounted() {
+    this.loadFilterRecintos()
     this.usersGet()
   },
 
@@ -670,7 +694,8 @@ export default {
         rowsPerPage: pagination.rowsPerPage,
         sortBy: pagination.sortBy || 'id',
         descending: pagination.descending,
-        search: this.filter || undefined
+        search: this.filter || undefined,
+        recinto_id: this.selectedRecintoId || undefined
       }
     },
 
@@ -707,6 +732,10 @@ export default {
         })
         .catch(err => { this.$alert.error(err.response?.data?.message || 'Error') })
         .finally(() => { this.loading = false })
+    },
+
+    onRecintoFilterChange () {
+      this.usersGet({ page: 1 })
     },
 
     ensureSelectedRecintoOption () {
@@ -1011,12 +1040,56 @@ export default {
       }
     },
 
+    async loadFilterRecintos (search = '') {
+      this.loadingFilterRecintos = true
+      try {
+        const res = await this.$axios.get('admin/recintos-oruro-city', {
+          params: {
+            search: search || undefined
+          }
+        })
+
+        const rows = Array.isArray(res?.data)
+          ? res.data
+          : (Array.isArray(res?.data?.data) ? res.data.data : [])
+
+        this.filterRecintoOptions = rows.map(r => ({
+          label: this.buildRecintoLabel(r),
+          value: r.id
+        }))
+
+        if (this.selectedRecintoId && !this.filterRecintoOptions.some(opt => opt.value === this.selectedRecintoId)) {
+          const selected = this.users.find(row => row.recinto_id === this.selectedRecintoId)
+          if (selected) {
+            this.filterRecintoOptions = [
+              ...this.filterRecintoOptions,
+              {
+                label: selected.recinto_nombre || `Recinto ${this.selectedRecintoId}`,
+                value: this.selectedRecintoId
+              }
+            ]
+          }
+        }
+      } catch (err) {
+        this.$alert.error(err.response?.data?.message || 'Error cargando recintos')
+      } finally {
+        this.loadingFilterRecintos = false
+      }
+    },
+
+    filterRecintosList (val, update) {
+      update(async () => {
+        await this.loadFilterRecintos(val)
+      })
+    },
+
     async fetchUsersForExport (type) {
       const res = await this.$axios.get('users', {
         params: {
           sortBy: this.pagination.sortBy || 'id',
           descending: this.pagination.descending,
           search: this.filter || undefined,
+          recinto_id: this.selectedRecintoId || undefined,
           paginate: false
         }
       })

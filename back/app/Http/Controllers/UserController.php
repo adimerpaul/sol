@@ -173,6 +173,15 @@ class UserController extends Controller
         });
     }
 
+    private function applyRecintoFilter($query, $recintoId): void
+    {
+        if ($recintoId === null || $recintoId === '') {
+            return;
+        }
+
+        $query->where('users.recinto_id', (int) $recintoId);
+    }
+
     private function applyIndexSorting($query, string $sortBy, bool $descending): void
     {
         $direction = $descending ? 'desc' : 'asc';
@@ -402,6 +411,7 @@ class UserController extends Controller
             $q->where('created_by', $actor->id);
         }
 
+        $this->applyRecintoFilter($q, $request->query('recinto_id'));
         $this->applyIndexSearch($q, (string) $request->query('search', ''));
 
         $q

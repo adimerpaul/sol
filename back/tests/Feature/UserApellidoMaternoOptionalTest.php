@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
@@ -86,4 +87,108 @@ it('updates a user without apellido materno', function () {
         'apellido_materno' => null,
         'name' => 'Luis Flores',
     ]);
+});
+
+it('filters users by recinto_id on index', function () {
+    $admin = createAdminUser();
+
+    $paisId = DB::table('paises')->insertGetId([
+        'nombre' => 'Bolivia',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $depId = DB::table('departamentos')->insertGetId([
+        'nombre' => 'Oruro',
+        'pais_id' => $paisId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $provId = DB::table('provincias')->insertGetId([
+        'nombre' => 'Cercado',
+        'departamento_id' => $depId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $munId = DB::table('municipios')->insertGetId([
+        'nombre' => 'Oruro',
+        'provincia_id' => $provId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $locId = DB::table('localidades')->insertGetId([
+        'nombre' => 'Centro',
+        'municipio_id' => $munId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $recintoA = DB::table('recintos')->insertGetId([
+        'nombre' => 'Recinto A',
+        'localidad_id' => $locId,
+        'municipio_id' => $munId,
+        'provincia_id' => $provId,
+        'departamento_id' => $depId,
+        'pais_id' => $paisId,
+        'latitud' => -17.0,
+        'longitud' => -67.0,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $recintoB = DB::table('recintos')->insertGetId([
+        'nombre' => 'Recinto B',
+        'localidad_id' => $locId,
+        'municipio_id' => $munId,
+        'provincia_id' => $provId,
+        'departamento_id' => $depId,
+        'pais_id' => $paisId,
+        'latitud' => -17.1,
+        'longitud' => -67.1,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $userInA = User::create([
+        'name' => 'Ana Uno',
+        'nombres' => 'Ana',
+        'apellido_paterno' => 'Uno',
+        'apellido_materno' => null,
+        'ci' => 'CI-REC-A',
+        'fecha_nacimiento' => '1993-03-03',
+        'bloque' => 'Jacha',
+        'username' => 'ana-uno',
+        'role' => 'Supervisor',
+        'avatar' => 'default.png',
+        'password' => bcrypt('secret123'),
+        'created_by' => $admin->id,
+        'recinto_id' => $recintoA,
+    ]);
+
+    User::create([
+        'name' => 'Beto Dos',
+        'nombres' => 'Beto',
+        'apellido_paterno' => 'Dos',
+        'apellido_materno' => null,
+        'ci' => 'CI-REC-B',
+        'fecha_nacimiento' => '1994-04-04',
+        'bloque' => 'Jacha',
+        'username' => 'beto-dos',
+        'role' => 'Supervisor',
+        'avatar' => 'default.png',
+        'password' => bcrypt('secret123'),
+        'created_by' => $admin->id,
+        'recinto_id' => $recintoB,
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->getJson("/api/users?recinto_id={$recintoA}");
+
+    $response->assertOk()
+        ->assertJsonPath('data.0.id', $userInA->id)
+        ->assertJsonCount(1, 'data');
 });
