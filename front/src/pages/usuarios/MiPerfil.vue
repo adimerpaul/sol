@@ -34,7 +34,7 @@
               <q-input v-model="form.apellido_paterno" dense outlined label="Apellido paterno" />
             </div>
             <div class="col-12 col-md-6">
-              <q-input v-model="form.apellido_materno" dense outlined label="Apellido materno" />
+              <q-input v-model="form.apellido_materno" dense outlined label="Apellido materno (opcional)" />
             </div>
             <div class="col-12 col-md-6">
               <q-input v-model="form.email" dense outlined label="Email" />
@@ -84,8 +84,8 @@ function canAccessProfile () {
 }
 
 function save () {
-  if (!form.value.username || !form.value.nombres || !form.value.apellido_materno) {
-    proxy.$alert.error('Complete username, nombres y apellido materno')
+  if (!form.value.username || !form.value.nombres) {
+    proxy.$alert.error('Complete username y nombres')
     return
   }
 

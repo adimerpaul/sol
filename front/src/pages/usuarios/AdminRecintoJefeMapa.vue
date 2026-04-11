@@ -418,10 +418,9 @@
               <div class="col-12 col-md-4">
                 <q-input
                   v-model="delegadoForm.apellido_materno"
-                  label="Apellido materno *"
+                  label="Apellido materno (opcional)"
                   dense
                   outlined
-                  :rules="[v => !!v || 'Campo requerido']"
                 />
               </div>
 

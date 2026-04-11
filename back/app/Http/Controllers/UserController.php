@@ -374,12 +374,16 @@ class UserController extends Controller
             ],
             'nombres' => 'required|string|max:120',
             'apellido_paterno' => 'nullable|string|max:120',
-            'apellido_materno' => 'required|string|max:120',
+            'apellido_materno' => 'nullable|string|max:120',
             'celular' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:180',
         ]);
 
-        $data['name'] = trim(($data['nombres'] ?? '') . ' ' . ($data['apellido_paterno'] ?? '') . ' ' . ($data['apellido_materno'] ?? ''));
+        $data['name'] = collect([
+            $data['nombres'] ?? '',
+            $data['apellido_paterno'] ?? '',
+            $data['apellido_materno'] ?? '',
+        ])->filter(fn ($value) => filled($value))->implode(' ');
 
         $user->update($data);
 
@@ -501,7 +505,7 @@ class UserController extends Controller
         $data = $request->validate([
             'nombres' => 'required|string|max:120',
             'apellido_paterno' => 'nullable|string|max:120',
-            'apellido_materno' => 'required|string|max:120',
+            'apellido_materno' => 'nullable|string|max:120',
             'ci' => 'required|string|max:30',
             'fecha_nacimiento' => 'required|date',
             'bloque' => 'required|string|max:180',
@@ -526,7 +530,11 @@ class UserController extends Controller
         $usernameBase = $data['username'] ?? $data['ci'];
         $data['username'] = $this->makeUniqueUsername((string) $usernameBase);
         $data['password'] = bcrypt($data['password'] ?? str()->random(12));
-        $data['name'] = trim($data['nombres'] . ' ' . $data['apellido_paterno'] . ' ' . $data['apellido_materno']);
+        $data['name'] = collect([
+            $data['nombres'] ?? '',
+            $data['apellido_paterno'] ?? '',
+            $data['apellido_materno'] ?? '',
+        ])->filter(fn ($value) => filled($value))->implode(' ');
         $data['created_by'] = $actor?->id;
 
         $user = User::create($data);
@@ -546,7 +554,7 @@ class UserController extends Controller
         $data = $request->validate([
             'nombres' => 'required|string|max:120',
             'apellido_paterno' => 'nullable|string|max:120',
-            'apellido_materno' => 'required|string|max:120',
+            'apellido_materno' => 'nullable|string|max:120',
             'ci' => 'required|string|max:30|unique:users,ci,' . $user->id,
             'fecha_nacimiento' => 'required|date',
             'bloque' => 'required|string|max:180',
@@ -567,7 +575,11 @@ class UserController extends Controller
             $data['username'] = $this->makeUniqueUsername((string) ($data['ci'] ?? 'user'), $user->id);
         }
 
-        $data['name'] = trim($data['nombres'] . ' ' . $data['apellido_paterno'] . ' ' . $data['apellido_materno']);
+        $data['name'] = collect([
+            $data['nombres'] ?? '',
+            $data['apellido_paterno'] ?? '',
+            $data['apellido_materno'] ?? '',
+        ])->filter(fn ($value) => filled($value))->implode(' ');
 
         $user->update($data);
         $user->load('permissions:id,name');
