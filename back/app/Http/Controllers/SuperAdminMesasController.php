@@ -244,21 +244,9 @@ class SuperAdminMesasController extends Controller
 
     private function resolveAdminResultadosDefaultScope(int $departamentoId): array
     {
-        $provinciaId = DB::table('provincias')
-            ->where('departamento_id', $departamentoId)
-            ->whereRaw('LOWER(nombre) = ?', ['cercado'])
-            ->value('id');
-
-        $municipioId = $provinciaId
-            ? DB::table('municipios')
-                ->where('provincia_id', $provinciaId)
-                ->whereRaw('LOWER(nombre) = ?', ['oruro'])
-                ->value('id')
-            : null;
-
         return [
-            'provincia_id' => $provinciaId,
-            'municipio_id' => $municipioId,
+            'provincia_id' => null,
+            'municipio_id' => null,
         ];
     }
 

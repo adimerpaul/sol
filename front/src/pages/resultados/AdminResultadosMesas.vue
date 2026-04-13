@@ -1569,20 +1569,8 @@ export default {
     },
 
     applyDefaultGeoFilters () {
-      if (!this.filters.provincia_id) {
-        const provincia = (this.geoOptions.provincias || []).find(p =>
-          Number(p.departamento_id) === 5 && String(p.nombre || '').toLowerCase() === 'cercado'
-        )
-        this.filters.provincia_id = provincia?.id || null
-      }
-
-      if (!this.filters.municipio_id) {
-        const municipio = (this.geoOptions.municipios || []).find(m =>
-          Number(m.provincia_id) === Number(this.filters.provincia_id) &&
-          String(m.nombre || '').toLowerCase() === 'oruro'
-        )
-        this.filters.municipio_id = municipio?.id || null
-      }
+      if (this.filters.provincia_id == null) this.filters.provincia_id = null
+      if (this.filters.municipio_id == null) this.filters.municipio_id = null
     },
 
     async loadRecintosOptions () {
