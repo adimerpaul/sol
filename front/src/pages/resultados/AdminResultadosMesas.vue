@@ -244,23 +244,12 @@
             </td>
 
             <td class="text-left">
-              <div v-if="r.delegado">
-                <div class="text-weight-medium" style="max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ r.delegado.name }}</div>
-                <div class="text-caption text-grey-7">
-                  <strong>Username:</strong>
-                  {{ r.delegado.username }}
-                </div>
-                <div class="text-caption text-grey-7">
-                  <strong>CI:</strong>
-                  {{ r.delegado.ci }}
-                </div>
-                <div class="text-caption text-grey-7">
-                  <strong>Nac:</strong>
-                  {{ r.delegado.fecha_nacimiento }}
-                </div>
-                <div class="text-caption text-grey-7">
-                  <strong>Celular:</strong>
-                  {{ r.delegado.celular || 'Sin celular' }}
+              <div v-if="r.delegado" class="usuario-resumen">
+                <div class="text-weight-medium ellipsis">{{ r.delegado.name }}</div>
+                <div class="text-caption text-grey-7">User: {{ r.delegado.username || '-' }}</div>
+                <div class="text-caption text-grey-7">CI: {{ r.delegado.ci || '-' }} · Nac: {{ r.delegado.fecha_nacimiento || '-' }}</div>
+                <div class="text-caption text-grey-7 row items-center no-wrap">
+                  <span>Cel: {{ r.delegado.celular || '-' }}</span>
                   <q-btn
                     v-if="whatsappUrl(r.delegado.celular)"
                     flat
@@ -329,8 +318,7 @@
               <div class="row items-center q-gutter-xs">
                 <q-chip dense size="11px" :color="b(r.aviso_antes)" text-color="white">Estoy presente</q-chip>
                 <q-chip dense size="11px" :color="b(r.aviso_manana)" text-color="white">Mesa abierta</q-chip>
-                <q-chip dense size="11px" :color="b(r.aviso_mediodia)" text-color="white">Acta alcaldia</q-chip>
-                <q-chip dense size="11px" :color="b(r.aviso_tarde)" text-color="white">Acta gobernacion</q-chip>
+                <q-chip dense size="11px" :color="b(r.aviso_tarde)" text-color="white">Acta gobernador</q-chip>
                 <q-chip v-if="r.hora_apertura_mesa" dense size="11px" color="indigo" text-color="white">
                   {{ r.hora_apertura_mesa }}
                 </q-chip>
@@ -479,10 +467,9 @@
                     type="time"
                     dense
                     outlined
-                    label="Hora de apertura (08:00 a 04:00)"
+                    label="Hora de apertura"
                     :disable="!resForm.aviso_manana"
                   />
-                  <q-toggle v-model="resForm.aviso_mediodia" label="Tengo el acta de la alcaldia en mi poder" />
                   <q-toggle v-model="resForm.aviso_tarde" label="Tengo el acta de la gobernacion en mi poder" />
                 </q-card-section>
               </q-card>
@@ -491,68 +478,16 @@
                 <q-card-section class="text-weight-bold">Totales</q-card-section>
                 <q-separator />
                 <q-card-section class="row q-col-gutter-sm">
-                 <div class="col-12 text-caption text-grey-7">Gobernador</div>
-                 <div class="col-6">
-                   <q-input v-model.number="resForm.blancos_gobernador" type="number" dense outlined label="Blancos" min="0" />
-                 </div>
-                 <div class="col-6">
-                   <q-input v-model.number="resForm.nulos_gobernador" type="number" dense outlined label="Nulos" min="0" />
-                 </div>
-                 <div class="col-12">
-                   <q-input v-model.number="resForm.papeletas_no_utilizadas_gobernador" type="number" dense outlined label="Papeletas no utilizadas" min="0" />
-                 </div>
-
-                 <div class="col-12 text-caption text-grey-7">Asambleísta Distrito  </div>
-                 <div class="col-6">
-                   <q-input v-model.number="resForm.blancos_asambleista_distrito" type="number" dense outlined label="Blancos" min="0" />
-                 </div>
-                 <div class="col-6">
-                   <q-input v-model.number="resForm.nulos_asambleista_distrito" type="number" dense outlined label="Nulos" min="0" />
-                 </div>
-                 <div class="col-12">
-                   <q-input v-model.number="resForm.papeletas_no_utilizadas_asambleista_distrito" type="number" dense outlined label="Papeletas no utilizadas" min="0" />
-                 </div>
-
-                 <div class="col-12 text-caption text-grey-7">Asambleísta Población</div>
-                 <div class="col-6">
-                   <q-input v-model.number="resForm.blancos_asambleista_poblacion" type="number" dense outlined label="Blancos" min="0" />
-                 </div>
-                 <div class="col-6">
-                   <q-input v-model.number="resForm.nulos_asambleista_poblacion" type="number" dense outlined label="Nulos" min="0" />
-                 </div>
-                 <div class="col-12">
-                   <q-input v-model.number="resForm.papeletas_no_utilizadas_asambleista_poblacion" type="number" dense outlined label="Papeletas no utilizadas" min="0" />
-                 </div>
-
-
-
-                  <div class="col-12 text-caption text-grey-7">Alcalde</div>
+                  <div class="col-12 text-caption text-grey-7">Gobernador</div>
                   <div class="col-6">
-                    <q-input v-model.number="resForm.blancos_alcalde" type="number" dense outlined label="Blancos" min="0" />
+                    <q-input v-model.number="resForm.blancos_gobernador" type="number" dense outlined label="Blancos" min="0" />
                   </div>
                   <div class="col-6">
-                    <q-input v-model.number="resForm.nulos_alcalde" type="number" dense outlined label="Nulos" min="0" />
+                    <q-input v-model.number="resForm.nulos_gobernador" type="number" dense outlined label="Nulos" min="0" />
                   </div>
                   <div class="col-12">
                     <q-input
-                      v-model.number="resForm.papeletas_no_utilizadas_alcalde"
-                      type="number"
-                      dense
-                      outlined
-                      label="Papeletas no utilizadas"
-                      min="0"
-                    />
-                  </div>
-                  <div class="col-12 text-caption text-grey-7">Concejal</div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.blancos_concejal" type="number" dense outlined label="Blancos" min="0" />
-                  </div>
-                  <div class="col-6">
-                    <q-input v-model.number="resForm.nulos_concejal" type="number" dense outlined label="Nulos" min="0" />
-                  </div>
-                  <div class="col-12">
-                    <q-input
-                      v-model.number="resForm.papeletas_no_utilizadas_concejal"
+                      v-model.number="resForm.papeletas_no_utilizadas_gobernador"
                       type="number"
                       dense
                       outlined
@@ -572,11 +507,11 @@
 
               <!-- FOTOS (compacto tipo Usuarios) -->
               <q-card flat bordered class="q-mt-sm">
-                <q-card-section class="text-weight-bold">Fotos (10)</q-card-section>
+                <q-card-section class="text-weight-bold">Fotos (2)</q-card-section>
                 <q-separator />
                 <q-card-section class="q-pt-sm">
                   <div class="row q-col-gutter-sm">
-                    <div v-for="n in 10" :key="n" class="col-6">
+                    <div v-for="n in 2" :key="n" class="col-6">
                       <q-card flat bordered class="q-pa-xs relative-position foto-card">
                         <input
                           :id="`foto-input-${n}`"
@@ -650,81 +585,11 @@
 
                 <q-card-section style="max-height: 55vh; overflow:auto;">
                   <div class="row q-col-gutter-sm">
-                   <div class="col-12 col-md-6">
-                     <q-card flat bordered class="q-pa-sm">
-                       <div class="text-weight-bold q-mb-xs">Gobernador</div>
-                       <div v-for="p in partidosGobernador" :key="'gob_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
-                         <div class="col-12 col-md-7 row items-center">
-                           <div v-if="p.icono" class="q-mr-sm">
-                             <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
-                           </div>
-                           <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
-                             {{ p.sigla }}
-                           </q-badge>
-                           <span class="q-ml-sm">{{ p.nombre }}</span>
-                         </div>
-                         <div class="col-12 col-md-5">
-                           <q-input v-model.number="votosMap[p.id].votos_gobernador" type="number" dense outlined label="Votos" min="0" />
-                         </div>
-                       </div>
-                       <q-separator />
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                         Total: {{ sumGobernador }} · Blancos: {{ resForm.blancos_gobernador }} · Nulos: {{ resForm.nulos_gobernador }} · PNU: {{ resForm.papeletas_no_utilizadas_gobernador }}
-                       </div>
-                     </q-card>
-                   </div>
-
-                   <div class="col-12 col-md-6">
-                     <q-card flat bordered class="q-pa-sm">
-                       <div class="text-weight-bold q-mb-xs">Asambleísta Distrito</div>
-                       <div v-for="p in partidosAsambleistaDistrito" :key="'asd_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
-                         <div class="col-12 col-md-7 row items-center">
-                           <div v-if="p.icono" class="q-mr-sm">
-                             <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
-                           </div>
-                           <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
-                             {{ p.sigla }}
-                           </q-badge>
-                           <span class="q-ml-sm">{{ p.nombre }}</span>
-                         </div>
-                         <div class="col-12 col-md-5">
-                           <q-input v-model.number="votosMap[p.id].votos_asambleista_distrito" type="number" dense outlined label="Votos" min="0" />
-                         </div>
-                       </div>
-                       <q-separator />
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                         Total: {{ sumAsd }} · Blancos: {{ resForm.blancos_asambleista_distrito }} · Nulos: {{ resForm.nulos_asambleista_distrito }} · PNU: {{ resForm.papeletas_no_utilizadas_asambleista_distrito }}
-                       </div>
-                     </q-card>
-                   </div>
-
-                   <div class="col-12 col-md-6">
-                     <q-card flat bordered class="q-pa-sm">
-                       <div class="text-weight-bold q-mb-xs">Asambleísta Población</div>
-                       <div v-for="p in partidosAsambleistaPoblacion" :key="'asp_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
-                         <div class="col-12 col-md-7 row items-center">
-                           <div v-if="p.icono" class="q-mr-sm">
-                             <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
-                           </div>
-                           <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
-                             {{ p.sigla }}
-                           </q-badge>
-                           <span class="q-ml-sm">{{ p.nombre }}</span>
-                         </div>
-                         <div class="col-12 col-md-5">
-                           <q-input v-model.number="votosMap[p.id].votos_asambleista_poblacion" type="number" dense outlined label="Votos" min="0" />
-                         </div>
-                       </div>
-                       <q-separator />
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                         Total: {{ sumAsp }} · Blancos: {{ resForm.blancos_asambleista_poblacion }} · Nulos: {{ resForm.nulos_asambleista_poblacion }} · PNU: {{ resForm.papeletas_no_utilizadas_asambleista_poblacion }}
-                       </div>
-                     </q-card>
-                   </div>
-                    <div class="col-12 col-md-6">
+                    <div class="col-12">
                       <q-card flat bordered class="q-pa-sm">
-                        <div class="text-weight-bold q-mb-xs">Alcalde</div>
-                        <div v-for="p in partidosAlcalde" :key="'alc_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
+                        <div class="text-weight-bold q-mb-xs">Gobernador</div>
+                        <div class="text-caption text-grey-7 q-mb-sm">Patria y Jacha</div>
+                        <div v-for="p in partidosGobernador" :key="'gob_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                           <div class="col-12 col-md-7 row items-center">
                             <div v-if="p.icono" class="q-mr-sm">
                               <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
@@ -735,35 +600,12 @@
                             <span class="q-ml-sm">{{ p.nombre }}</span>
                           </div>
                           <div class="col-12 col-md-5">
-                            <q-input v-model.number="votosMap[p.id].votos_alcalde" type="number" dense outlined label="Votos" min="0" />
+                            <q-input v-model.number="votosMap[p.id].votos_gobernador" type="number" dense outlined label="Votos" min="0" />
                           </div>
                         </div>
                         <q-separator />
                         <div class="text-caption text-grey-7 q-mt-xs">
-                          Total: {{ sumAlc }} · Blancos: {{ resForm.blancos_alcalde }} · Nulos: {{ resForm.nulos_alcalde }} · PNU: {{ resForm.papeletas_no_utilizadas_alcalde }}
-                        </div>
-                      </q-card>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <q-card flat bordered class="q-pa-sm">
-                        <div class="text-weight-bold q-mb-xs">Concejal</div>
-                        <div v-for="p in partidosConcejal" :key="'con_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
-                          <div class="col-12 col-md-7 row items-center">
-                            <div v-if="p.icono" class="q-mr-sm">
-                              <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
-                            </div>
-                            <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
-                              {{ p.sigla }}
-                            </q-badge>
-                            <span class="q-ml-sm">{{ p.nombre }}</span>
-                          </div>
-                          <div class="col-12 col-md-5">
-                            <q-input v-model.number="votosMap[p.id].votos_concejal" type="number" dense outlined label="Votos" min="0" />
-                          </div>
-                        </div>
-                        <q-separator />
-                        <div class="text-caption text-grey-7 q-mt-xs">
-                          Total: {{ sumCon }} · Blancos: {{ resForm.blancos_concejal }} · Nulos: {{ resForm.nulos_concejal }} · PNU: {{ resForm.papeletas_no_utilizadas_concejal }}
+                          Total: {{ sumGobernador }} · Blancos: {{ resForm.blancos_gobernador }} · Nulos: {{ resForm.nulos_gobernador }} · PNU: {{ resForm.papeletas_no_utilizadas_gobernador }}
                         </div>
                       </q-card>
                     </div>
@@ -773,11 +615,7 @@
 
               <q-card flat bordered class="q-mt-sm">
                 <q-card-section>
-                  <q-input v-model="resForm.observacion_alcalde" type="textarea" outlined label="Observacion Alcalde" class="q-mb-sm" />
-                  <q-input v-model="resForm.observacion_concejal" type="textarea" outlined label="Observacion Concejal" class="q-mb-sm" />
-                  <q-input v-model="resForm.observacion_gobernador" type="textarea" outlined label="Observacion Gobernador" class="q-mb-sm" />
-                  <q-input v-model="resForm.observacion_asambleista_distrito" type="textarea" outlined label="Observacion Asambleista Distrito" class="q-mb-sm" />
-                  <q-input v-model="resForm.observacion_asambleista_poblacion" type="textarea" outlined label="Observacion Asambleista Poblacion" />
+                  <q-input v-model="resForm.observacion_gobernador" type="textarea" outlined label="Observacion Gobernador" />
                 </q-card-section>
               </q-card>
             </div>
@@ -1143,11 +981,7 @@ export default {
       partidos: [],
       votosMap: {},
       voteTypes: [
-        { key: 'votos_gobernador', label: 'Gobernador' },
-        { key: 'votos_asambleista_distrito', label: 'Asambleista Distrito' },
-        { key: 'votos_asambleista_poblacion', label: 'Asambleista Poblacion' },
-        { key: 'votos_concejal', label: 'Concejal' },
-        { key: 'votos_alcalde', label: 'Alcalde' }
+        { key: 'votos_gobernador', label: 'Gobernador' }
       ],
       resForm: {
         aviso_antes: false,
@@ -1182,16 +1016,16 @@ export default {
 
       // fotos
       fotos: {
-        foto1: null, foto2: null, foto3: null, foto4: null, foto5: null,
-        foto6: null, foto7: null, foto8: null, foto9: null, foto10: null
+        foto1: null,
+        foto2: null
       },
       fotosServer: {
-        foto1_url: null, foto2_url: null, foto3_url: null, foto4_url: null, foto5_url: null,
-        foto6_url: null, foto7_url: null, foto8_url: null, foto9_url: null, foto10_url: null
+        foto1_url: null,
+        foto2_url: null
       },
       fotosToClear: {
-        foto1: false, foto2: false, foto3: false, foto4: false, foto5: false,
-        foto6: false, foto7: false, foto8: false, foto9: false, foto10: false
+        foto1: false,
+        foto2: false
       },
       dlgFotoPreview: false,
       fotoPreviewSrc: null
@@ -1270,22 +1104,6 @@ export default {
       return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_gobernador), 'orden_departamental')
     },
 
-    partidosAsambleistaDistrito () {
-      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_asambleista_distrito), 'orden_departamental')
-    },
-
-    partidosAsambleistaPoblacion () {
-      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_asambleista_poblacion), 'orden_departamental')
-    },
-
-    partidosAlcalde () {
-      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_alcalde), 'orden_municipal')
-    },
-
-    partidosConcejal () {
-      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_concejal), 'orden_municipal')
-    },
-
     sumVotos () {
       let s = 0
       for (const k of Object.keys(this.votosMap || {})) {
@@ -1299,30 +1117,11 @@ export default {
     },
 
     sumGobernador () { return this.sumByKey('votos_gobernador') },
-    sumAsd () { return this.sumByKey('votos_asambleista_distrito') },
-    sumAsp () { return this.sumByKey('votos_asambleista_poblacion') },
-    sumCon () { return this.sumByKey('votos_concejal') },
-    sumAlc () { return this.sumByKey('votos_alcalde') },
 
     sumTotal () {
-      const b =
-        Number(this.resForm.blancos_gobernador || 0) +
-        Number(this.resForm.blancos_asambleista_distrito || 0) +
-        Number(this.resForm.blancos_asambleista_poblacion || 0) +
-        Number(this.resForm.blancos_concejal || 0) +
-        Number(this.resForm.blancos_alcalde || 0)
-      const n =
-        Number(this.resForm.nulos_gobernador || 0) +
-        Number(this.resForm.nulos_asambleista_distrito || 0) +
-        Number(this.resForm.nulos_asambleista_poblacion || 0) +
-        Number(this.resForm.nulos_concejal || 0) +
-        Number(this.resForm.nulos_alcalde || 0)
-      const p =
-        Number(this.resForm.papeletas_no_utilizadas_gobernador || 0) +
-        Number(this.resForm.papeletas_no_utilizadas_asambleista_distrito || 0) +
-        Number(this.resForm.papeletas_no_utilizadas_asambleista_poblacion || 0) +
-        Number(this.resForm.papeletas_no_utilizadas_concejal || 0) +
-        Number(this.resForm.papeletas_no_utilizadas_alcalde || 0)
+      const b = Number(this.resForm.blancos_gobernador || 0)
+      const n = Number(this.resForm.nulos_gobernador || 0)
+      const p = Number(this.resForm.papeletas_no_utilizadas_gobernador || 0)
       return this.sumVotos + b + n + p
     },
 
@@ -1569,8 +1368,7 @@ export default {
     },
 
     applyDefaultGeoFilters () {
-      if (this.filters.provincia_id == null) this.filters.provincia_id = null
-      if (this.filters.municipio_id == null) this.filters.municipio_id = null
+      // No forzar Cercado/Oruro: el listado debe iniciar con todo el departamento.
     },
 
     async loadRecintosOptions () {
@@ -2213,11 +2011,7 @@ export default {
     ganadoresMesa (row) {
       const ganadores = row?.ganadores || {}
       const labels = [
-        { key: 'gobernador', label: 'Gobernador' },
-        { key: 'asambleista_distrito', label: 'Asambleista distrito' },
-        { key: 'asambleista_poblacion', label: 'Asambleista poblacion' },
-        { key: 'alcalde', label: 'Alcalde' },
-        { key: 'concejal', label: 'Concejal' }
+        { key: 'gobernador', label: 'Gobernador' }
       ]
 
       return labels
@@ -2252,7 +2046,7 @@ export default {
         const data = await this.$axios.get(`admin/mesas/${row.id}/resultado`).then(r => r.data)
 
         this.resMesa = data.mesa
-        this.partidos = data.partidos || []
+        this.partidos = (data.partidos || []).filter(p => [11, 15].includes(Number(p.id)))
 
         // reset form + votos + fotos
         this.votosMap = {}
@@ -2305,7 +2099,7 @@ export default {
 
           this.resForm.aviso_antes = !!r.aviso_antes
           this.resForm.aviso_manana = !!r.aviso_manana
-          this.resForm.aviso_mediodia = !!r.aviso_mediodia
+          this.resForm.aviso_mediodia = false
           this.resForm.hora_apertura_mesa = r.hora_apertura_mesa || ''
           this.resForm.aviso_tarde = !!r.aviso_tarde
           this.resForm.etapa_1 = !!r.etapa_1
@@ -2314,36 +2108,12 @@ export default {
           this.resForm.blancos_gobernador = Number(r.blancos_gobernador || 0)
           this.resForm.nulos_gobernador = Number(r.nulos_gobernador || 0)
           this.resForm.papeletas_no_utilizadas_gobernador = Number(r.papeletas_no_utilizadas_gobernador || 0)
-          this.resForm.blancos_asambleista_distrito = Number(r.blancos_asambleista_distrito || 0)
-          this.resForm.nulos_asambleista_distrito = Number(r.nulos_asambleista_distrito || 0)
-          this.resForm.papeletas_no_utilizadas_asambleista_distrito = Number(r.papeletas_no_utilizadas_asambleista_distrito || 0)
-          this.resForm.blancos_asambleista_poblacion = Number(r.blancos_asambleista_poblacion || 0)
-          this.resForm.nulos_asambleista_poblacion = Number(r.nulos_asambleista_poblacion || 0)
-          this.resForm.papeletas_no_utilizadas_asambleista_poblacion = Number(r.papeletas_no_utilizadas_asambleista_poblacion || 0)
-          this.resForm.blancos_concejal = Number(r.blancos_concejal || 0)
-          this.resForm.nulos_concejal = Number(r.nulos_concejal || 0)
-          this.resForm.papeletas_no_utilizadas_concejal = Number(r.papeletas_no_utilizadas_concejal || 0)
-          this.resForm.blancos_alcalde = Number(r.blancos_alcalde || 0)
-          this.resForm.nulos_alcalde = Number(r.nulos_alcalde || 0)
-          this.resForm.papeletas_no_utilizadas_alcalde = Number(r.papeletas_no_utilizadas_alcalde || 0)
           this.resForm.observacion = r.observacion || ''
           this.resForm.observacion_gobernador = r.observacion_gobernador || ''
-          this.resForm.observacion_asambleista_distrito = r.observacion_asambleista_distrito || ''
-          this.resForm.observacion_asambleista_poblacion = r.observacion_asambleista_poblacion || ''
-          this.resForm.observacion_concejal = r.observacion_concejal || ''
-          this.resForm.observacion_alcalde = r.observacion_alcalde || ''
 
           // fotos existentes
           this.fotosServer.foto1_url = r.foto1_url || null
           this.fotosServer.foto2_url = r.foto2_url || null
-          this.fotosServer.foto3_url = r.foto3_url || null
-          this.fotosServer.foto4_url = r.foto4_url || null
-          this.fotosServer.foto5_url = r.foto5_url || null
-          this.fotosServer.foto6_url = r.foto6_url || null
-          this.fotosServer.foto7_url = r.foto7_url || null
-          this.fotosServer.foto8_url = r.foto8_url || null
-          this.fotosServer.foto9_url = r.foto9_url || null
-          this.fotosServer.foto10_url = r.foto10_url || null
 
           const det = r.detalles || []
           det.forEach(d => {
@@ -2382,102 +2152,73 @@ export default {
       if (!this.resMesa?.id) return
       this.saving = true
       try {
-        if (this.resForm.aviso_manana) {
-          const hhmm = this.resForm.hora_apertura_mesa || ''
-          const okFmt = /^\d{2}:\d{2}$/.test(hhmm)
-          const hh = okFmt ? Number(hhmm.slice(0, 2)) : -1
-          if (!okFmt || !(hh >= 8 || hh <= 4)) {
-            this.$alert.error('La hora de apertura debe estar entre 08:00 y 04:00')
-            return
-          }
-        } else {
+        if (!this.resForm.aviso_manana) {
           this.resForm.hora_apertura_mesa = ''
         }
 
         const votos = (this.partidos || []).map(p => ({
           partido_id: p.id,
           votos_gobernador: Number(this.votosMap[p.id]?.votos_gobernador || 0),
-          votos_asambleista_distrito: Number(this.votosMap[p.id]?.votos_asambleista_distrito || 0),
-          votos_asambleista_poblacion: Number(this.votosMap[p.id]?.votos_asambleista_poblacion || 0),
-          votos_concejal: Number(this.votosMap[p.id]?.votos_concejal || 0),
-          votos_alcalde: Number(this.votosMap[p.id]?.votos_alcalde || 0)
+          votos_asambleista_distrito: 0,
+          votos_asambleista_poblacion: 0,
+          votos_concejal: 0,
+          votos_alcalde: 0
         }))
 
         // multipart
         const fd = new FormData()
         fd.append('aviso_antes', this.resForm.aviso_antes ? '1' : '0')
         fd.append('aviso_manana', this.resForm.aviso_manana ? '1' : '0')
-        fd.append('aviso_mediodia', this.resForm.aviso_mediodia ? '1' : '0')
+        fd.append('aviso_mediodia', '0')
         fd.append('aviso_tarde', this.resForm.aviso_tarde ? '1' : '0')
         fd.append('hora_apertura_mesa', this.resForm.hora_apertura_mesa || '')
 
-        const totalBlancos =
-          Number(this.resForm.blancos_gobernador || 0) +
-          Number(this.resForm.blancos_asambleista_distrito || 0) +
-          Number(this.resForm.blancos_asambleista_poblacion || 0) +
-          Number(this.resForm.blancos_concejal || 0) +
-          Number(this.resForm.blancos_alcalde || 0)
+        const totalBlancos = Number(this.resForm.blancos_gobernador || 0)
         const totalNulos =
           Number(this.resForm.nulos_gobernador || 0) +
-          Number(this.resForm.nulos_asambleista_distrito || 0) +
-          Number(this.resForm.nulos_asambleista_poblacion || 0) +
-          Number(this.resForm.papeletas_no_utilizadas_gobernador || 0) +
-          Number(this.resForm.papeletas_no_utilizadas_asambleista_distrito || 0) +
-          Number(this.resForm.papeletas_no_utilizadas_asambleista_poblacion || 0) +
-          Number(this.resForm.nulos_concejal || 0) +
-          Number(this.resForm.nulos_alcalde || 0) +
-          Number(this.resForm.papeletas_no_utilizadas_concejal || 0) +
-          Number(this.resForm.papeletas_no_utilizadas_alcalde || 0)
+          Number(this.resForm.papeletas_no_utilizadas_gobernador || 0)
 
         fd.append('total_blancos', String(totalBlancos))
         fd.append('total_nulos', String(totalNulos))
         fd.append('total_validos', String(this.sumVotos || 0))
         fd.append('observacion', this.resForm.observacion || '')
         fd.append('observacion_gobernador', this.resForm.observacion_gobernador || '')
-        fd.append('observacion_asambleista_distrito', this.resForm.observacion_asambleista_distrito || '')
-        fd.append('observacion_asambleista_poblacion', this.resForm.observacion_asambleista_poblacion || '')
-        fd.append('observacion_concejal', this.resForm.observacion_concejal || '')
-        fd.append('observacion_alcalde', this.resForm.observacion_alcalde || '')
+        fd.append('observacion_asambleista_distrito', '')
+        fd.append('observacion_asambleista_poblacion', '')
+        fd.append('observacion_concejal', '')
+        fd.append('observacion_alcalde', '')
 
         fd.append('blancos_gobernador', String(this.resForm.blancos_gobernador || 0))
         fd.append('nulos_gobernador', String(this.resForm.nulos_gobernador || 0))
         fd.append('papeletas_no_utilizadas_gobernador', String(this.resForm.papeletas_no_utilizadas_gobernador || 0))
-        fd.append('blancos_asambleista_distrito', String(this.resForm.blancos_asambleista_distrito || 0))
-        fd.append('nulos_asambleista_distrito', String(this.resForm.nulos_asambleista_distrito || 0))
-        fd.append('papeletas_no_utilizadas_asambleista_distrito', String(this.resForm.papeletas_no_utilizadas_asambleista_distrito || 0))
-        fd.append('blancos_asambleista_poblacion', String(this.resForm.blancos_asambleista_poblacion || 0))
-        fd.append('nulos_asambleista_poblacion', String(this.resForm.nulos_asambleista_poblacion || 0))
-        fd.append('papeletas_no_utilizadas_asambleista_poblacion', String(this.resForm.papeletas_no_utilizadas_asambleista_poblacion || 0))
-        fd.append('blancos_concejal', String(this.resForm.blancos_concejal || 0))
-        fd.append('nulos_concejal', String(this.resForm.nulos_concejal || 0))
-        fd.append('papeletas_no_utilizadas_concejal', String(this.resForm.papeletas_no_utilizadas_concejal || 0))
-        fd.append('blancos_alcalde', String(this.resForm.blancos_alcalde || 0))
-        fd.append('nulos_alcalde', String(this.resForm.nulos_alcalde || 0))
-        fd.append('papeletas_no_utilizadas_alcalde', String(this.resForm.papeletas_no_utilizadas_alcalde || 0))
+        fd.append('blancos_asambleista_distrito', '0')
+        fd.append('nulos_asambleista_distrito', '0')
+        fd.append('papeletas_no_utilizadas_asambleista_distrito', '0')
+        fd.append('blancos_asambleista_poblacion', '0')
+        fd.append('nulos_asambleista_poblacion', '0')
+        fd.append('papeletas_no_utilizadas_asambleista_poblacion', '0')
+        fd.append('blancos_concejal', '0')
+        fd.append('nulos_concejal', '0')
+        fd.append('papeletas_no_utilizadas_concejal', '0')
+        fd.append('blancos_alcalde', '0')
+        fd.append('nulos_alcalde', '0')
+        fd.append('papeletas_no_utilizadas_alcalde', '0')
 
         fd.append('votos', JSON.stringify(votos))
 
         // fotos (si selecciona, reemplaza)
         if (this.fotos.foto1) fd.append('foto1', this.fotos.foto1)
         if (this.fotos.foto2) fd.append('foto2', this.fotos.foto2)
-        if (this.fotos.foto3) fd.append('foto3', this.fotos.foto3)
-        if (this.fotos.foto4) fd.append('foto4', this.fotos.foto4)
-        if (this.fotos.foto5) fd.append('foto5', this.fotos.foto5)
-        if (this.fotos.foto6) fd.append('foto6', this.fotos.foto6)
-        if (this.fotos.foto7) fd.append('foto7', this.fotos.foto7)
-        if (this.fotos.foto8) fd.append('foto8', this.fotos.foto8)
-        if (this.fotos.foto9) fd.append('foto9', this.fotos.foto9)
-        if (this.fotos.foto10) fd.append('foto10', this.fotos.foto10)
         if (this.fotosToClear.foto1) fd.append('clear_foto1', '1')
         if (this.fotosToClear.foto2) fd.append('clear_foto2', '1')
-        if (this.fotosToClear.foto3) fd.append('clear_foto3', '1')
-        if (this.fotosToClear.foto4) fd.append('clear_foto4', '1')
-        if (this.fotosToClear.foto5) fd.append('clear_foto5', '1')
-        if (this.fotosToClear.foto6) fd.append('clear_foto6', '1')
-        if (this.fotosToClear.foto7) fd.append('clear_foto7', '1')
-        if (this.fotosToClear.foto8) fd.append('clear_foto8', '1')
-        if (this.fotosToClear.foto9) fd.append('clear_foto9', '1')
-        if (this.fotosToClear.foto10) fd.append('clear_foto10', '1')
+        fd.append('clear_foto3', '1')
+        fd.append('clear_foto4', '1')
+        fd.append('clear_foto5', '1')
+        fd.append('clear_foto6', '1')
+        fd.append('clear_foto7', '1')
+        fd.append('clear_foto8', '1')
+        fd.append('clear_foto9', '1')
+        fd.append('clear_foto10', '1')
 
         const res = await this.$axios.post(
           `admin/mesas/${this.resMesa.id}/resultado?_method=PUT`,
@@ -2506,6 +2247,10 @@ export default {
 .foto-preview,
 .foto-preview-empty {
   height: 88px;
+}
+
+.usuario-resumen {
+  max-width: 240px;
 }
 
 .ganadores-compactos {

@@ -1415,12 +1415,6 @@ class SuperAdminMesasController extends Controller
             return response()->json(['message' => 'Formato invalido de votos'], 422);
         }
 
-        if (!$this->isHoraAperturaValida($data['hora_apertura_mesa'] ?? null)) {
-            return response()->json([
-                'message' => 'La hora de apertura debe estar entre 08:00 y 04:00',
-            ], 422);
-        }
-
         $votosFields = [
             'votos_gobernador',
             'votos_asambleista_distrito',
@@ -1561,7 +1555,9 @@ class SuperAdminMesasController extends Controller
 
             $res->save();
 
-            if ($res->aviso_antes || $res->aviso_manana || $res->aviso_mediodia || $res->aviso_tarde) {
+            if (!empty($res->foto2)) {
+                $mesa->estado = 'FINALIZADA';
+            } elseif ($res->aviso_antes || $res->aviso_manana || $res->aviso_mediodia || $res->aviso_tarde) {
                 $mesa->estado = 'EN_PROCESO';
             } else {
                 $mesa->estado = $mesa->delegado_id ? 'ASIGNADA' : 'PENDIENTE';
