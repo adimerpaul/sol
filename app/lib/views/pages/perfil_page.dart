@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,12 +17,6 @@ class PerfilPage extends StatefulWidget {
 }
 
 class _PerfilPageState extends State<PerfilPage> {
-  static final Uri _apoyoUri = Uri.parse(
-    'https://chat.whatsapp.com/LvVhubY9BMY93m0pR5HaIE?mode=gi_t',
-  );
-  static final Uri _sistemasUri = Uri.parse(
-    'https://chat.whatsapp.com/Lf7zEfkXIDq1niBSH0lEzR',
-  );
 
   late Future<_PerfilUiData> _future;
 
@@ -31,10 +29,73 @@ class _PerfilPageState extends State<PerfilPage> {
   Future<_PerfilUiData> _load() async {
     final profile = await MobileAuthLocalStore.instance.readProfileData();
     final package = await PackageInfo.fromPlatform();
+    final jefesRecinto = await _fetchJefesDeRecinto();
     return _PerfilUiData(
       profile: profile,
       versionLabel: '${package.version}+${package.buildNumber}',
+      jefesRecinto: jefesRecinto,
     );
+  }
+
+  /// Obtiene los jefes de recinto del delegado desde el endpoint publico.
+  /// Flujo: mesas del delegado (SQLite) -> recinto_ids -> GET /api/public/recintos-mapa -> filtrar jefes.
+  Future<List<_JefeRecintoInfo>> _fetchJefesDeRecinto() async {
+    try {
+      // 1. Obtener recinto_ids de las mesas del delegado en SQLite
+      final store = MobileAuthLocalStore.instance;
+      final db = await store.database;
+      final mesaRows = await db.query(
+        'auth_mesas',
+        columns: ['recinto_id'],
+        where: 'recinto_id IS NOT NULL',
+      );
+      final recintoIds = mesaRows
+          .map((r) => r['recinto_id'] as int?)
+          .where((id) => id != null)
+          .cast<int>()
+          .toSet();
+      if (recintoIds.isEmpty) return [];
+
+      // 2. Llamar al endpoint publico de recintos-mapa
+      final baseUrl = (dotenv.env['API_BACK'] ?? '').replaceAll('"', '').trim();
+      if (baseUrl.isEmpty) return [];
+      // La base es .../api/mobile, necesitamos .../api/public/recintos-mapa
+      final apiBase = baseUrl.replaceAll(RegExp(r'/mobile/?$'), '');
+      final url = apiBase.endsWith('/') 
+          ? '${apiBase}public/recintos-mapa'
+          : '$apiBase/public/recintos-mapa';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: const {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode != 200) return [];
+
+      final body = jsonDecode(response.body);
+      final data = (body is Map ? body['data'] : null) as List? ?? [];
+
+      // 3. Filtrar por recinto_ids del delegado y extraer jefes unicos
+      final seenIds = <int>{};
+      final result = <_JefeRecintoInfo>[];
+      for (final recinto in data) {
+        final rId = recinto['id'] as int?;
+        if (rId == null || !recintoIds.contains(rId)) continue;
+        final jefes = (recinto['jefes'] as List?) ?? [];
+        for (final jefe in jefes) {
+          final jefeId = jefe['id'] as int?;
+          if (jefeId == null || seenIds.contains(jefeId)) continue;
+          seenIds.add(jefeId);
+          result.add(_JefeRecintoInfo(
+            name: (jefe['name'] as String?) ?? '',
+            celular: jefe['celular'] as String?,
+          ));
+        }
+      }
+      return result;
+    } catch (_) {
+      return [];
+    }
   }
 
   @override
@@ -77,34 +138,10 @@ class _PerfilPageState extends State<PerfilPage> {
                   value: profile.user.role ?? '-',
                   boldValue: true,
                 ),
-                _WhatsAppLine(
+                _InfoLine(
                   label: 'Celular',
-                  celular: celular,
+                  value: (celular ?? '').trim().isEmpty ? '-' : celular!.trim(),
                   boldValue: true,
-                  onTap: () => _openWhatsApp(celular),
-                ),
-                _LinkLine(
-                  label: 'Apoyo',
-                  subtitle: 'Grupo de WhatsApp',
-                  onTap: () => _openLink(_apoyoUri),
-                ),
-                _LinkLine(
-                  label: 'Consulta sistemas',
-                  subtitle: 'Grupo de WhatsApp',
-                  onTap: () => _openLink(_sistemasUri),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _InfoCard(
-              title: 'Supervisores',
-              children: [
-                _ContactList(
-                  emptyText: 'Sin supervisores asignados',
-                  items: profile.supervisores
-                      .map((s) => _ContactItem(name: s.name, celular: s.celular))
-                      .toList(),
-                  onWhatsAppTap: _openWhatsApp,
                 ),
               ],
             ),
@@ -114,7 +151,7 @@ class _PerfilPageState extends State<PerfilPage> {
               children: [
                 _ContactList(
                   emptyText: 'Sin jefes asignados',
-                  items: profile.jefes
+                  items: data.jefesRecinto
                       .map((j) => _ContactItem(name: j.name, celular: j.celular))
                       .toList(),
                   onWhatsAppTap: _openWhatsApp,
@@ -399,9 +436,20 @@ class _ContactList extends StatelessWidget {
   }
 }
 
+class _JefeRecintoInfo {
+  const _JefeRecintoInfo({required this.name, required this.celular});
+  final String name;
+  final String? celular;
+}
+
 class _PerfilUiData {
-  _PerfilUiData({required this.profile, required this.versionLabel});
+  _PerfilUiData({
+    required this.profile,
+    required this.versionLabel,
+    this.jefesRecinto = const [],
+  });
 
   final MobileProfileData? profile;
   final String versionLabel;
+  final List<_JefeRecintoInfo> jefesRecinto;
 }

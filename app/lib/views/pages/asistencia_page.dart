@@ -247,6 +247,12 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
 
   bool _isLocked(String field) => _lockedFields.contains(field);
 
+  bool _canActivateTarde() {
+    final now = TimeOfDay.now();
+    // 16:30 = 4:30 PM
+    return now.hour > 16 || (now.hour == 16 && now.minute >= 30);
+  }
+
   void _setLocalField(String field, bool value) {
     setState(() {
       switch (field) {
@@ -334,35 +340,15 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.sectionTitle,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Asistencia: funciona offline y sincroniza cuando vuelve internet.',
-                ),
-                const SizedBox(height: 10),
-                if (_hasPending)
-                  FilledButton.icon(
-                    onPressed: _syncing ? null : _syncPending,
-                    icon: const Icon(Icons.pending_actions),
-                    label: Text(_syncing ? 'Sincronizando...' : 'Pendiente'),
-                  ),
-              ],
+        if (_hasPending)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: FilledButton.icon(
+              onPressed: _syncing ? null : _syncPending,
+              icon: const Icon(Icons.pending_actions),
+              label: Text(_syncing ? 'Sincronizando...' : 'Pendiente'),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
         _buildSectionCard(
           title: 'En la mañana',
           pillColor: const Color(0xFF1E7A33),
@@ -416,16 +402,23 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
           borderColor: const Color(0xFFFF7B7B),
           children: [
             _buildToggleTile(
-              label: 'Tengo el acta de la alcaldia en mi poder',
-              field: 'aviso_mediodia',
-              value: _avisoMediodia,
-            ),
-            const SizedBox(height: 8),
-            _buildToggleTile(
               label: 'Tengo el acta de la gobernacion en mi poder',
               field: 'aviso_tarde',
               value: _avisoTarde,
+              enabled: _canActivateTarde(),
             ),
+            if (!_canActivateTarde() && !_isLocked('aviso_tarde'))
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Text(
+                  'Disponible a partir de las 16:30',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
           ],
         ),
       ],
@@ -486,9 +479,10 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     required String field,
     required bool value,
     String? subtitle,
+    bool enabled = true,
   }) {
     final locked = _isLocked(field);
-    final enabled = !(locked || _resolvingLocation);
+    final isEnabled = !(locked || _resolvingLocation) && enabled;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -507,7 +501,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
-                    color: enabled ? const Color(0xFF3D3643) : const Color(0xFFB7ACBC),
+                    color: isEnabled ? const Color(0xFF3D3643) : const Color(0xFFB7ACBC),
                   ),
                 ),
                 if (locked || subtitle != null) ...[
@@ -529,7 +523,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
             scale: 1.05,
             child: Switch.adaptive(
               value: value,
-              onChanged: enabled
+              onChanged: isEnabled
                   ? (v) => _toggleUpdate(field: field, value: v)
                   : null,
             ),
