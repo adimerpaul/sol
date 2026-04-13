@@ -28,10 +28,10 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
-    _ciController.text = '7336198';
-    _selectedDay = 2;
-    _selectedMonth = 4;
-    _selectedYear = 1989;
+    // _ciController.text = '7336198';
+    // _selectedDay = 2;
+    // _selectedMonth = 4;
+    // _selectedYear = 1989;
   }
 
   String? get _fechaNacimiento {

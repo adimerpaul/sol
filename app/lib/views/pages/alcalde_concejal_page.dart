@@ -361,9 +361,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
 
   String _estadoMesaLabel(MobileMesa? mesa) {
     final estadoApi = (mesa?.estado ?? '').toUpperCase().trim();
+    if (estadoApi == 'PENDIENTE') return 'ASIGNADA';
     if (estadoApi.isNotEmpty) return estadoApi;
     final local = (mesa?.estadoLocal ?? 'PENDIENTE').toUpperCase().trim();
     if (local == 'REALIZADO') return 'FINALIZADA';
+    if (local == 'PENDIENTE') return 'ASIGNADA';
     if (local == 'LOCAL') return 'EN_PROCESO';
     return 'PENDIENTE';
   }
@@ -371,7 +373,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   bool get _mesaEsFinalizada => _estadoMesaLabel(_mesaActual) == 'FINALIZADA';
   bool get _mesaEditablePorEstado {
     final estado = _estadoMesaLabel(_mesaActual);
-    return estado == 'ASIGNADA' || estado == 'EN_PROCESO';
+    return estado == 'ASIGNADA' || estado == 'EN_PROCESO' || estado == 'PENDIENTE';
   }
 
   bool _tabBloqueada(_VotacionTab tab) => _tabLocks[tab] == true;
@@ -414,9 +416,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     }
   }
 
-  bool _tabTotalesOk(_VotacionTab tab) =>
-      _tabTotalActual(tab) == _targetTotalPorCategoria;
-
   void _showLimitAlert() {
     final now = DateTime.now();
     final last = _lastLimitAlertAt;
@@ -453,21 +452,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     _setNumericControllerValue(controller, maxAllowed);
     _onDataChanged();
     _showLimitAlert();
-  }
-
-  String? _tabActaSlot(_VotacionTab tab) {
-    switch (tab) {
-      case _VotacionTab.alcalde:
-        return 'foto2';
-      case _VotacionTab.concejal:
-        return 'foto4';
-      case _VotacionTab.gobernador:
-        return 'foto6';
-      case _VotacionTab.asambleistaDistrito:
-        return 'foto8';
-      case _VotacionTab.asambleistaPoblacion:
-        return 'foto10';
-    }
   }
 
   List<String> _tabFotoSlotsParaBloqueo(_VotacionTab tab) {
@@ -843,79 +827,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
       showError(context, 'Solo puedes editar mesas ASIGNADA o EN_PROCESO');
       return;
     }
-
-    final actaSlot = _tabActaSlot(_activeTab);
-    final hasActaElectoral =
-        actaSlot == null ? true : _hasFoto(actaSlot);
-    if (!hasActaElectoral) {
-      final continuarSinActa = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Sin acta electoral'),
-          content: const Text(
-            'No cargaste foto del acta electoral. Las fotos son opcionales.\n\nDeseas enviar de todas formas?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Enviar igual'),
-            ),
-          ],
-        ),
-      );
-      if (continuarSinActa != true) return;
-    }
-
-    if (!_tabTotalesOk(_activeTab)) {
-      final continuar = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Advertencia de totales'),
-          content: Text(
-            '${_tabLabel(_activeTab)} no suma $_targetTotalPorCategoria.\n'
-            'Total actual: ${_tabTotalActual(_activeTab)}\n\n'
-            'Deseas enviar de todas formas?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Enviar igual'),
-            ),
-          ],
-        ),
-      );
-      if (continuar != true) return;
-    }
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmar envio'),
-        content: const Text(
-          'Se enviaran datos de votacion. Si no hay internet quedaran pendientes para sincronizar.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
-    );
-
-    if (ok != true) return;
 
     setState(() => _saving = true);
     try {

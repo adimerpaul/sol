@@ -19,20 +19,20 @@
 
       <q-card-section v-if="isChartRoute" class="q-pa-md">
         <template v-if="chartsViewMode === 'both'">
-          <div v-for="card in chartCards" :key="card.key" class="category-block q-mb-md">
+          <div v-if="principalChartCard" class="category-block q-mb-lg">
             <div class="row items-center justify-between q-mb-sm">
-              <div class="text-subtitle1 text-weight-bold">{{ card.label }}</div>
-              <q-chip dense outline color="primary">Total: {{ card.total }}</q-chip>
+              <div class="text-subtitle1 text-weight-bold">Principal · {{ principalChartCard.label }}</div>
+              <q-chip dense outline color="primary">Total: {{ principalChartCard.total }}</q-chip>
             </div>
             <div class="row q-col-gutter-md">
               <div class="col-12 col-md-6">
                 <q-card flat bordered class="q-pa-sm chart-modern">
-                  <apexchart type="pie" height="280" :options="pieOptions(card)" :series="card.series" />
+                  <apexchart type="pie" height="280" :options="pieOptions(principalChartCard)" :series="principalChartCard.series" />
                 </q-card>
               </div>
               <div class="col-12 col-md-6">
                 <q-card flat bordered class="q-pa-sm chart-modern">
-                  <apexchart type="bar" height="280" :options="barOptions(card)" :series="[{ name: card.label, data: card.series }]" />
+                  <apexchart type="bar" height="280" :options="barOptions(principalChartCard)" :series="[{ name: principalChartCard.label, data: principalChartCard.series }]" />
                 </q-card>
               </div>
             </div>
@@ -616,7 +616,7 @@ export default {
       mesas: { total: 0, con_resultado: 0, faltantes: 0 },
       mapViewerOpen: false,
       mesasViewerOpen: false,
-      viewerCategory: 'alcalde',
+      viewerCategory: 'gobernador',
       mapData: [],
       selectedMapRecinto: null,
       zoom: 12,
@@ -668,6 +668,9 @@ export default {
         const ranking = Array.isArray(this.categoryRankings[def.key]) ? this.categoryRankings[def.key] : []
         return { ...def, labels: ranking.map(r => this.toNameCase(r.sigla || '-')), series: ranking.map(r => Number(r[def.valueField] || 0)), colors: ranking.map((r, i) => r.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length]), total: Number(this?.categorias?.[def.key]?.total || 0) }
       })
+    },
+    principalChartCard () {
+      return this.chartCards.find(card => card.key === 'gobernador') || null
     },
     mapStateCounts () {
       return (this.mapData || []).reduce((acc, recinto) => {
