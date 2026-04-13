@@ -30,7 +30,7 @@ enum _VotacionTab {
   asambleistaPoblacion,
 }
 
-const Set<int> _segundaVueltaPartidos = {11, 15};
+const Set<int> _partidosApp = {11, 15};
 
 class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   final MobileAuthLocalStore _localStore = MobileAuthLocalStore.instance;
@@ -90,9 +90,29 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
   };
   DateTime? _lastLimitAlertAt;
 
+  static const List<Map<String, String>> _fotoAlcaldeConfig = [
+    {'slot': 'foto1', 'label': 'Hoja trabajo - Alcalde'},
+    {'slot': 'foto2', 'label': 'Acta electoral - Alcalde'},
+  ];
+
+  static const List<Map<String, String>> _fotoConcejalConfig = [
+    {'slot': 'foto3', 'label': 'Hoja trabajo - Concejal'},
+    {'slot': 'foto4', 'label': 'Acta electoral - Concejal'},
+  ];
+
   static const List<Map<String, String>> _fotoGobernadorConfig = [
     {'slot': 'foto5', 'label': 'Hoja trabajo - Gobernador'},
     {'slot': 'foto6', 'label': 'Acta electoral - Gobernador'},
+  ];
+
+  static const List<Map<String, String>> _fotoAsambleaDistritoConfig = [
+    {'slot': 'foto7', 'label': 'Hoja trabajo - Asambleista Territorio'},
+    {'slot': 'foto8', 'label': 'Acta electoral - Asambleista Territorio'},
+  ];
+
+  static const List<Map<String, String>> _fotoAsambleaPoblacionConfig = [
+    {'slot': 'foto9', 'label': 'Hoja trabajo - Asambleista Poblacion'},
+    {'slot': 'foto10', 'label': 'Acta electoral - Asambleista Poblacion'},
   ];
 
   @override
@@ -158,7 +178,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
             },
           )
           .toList();
-      partidos = _normalizePartidosSegundaVuelta(partidos);
+      partidos = _normalizePartidos(partidos);
 
       if (partidos.isEmpty) {
         try {
@@ -167,12 +187,12 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
               .whereType<Map>()
               .map((e) => Map<String, dynamic>.from(e))
               .toList();
-          partidos = _normalizePartidosSegundaVuelta(partidos);
+          partidos = _normalizePartidos(partidos);
         } catch (_) {}
       }
 
       if (partidos.isEmpty) {
-        partidos = _normalizePartidosSegundaVuelta(
+        partidos = _normalizePartidos(
           await _buildPartidosFromLocalDrafts(),
         );
       }
@@ -219,11 +239,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     return set.values.toList();
   }
 
-  List<Map<String, dynamic>> _normalizePartidosSegundaVuelta(
+  List<Map<String, dynamic>> _normalizePartidos(
     List<Map<String, dynamic>> partidos,
   ) {
     final filtered = partidos
-        .where((p) => _segundaVueltaPartidos.contains(_toInt(p['id']) ?? -1))
+        .where((p) => _partidosApp.contains(_toInt(p['id']) ?? -1))
         .map((p) {
           final row = Map<String, dynamic>.from(p);
           row['habilitado_gobernador'] = true;
@@ -236,10 +256,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         .toList();
 
     filtered.sort((a, b) {
-      final order = {
-        11: 1,
-        15: 2,
-      };
+      const order = {11: 1, 15: 2};
       final aId = _toInt(a['id']) ?? 999;
       final bId = _toInt(b['id']) ?? 999;
       return (order[aId] ?? 999).compareTo(order[bId] ?? 999);
@@ -557,13 +574,11 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-      bloqueadaRemota =
-          remote['bloqueada_mobile'] == true ||
-          ((remote['resultado'] as Map?)?['etapa_2'] == true);
+      bloqueadaRemota = remote['bloqueada_mobile'] == true;
       if (partidos.isNotEmpty) {
-        final partidosSegundaVuelta = _normalizePartidosSegundaVuelta(partidos);
-        _ensureControllers(partidosSegundaVuelta);
-        _partidos = partidosSegundaVuelta;
+        final partidosNormalizados = _normalizePartidos(partidos);
+        _ensureControllers(partidosNormalizados);
+        _partidos = partidosNormalizados;
       }
     } catch (_) {}
 
@@ -1042,7 +1057,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         const SizedBox(height: 8),
         if (_activeTab == _VotacionTab.gobernador) ...[
           _buildCategoryCard(
-            title: 'Segunda vuelta - Gobernador',
+            title: 'Gobernador',
             tab: _VotacionTab.gobernador,
             partidos: _partidosGobernador,
             voteMap: _gobCtrl,
@@ -1132,7 +1147,7 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
         children: [
           _tabButton(
             tab: _VotacionTab.gobernador,
-            label: 'Gobernador 2V',
+            label: 'Gobernador',
             done: _tabBloqueada(_VotacionTab.gobernador),
           ),
         ],
@@ -1257,11 +1272,6 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
                   );
                 },
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Segunda vuelta: solo se registra Gobernador para Patria y Jacha.',
-              style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
             ),
           ],
         ),

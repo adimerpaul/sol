@@ -28,6 +28,10 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
+    _ciController.text = '7336198';
+    _selectedDay = 2;
+    _selectedMonth = 4;
+    _selectedYear = 1989;
   }
 
   String? get _fechaNacimiento {
@@ -95,32 +99,6 @@ class _LoginViewState extends State<LoginView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _ManualButton(
-                                title: 'Manual de la\nApp Jacha',
-                                onTap: () => _openManual(
-                                  assetPath: 'assets/aplicacion.pdf',
-                                  fileName: 'manual_app_jacha.pdf',
-                                  successLabel: 'Manual de la App Jacha',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _ManualButton(
-                                title: 'Manual de\nProceso del Voto',
-                                onTap: () => _openManual(
-                                  assetPath: 'assets/proceso voto.pdf',
-                                  fileName: 'manual_proceso_del_voto.pdf',
-                                  successLabel: 'Manual de Proceso del Voto',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
                         Card(
                           elevation: 10,
                           shadowColor: const Color(0x40220000),

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class MobileAuthController extends Controller
 {
+    private const PARTIDOS_APP = [11, 15];
+
     private const PARTIDOS_SEGUNDA_VUELTA = [11, 15];
 
     private function imagePathToBase64(?string $relativePath): ?string
@@ -146,17 +148,17 @@ class MobileAuthController extends Controller
             return response()->json(['message' => 'CI o fecha de nacimiento incorrectos'], 401);
         }
 
-        // ✅ Mesa asignada pendiente (la más simple)
+        // Mesas asignadas en flujo normal
         $mesas = Mesa::query()
-            ->where('delegado_segunda_vuelta_id', $user->id)
+            ->where('delegado_id', $user->id)
             ->with([
                 'recinto:id,nombre,latitud,longitud',
                 'localidad:id,nombre',
                 'municipio:id,nombre',
                 'provincia:id,nombre',
                 'departamento:id,nombre',
-                'resultadoSegundaVuelta:id,mesa_id,observacion,blancos,nulos,papeletas_no_utilizadas,foto_pizarra,foto_acta',
-                'resultadoSegundaVuelta.detalles:id,resultado_mesa_segunda_vuelta_id,partido_id,votos_gobernador',
+                'resultado:id,mesa_id,observacion,observacion_gobernador,observacion_asambleista_distrito,observacion_asambleista_poblacion,observacion_concejal,observacion_alcalde,blancos_gobernador,nulos_gobernador,papeletas_no_utilizadas_gobernador,blancos_asambleista_distrito,nulos_asambleista_distrito,papeletas_no_utilizadas_asambleista_distrito,blancos_asambleista_poblacion,nulos_asambleista_poblacion,papeletas_no_utilizadas_asambleista_poblacion,blancos_concejal,nulos_concejal,papeletas_no_utilizadas_concejal,blancos_alcalde,nulos_alcalde,papeletas_no_utilizadas_alcalde,foto1,foto2,foto3,foto4,foto5,foto6,foto7,foto8,foto9,foto10,etapa_1,etapa_2',
+                'resultado.detalles:id,resultado_mesa_id,partido_id,votos_gobernador,votos_asambleista_distrito,votos_asambleista_poblacion,votos_concejal,votos_alcalde',
             ])
             ->orderBy('numero_mesa')
             ->orderBy('id')
@@ -164,50 +166,48 @@ class MobileAuthController extends Controller
             ->map(function (Mesa $mesa) {
                 $arr = $mesa->toArray();
                 $arr['habilitados'] = (int) ($mesa->habilitados ?? 260);
-                $r = $mesa->resultadoSegundaVuelta;
+                $r = $mesa->resultado;
 
                 if ($r) {
                     $resultado = [
-                        'etapa_1' => true,
-                        'etapa_2' => true,
+                        'etapa_1' => (bool) $r->etapa_1,
+                        'etapa_2' => (bool) $r->etapa_2,
                         'observacion' => $r->observacion,
-                        'observacion_gobernador' => $r->observacion,
-                        'observacion_asambleista_distrito' => null,
-                        'observacion_asambleista_poblacion' => null,
-                        'observacion_concejal' => null,
-                        'observacion_alcalde' => null,
-                        'blancos_gobernador' => (int) ($r->blancos ?? 0),
-                        'nulos_gobernador' => (int) ($r->nulos ?? 0),
-                        'papeletas_no_utilizadas_gobernador' => (int) ($r->papeletas_no_utilizadas ?? 0),
-                        'blancos_asambleista_distrito' => 0,
-                        'nulos_asambleista_distrito' => 0,
-                        'papeletas_no_utilizadas_asambleista_distrito' => 0,
-                        'blancos_asambleista_poblacion' => 0,
-                        'nulos_asambleista_poblacion' => 0,
-                        'papeletas_no_utilizadas_asambleista_poblacion' => 0,
-                        'blancos_concejal' => 0,
-                        'nulos_concejal' => 0,
-                        'papeletas_no_utilizadas_concejal' => 0,
-                        'blancos_alcalde' => 0,
-                        'nulos_alcalde' => 0,
-                        'papeletas_no_utilizadas_alcalde' => 0,
+                        'observacion_gobernador' => $r->observacion_gobernador,
+                        'observacion_asambleista_distrito' => $r->observacion_asambleista_distrito,
+                        'observacion_asambleista_poblacion' => $r->observacion_asambleista_poblacion,
+                        'observacion_concejal' => $r->observacion_concejal,
+                        'observacion_alcalde' => $r->observacion_alcalde,
+                        'blancos_gobernador' => (int) ($r->blancos_gobernador ?? 0),
+                        'nulos_gobernador' => (int) ($r->nulos_gobernador ?? 0),
+                        'papeletas_no_utilizadas_gobernador' => (int) ($r->papeletas_no_utilizadas_gobernador ?? 0),
+                        'blancos_asambleista_distrito' => (int) ($r->blancos_asambleista_distrito ?? 0),
+                        'nulos_asambleista_distrito' => (int) ($r->nulos_asambleista_distrito ?? 0),
+                        'papeletas_no_utilizadas_asambleista_distrito' => (int) ($r->papeletas_no_utilizadas_asambleista_distrito ?? 0),
+                        'blancos_asambleista_poblacion' => (int) ($r->blancos_asambleista_poblacion ?? 0),
+                        'nulos_asambleista_poblacion' => (int) ($r->nulos_asambleista_poblacion ?? 0),
+                        'papeletas_no_utilizadas_asambleista_poblacion' => (int) ($r->papeletas_no_utilizadas_asambleista_poblacion ?? 0),
+                        'blancos_concejal' => (int) ($r->blancos_concejal ?? 0),
+                        'nulos_concejal' => (int) ($r->nulos_concejal ?? 0),
+                        'papeletas_no_utilizadas_concejal' => (int) ($r->papeletas_no_utilizadas_concejal ?? 0),
+                        'blancos_alcalde' => (int) ($r->blancos_alcalde ?? 0),
+                        'nulos_alcalde' => (int) ($r->nulos_alcalde ?? 0),
+                        'papeletas_no_utilizadas_alcalde' => (int) ($r->papeletas_no_utilizadas_alcalde ?? 0),
                         'detalles' => $r->detalles
                             ->map(fn ($d) => [
                                 'partido_id' => (int) $d->partido_id,
                                 'votos_gobernador' => (int) ($d->votos_gobernador ?? 0),
-                                'votos_asambleista_distrito' => 0,
-                                'votos_asambleista_poblacion' => 0,
-                                'votos_concejal' => 0,
-                                'votos_alcalde' => 0,
+                                'votos_asambleista_distrito' => (int) ($d->votos_asambleista_distrito ?? 0),
+                                'votos_asambleista_poblacion' => (int) ($d->votos_asambleista_poblacion ?? 0),
+                                'votos_concejal' => (int) ($d->votos_concejal ?? 0),
+                                'votos_alcalde' => (int) ($d->votos_alcalde ?? 0),
                             ])
                             ->values(),
                     ];
 
-                    foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto7', 'foto8', 'foto9', 'foto10'] as $slot) {
-                        $resultado[$slot . '_base64'] = null;
+                    foreach (['foto1', 'foto2', 'foto3', 'foto4', 'foto5', 'foto6', 'foto7', 'foto8', 'foto9', 'foto10'] as $slot) {
+                        $resultado[$slot . '_base64'] = $this->imagePathToBase64($r->{$slot});
                     }
-                    $resultado['foto5_base64'] = $this->imagePathToBase64($r->foto_pizarra);
-                    $resultado['foto6_base64'] = $this->imagePathToBase64($r->foto_acta);
 
                     $arr['resultado'] = $resultado;
                 } else {
@@ -219,11 +219,12 @@ class MobileAuthController extends Controller
             ->values();
 
         $mesaReferencia = Mesa::query()
-            ->where('delegado_segunda_vuelta_id', $user->id)
+            ->where('delegado_id', $user->id)
             ->orderBy('numero_mesa')
             ->first();
 
-        $partidos = $this->partidosSegundaVuelta()
+        $partidos = $this->partidosPorMesa($mesaReferencia)
+            ->whereIn('id', self::PARTIDOS_APP)
             ->map(function ($p) {
                 $iconoBase64 = $this->partidoIconoBase64($p->icono);
                 return [
@@ -367,6 +368,7 @@ class MobileAuthController extends Controller
                     ->where('mp.municipio_id', '=', $municipioId);
             })
             ->whereNull('partidos.deleted_at')
+            ->whereIn('partidos.id', self::PARTIDOS_APP)
             ->select([
                 'partidos.id',
                 'partidos.sigla',
@@ -382,11 +384,7 @@ class MobileAuthController extends Controller
                 'mp.habilitado_alcalde',
             ])
             ->where(function ($qq) {
-                $qq->where('mp.habilitado_gobernador', true)
-                    ->orWhere('mp.habilitado_asambleista_poblacion', true)
-                    ->orWhere('mp.habilitado_asambleista_distrito', true)
-                    ->orWhere('mp.habilitado_concejal', true)
-                    ->orWhere('mp.habilitado_alcalde', true);
+                $qq->where('mp.habilitado_gobernador', true);
             })
             ->orderByRaw('CASE WHEN partidos.orden_municipal IS NULL OR partidos.orden_municipal = 0 THEN 1 ELSE 0 END')
             ->orderBy('partidos.orden_municipal')
