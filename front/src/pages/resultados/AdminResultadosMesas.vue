@@ -94,7 +94,7 @@
                 clearable
                 dense
                 outlined
-                label="Delegado"
+                label="Usuario asignado"
                 @filter="filterDelegados"
                 @update:model-value="onChangeMainFilters"
               />
@@ -175,7 +175,7 @@
         <div class="row items-center q-col-gutter-sm">
           <div class="col-auto"><q-chip outline color="primary">Total: {{ summaryTotal }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="positive">Asignadas: {{ countAsignadas }}</q-chip></div>
-          <div class="col-auto"><q-chip outline color="negative">Sin delegado: {{ countSinDelegado }}</q-chip></div>
+          <div class="col-auto"><q-chip outline color="negative">Sin asignar: {{ countSinDelegado }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="indigo">En mesa: {{ countEnMesa }}</q-chip></div>
           <div class="col-auto"><q-chip outline color="teal">Con resultado: {{ countConResultado }}</q-chip></div>
 
@@ -208,7 +208,7 @@
           <tr>
             <th class="text-center" style="width: 76px;">Acciones</th>
             <th class="text-left" style="width: 180px;">Mesa</th>
-            <th class="text-left">Delegado</th>
+            <th class="text-left">Usuario</th>
             <th class="text-left">Estado</th>
             <th class="text-left">Resultado</th>
             <th class="text-left">Control de Mesa</th>
@@ -222,7 +222,7 @@
                 <q-list>
                   <q-item clickable v-close-popup @click="openAsignar(r)">
                     <q-item-section avatar><q-icon name="person_add" /></q-item-section>
-                    <q-item-section><q-item-label>Asignar delegado</q-item-label></q-item-section>
+                    <q-item-section><q-item-label>Asignar usuario</q-item-label></q-item-section>
                   </q-item>
                   <q-item clickable v-close-popup @click="openResultado(r)">
                     <q-item-section avatar><q-icon name="how_to_vote" /></q-item-section>
@@ -230,7 +230,7 @@
                   </q-item>
                   <q-item clickable v-close-popup :disable="!hasPresenceData(r)" @click="openPresencia(r)">
                     <q-item-section avatar><q-icon name="place" /></q-item-section>
-                    <q-item-section><q-item-label>Ver presencia delegado</q-item-label></q-item-section>
+                    <q-item-section><q-item-label>Ver presencia usuario</q-item-label></q-item-section>
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
@@ -387,7 +387,7 @@
     <q-dialog v-model="dlgAsignar" persistent>
       <q-card style="width: 520px; max-width: 95vw;">
         <q-card-section class="row items-center">
-          <div class="text-weight-bold">Asignar delegado</div>
+          <div class="text-weight-bold">Asignar usuario</div>
           <q-space />
           <q-btn icon="close" flat round dense @click="dlgAsignar=false" />
         </q-card-section>
@@ -405,7 +405,7 @@
             emit-value map-options
             use-input input-debounce="200"
             dense outlined
-            label="Delegado de Mesa"
+            label="Usuario responsable"
             clearable
             @filter="filterDelegadosAsignar"
           >
@@ -458,11 +458,11 @@
             {{ resMesa?.recinto_nombre }} · Mesa {{ resMesa?.numero_mesa }} ·
             {{ resMesa?.provincia_nombre || 'Sin provincia' }} ·
             {{ resMesa?.municipio_nombre || 'Sin municipio' }} ·
-            Delegado: <span class="text-weight-medium">{{ resMesa?.delegado?.name || 'SIN ASIGNAR' }}</span>
+            Usuario: <span class="text-weight-medium">{{ resMesa?.delegado?.name || 'SIN ASIGNAR' }}</span>
           </div>
 
           <q-banner v-if="!resMesa?.delegado_id" dense class="bg-orange-2 text-black q-mt-sm">
-            No puedes registrar resultados si la mesa no tiene delegado asignado.
+            No puedes registrar resultados si la mesa no tiene usuario asignado.
           </q-banner>
 
           <div class="row q-col-gutter-sm q-mt-sm">
@@ -815,8 +815,8 @@
             <q-item>
               <q-item-section avatar><q-icon name="person" color="primary" /></q-item-section>
               <q-item-section>
-                <q-item-label>Delegado</q-item-label>
-                <q-item-label caption>{{ presenceRow?.delegado?.name || 'Sin delegado' }}</q-item-label>
+                <q-item-label>Usuario</q-item-label>
+                <q-item-label caption>{{ presenceRow?.delegado?.name || 'Sin asignar' }}</q-item-label>
               </q-item-section>
             </q-item>
             <q-item>
@@ -1651,7 +1651,7 @@ export default {
     buildDelegadosOptions () {
       return (this.delegadosOpt || []).map(d => ({
         ...d,
-        label: `${d.name || '-'} (${d.username || '-'})`
+        label: `${d.name || '-'} (${d.username || '-'}) · ${d.role || 'Sin rol'}`
       }))
     },
 
@@ -2145,7 +2145,7 @@ export default {
           delegado_id: this.delegadoPick,
           estado: this.estadoPick
         })
-        this.$alert.success(this.delegadoPick ? 'Delegado asignado' : 'Mesa liberada')
+        this.$alert.success(this.delegadoPick ? 'Usuario asignado' : 'Mesa liberada')
         this.dlgAsignar = false
         this.applyPatchedRow(res?.data?.row)
       } catch (e) {

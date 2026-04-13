@@ -1194,7 +1194,7 @@ class SuperAdminMesasController extends Controller
     {
         return User::query()
             ->select('id','name','username','role','ci')
-            ->where('role', 'Delegado de Mesa')
+            ->whereIn('role', ['Administrador', 'Supervisor', 'Jefe de Recinto', 'Delegado de Mesa'])
             ->orderBy('name')
             ->get();
     }
@@ -1227,8 +1227,8 @@ class SuperAdminMesasController extends Controller
 
         if (!empty($data['delegado_id'])) {
             $delegado = User::findOrFail($data['delegado_id']);
-            if (!in_array($delegado->role, ['Administrador', 'Delegado de Mesa'])) {
-                return response()->json(['message' => 'El usuario no es Administrador ni Delegado de Mesa'], 422);
+            if (!in_array($delegado->role, ['Administrador', 'Supervisor', 'Jefe de Recinto', 'Delegado de Mesa'])) {
+                return response()->json(['message' => 'El usuario no tiene un rol permitido para esta asignacion'], 422);
             }
 
             if ((int) $mesa->delegado_id !== (int) $data['delegado_id']) {
@@ -1242,7 +1242,7 @@ class SuperAdminMesasController extends Controller
             $mesa->save();
 
             return response()->json([
-                'message' => 'Delegado asignado',
+                'message' => 'Usuario asignado',
                 'row' => $this->buildMesaIndexRowPayload($mesa),
             ]);
         }
