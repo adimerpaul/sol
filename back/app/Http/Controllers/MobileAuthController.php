@@ -79,6 +79,72 @@ class MobileAuthController extends Controller
         ];
     }
 
+    private function buildAsistenciaPanel(User $user): array
+    {
+        $recintosQuery = match ($user->role) {
+            'Administrador' => Recinto::query()
+                ->where('pais_id', 1)
+                ->where('departamento_id', 5),
+            'Supervisor' => Recinto::query()
+                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)),
+            'Jefe de Recinto' => $user->recintosComoJefe(),
+            default => null,
+        };
+
+        if (!$recintosQuery) {
+            return [
+                'titulares' => [],
+                'suplentes' => [],
+            ];
+        }
+
+        $recintos = $recintosQuery
+            ->with([
+                'mesas:id,recinto_id,numero_mesa,delegado_id',
+                'mesas.recinto:id,nombre',
+                'mesas.delegado:id,name,nombres,apellido_paterno,apellido_materno,username,celular',
+                'mesas.resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,aviso_tarde',
+            ])
+            ->get();
+
+        $titulares = $recintos
+            ->flatMap(function ($recinto) {
+                return collect($recinto->mesas ?? [])
+                    ->filter(fn ($mesa) => !empty($mesa->delegado))
+                    ->map(function ($mesa) {
+                        $delegado = $mesa->delegado;
+                        $resultado = $mesa->resultado;
+                        $name = $delegado->name
+                            ?? trim(
+                                ($delegado->nombres ?? '') . ' ' .
+                                ($delegado->apellido_paterno ?? '') . ' ' .
+                                ($delegado->apellido_materno ?? '')
+                            );
+
+                        return [
+                            'mesa_id' => $mesa->id,
+                            'numero_mesa' => $mesa->numero_mesa,
+                            'recinto_nombre' => $mesa->recinto?->nombre ?? $recinto->nombre,
+                            'delegado_id' => $delegado->id,
+                            'name' => trim((string) $name),
+                            'celular' => $delegado->celular,
+                            'aviso_antes' => (bool) ($resultado->aviso_antes ?? false),
+                            'aviso_manana' => (bool) ($resultado->aviso_manana ?? false),
+                            'aviso_mediodia' => (bool) ($resultado->aviso_mediodia ?? false),
+                            'aviso_tarde' => (bool) ($resultado->aviso_tarde ?? false),
+                        ];
+                    });
+            })
+            ->unique(fn ($item) => ($item['mesa_id'] ?? 0) . '-' . ($item['delegado_id'] ?? 0))
+            ->sortBy('numero_mesa')
+            ->values();
+
+        return [
+            'titulares' => $titulares,
+            'suplentes' => [],
+        ];
+    }
+
     private function imagePathToBase64(?string $relativePath): ?string
     {
         if (empty($relativePath)) {
@@ -314,6 +380,7 @@ class MobileAuthController extends Controller
         $jerarquia = $this->buildJerarquiaFromRecintos($mesas);
         $jefes = $jerarquia['jefes'];
         $supervisores = $jerarquia['supervisores'];
+        $asistenciaPanel = $this->buildAsistenciaPanel($user);
 
         // Token Sanctum
         $token = $user->createToken('mobile')->plainTextToken;
@@ -335,6 +402,7 @@ class MobileAuthController extends Controller
             ],
             'mesas' => $mesas,
             'partidos' => $partidos,
+            'asistencia_panel' => $asistenciaPanel,
         ]);
     }
 

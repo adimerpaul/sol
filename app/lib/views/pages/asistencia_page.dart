@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../addons/snackbar_helper.dart';
+import '../../models/mobile_login_response.dart';
 import '../../services/mobile_asistencia_service.dart';
 import '../../services/mobile_auth_local_store.dart';
 
@@ -25,7 +28,12 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   bool _resolvingLocation = false;
   bool _hasPending = false;
   bool _canUseAsistencia = true;
+  bool _showDelegadosTab = false;
   String? _asistenciaInfoMessage;
+  List<MobileDelegadoAsistencia> _delegadosTitulares =
+      const <MobileDelegadoAsistencia>[];
+  List<MobileDelegadoAsistencia> _delegadosSuplentes =
+      const <MobileDelegadoAsistencia>[];
 
   bool _avisoAntes = false;
   bool _avisoManana = false;
@@ -55,6 +63,12 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       final mesas = await _localStore.readMesasLocal();
       final hasMesas = mesas.isNotEmpty;
       final role = (profile?.user.role ?? '').trim();
+      _showDelegadosTab =
+          role == 'Administrador' ||
+          role == 'Supervisor' ||
+          role == 'Jefe de Recinto';
+      _delegadosTitulares = profile?.asistenciaPanel.titulares ?? const [];
+      _delegadosSuplentes = profile?.asistenciaPanel.suplentes ?? const [];
 
       _canUseAsistencia = hasMesas;
       if (!hasMesas) {
@@ -385,48 +399,42 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    return DefaultTabController(
+      length: _showDelegadosTab ? 2 : 1,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TabBar(
+              tabs: [
+                const Tab(text: 'Mi Asistencia'),
+                if (_showDelegadosTab) const Tab(text: 'Mis Delegados'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildMiAsistenciaTab(),
+                if (_showDelegadosTab) _buildDelegadosTab(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiAsistenciaTab() {
     if (!_canUseAsistencia) {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF3E0),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFFB74D)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Color(0xFFEF6C00)),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Asistencia no disponible',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF8A4B00),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _asistenciaInfoMessage ??
-                      'No tiene mesas asignadas. La asistencia no aplica para esta cuenta.',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF8A4B00),
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
+          _buildInfoCard(
+            title: 'Asistencia no disponible',
+            message:
+                _asistenciaInfoMessage ??
+                'No tiene mesas asignadas. La asistencia no aplica para esta cuenta.',
           ),
         ],
       );
@@ -525,6 +533,236 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
         ),
       ],
     );
+  }
+
+  Widget _buildDelegadosTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildDelegadosSection(
+          title: 'Delegados De Mesa Titulares',
+          items: _delegadosTitulares,
+          emptyText: 'No hay delegados titulares para mostrar.',
+        ),
+        const SizedBox(height: 16),
+        _buildDelegadosSection(
+          title: 'Delegados De Mesa Suplentes',
+          items: _delegadosSuplentes,
+          emptyText: 'No hay delegados suplentes para mostrar.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDelegadosSection({
+    required String title,
+    required List<MobileDelegadoAsistencia> items,
+    required String emptyText,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8DDF2)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x12000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF5F3DC4),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            Text(
+              emptyText,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF7B6F87)),
+            )
+          else
+            ...items.map(_buildDelegadoCard),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDelegadoCard(MobileDelegadoAsistencia item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F5FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE6DAF3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name.isEmpty ? 'Sin nombre' : item.name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF241B2F),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Mesa ${item.numeroMesa?.toString() ?? '-'}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6C5A7B),
+                      ),
+                    ),
+                    if ((item.recintoNombre ?? '').trim().isNotEmpty)
+                      Text(
+                        item.recintoNombre!.trim(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF8D7A9B),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Abrir WhatsApp',
+                onPressed: ((item.celular ?? '').trim().isEmpty)
+                    ? null
+                    : () => _openWhatsApp(item.celular),
+                icon: const FaIcon(
+                  FontAwesomeIcons.whatsapp,
+                  color: Color(0xFF25D366),
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildCheckChip('Mañana', item.avisoManana),
+              _buildCheckChip('Mediodía', item.avisoMediodia),
+              _buildCheckChip('Tarde', item.avisoTarde),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckChip(String label, bool checked) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: checked ? const Color(0xFFE4F7EA) : const Color(0xFFF1EDF5),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: checked ? const Color(0xFF7BC47F) : const Color(0xFFD9CFDF),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            checked ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 16,
+            color: checked ? const Color(0xFF2E7D32) : const Color(0xFF8E7E99),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF4B3E58),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard({required String title, required String message}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFB74D)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.info_outline, color: Color(0xFFEF6C00)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF8A4B00),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF8A4B00),
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openWhatsApp(String? rawPhone) async {
+    final phone = _normalizePhone(rawPhone);
+    if (phone == null) {
+      return;
+    }
+
+    await launchUrl(
+      Uri.parse('https://wa.me/$phone'),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  String? _normalizePhone(String? input) {
+    if (input == null) return null;
+    final digits = input.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return null;
+    return digits;
   }
 
   Widget _buildSectionCard({

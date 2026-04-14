@@ -5,6 +5,7 @@ class MobileLoginResponse {
     required this.jerarquia,
     required this.mesas,
     required this.partidos,
+    required this.asistenciaPanel,
   });
 
   final String token;
@@ -12,6 +13,7 @@ class MobileLoginResponse {
   final MobileJerarquia jerarquia;
   final List<MobileMesa> mesas;
   final List<MobilePartido> partidos;
+  final MobileAsistenciaPanel asistenciaPanel;
 
   factory MobileLoginResponse.fromJson(Map<String, dynamic> json) {
     final userJson = (json['user'] as Map<String, dynamic>?) ?? {};
@@ -31,6 +33,73 @@ class MobileLoginResponse {
           .whereType<Map<String, dynamic>>()
           .map(MobilePartido.fromJson)
           .toList(),
+      asistenciaPanel: MobileAsistenciaPanel.fromJson(
+        (json['asistencia_panel'] as Map<String, dynamic>?) ?? {},
+      ),
+    );
+  }
+}
+
+class MobileAsistenciaPanel {
+  MobileAsistenciaPanel({required this.titulares, required this.suplentes});
+
+  final List<MobileDelegadoAsistencia> titulares;
+  final List<MobileDelegadoAsistencia> suplentes;
+
+  factory MobileAsistenciaPanel.fromJson(Map<String, dynamic> json) {
+    final titularesJson = (json['titulares'] as List?) ?? const [];
+    final suplentesJson = (json['suplentes'] as List?) ?? const [];
+
+    return MobileAsistenciaPanel(
+      titulares: titularesJson
+          .whereType<Map<String, dynamic>>()
+          .map(MobileDelegadoAsistencia.fromJson)
+          .toList(),
+      suplentes: suplentesJson
+          .whereType<Map<String, dynamic>>()
+          .map(MobileDelegadoAsistencia.fromJson)
+          .toList(),
+    );
+  }
+}
+
+class MobileDelegadoAsistencia {
+  MobileDelegadoAsistencia({
+    required this.mesaId,
+    required this.numeroMesa,
+    required this.recintoNombre,
+    required this.delegadoId,
+    required this.name,
+    required this.celular,
+    required this.avisoAntes,
+    required this.avisoManana,
+    required this.avisoMediodia,
+    required this.avisoTarde,
+  });
+
+  final int? mesaId;
+  final int? numeroMesa;
+  final String? recintoNombre;
+  final int? delegadoId;
+  final String name;
+  final String? celular;
+  final bool avisoAntes;
+  final bool avisoManana;
+  final bool avisoMediodia;
+  final bool avisoTarde;
+
+  factory MobileDelegadoAsistencia.fromJson(Map<String, dynamic> json) {
+    return MobileDelegadoAsistencia(
+      mesaId: _asInt(json['mesa_id']),
+      numeroMesa: _asInt(json['numero_mesa']),
+      recintoNombre: json['recinto_nombre']?.toString(),
+      delegadoId: _asInt(json['delegado_id']),
+      name: (json['name'] as String?) ?? '',
+      celular: json['celular'] as String?,
+      avisoAntes: json['aviso_antes'] == true,
+      avisoManana: json['aviso_manana'] == true,
+      avisoMediodia: json['aviso_mediodia'] == true,
+      avisoTarde: json['aviso_tarde'] == true,
     );
   }
 }
@@ -315,8 +384,7 @@ class MobileMesaResultado {
       pnuGobernador: _asInt(json['papeletas_no_utilizadas_gobernador']) ?? 0,
       blancosAsd: _asInt(json['blancos_asambleista_distrito']) ?? 0,
       nulosAsd: _asInt(json['nulos_asambleista_distrito']) ?? 0,
-      pnuAsd:
-          _asInt(json['papeletas_no_utilizadas_asambleista_distrito']) ?? 0,
+      pnuAsd: _asInt(json['papeletas_no_utilizadas_asambleista_distrito']) ?? 0,
       blancosAsp: _asInt(json['blancos_asambleista_poblacion']) ?? 0,
       nulosAsp: _asInt(json['nulos_asambleista_poblacion']) ?? 0,
       pnuAsp:

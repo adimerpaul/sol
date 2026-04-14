@@ -99,6 +99,22 @@ class MobileAuthLocalStore {
         PRIMARY KEY (jefe_id, supervisor_id)
       )
     ''');
+    await db.execute('''
+      CREATE TABLE auth_asistencia_delegados (
+        mesa_id INTEGER NOT NULL,
+        delegado_id INTEGER,
+        numero_mesa INTEGER,
+        recinto_nombre TEXT,
+        tipo TEXT NOT NULL,
+        name TEXT NOT NULL,
+        celular TEXT,
+        aviso_antes INTEGER NOT NULL DEFAULT 0,
+        aviso_manana INTEGER NOT NULL DEFAULT 0,
+        aviso_mediodia INTEGER NOT NULL DEFAULT 0,
+        aviso_tarde INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (mesa_id, tipo)
+      )
+    ''');
 
     await db.execute('''
       CREATE TABLE auth_mesas (
@@ -214,6 +230,22 @@ class MobileAuthLocalStore {
       )
     ''');
     await db.execute('''
+      CREATE TABLE IF NOT EXISTS auth_asistencia_delegados (
+        mesa_id INTEGER NOT NULL,
+        delegado_id INTEGER,
+        numero_mesa INTEGER,
+        recinto_nombre TEXT,
+        tipo TEXT NOT NULL,
+        name TEXT NOT NULL,
+        celular TEXT,
+        aviso_antes INTEGER NOT NULL DEFAULT 0,
+        aviso_manana INTEGER NOT NULL DEFAULT 0,
+        aviso_mediodia INTEGER NOT NULL DEFAULT 0,
+        aviso_tarde INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (mesa_id, tipo)
+      )
+    ''');
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS auth_mesas (
         id INTEGER PRIMARY KEY,
         id_original INTEGER,
@@ -287,16 +319,57 @@ class MobileAuthLocalStore {
     );
     await _addColumnIfMissing(db, 'auth_partidos', 'icono_base64', 'TEXT');
     await _addColumnIfMissing(db, 'auth_partidos', 'color', 'TEXT');
-    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_gobernador', 'INTEGER NOT NULL DEFAULT 1');
-    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_asambleista_poblacion', 'INTEGER NOT NULL DEFAULT 1');
-    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_asambleista_distrito', 'INTEGER NOT NULL DEFAULT 1');
-    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_concejal', 'INTEGER NOT NULL DEFAULT 1');
-    await _addColumnIfMissing(db, 'auth_partidos', 'habilitado_alcalde', 'INTEGER NOT NULL DEFAULT 1');
-    await _addColumnIfMissing(db, 'asistencia_state', 'hora_apertura_mesa', 'TEXT');
-    await _addColumnIfMissing(db, 'asistencia_queue', 'hora_apertura_mesa', 'TEXT');
+    await _addColumnIfMissing(
+      db,
+      'auth_partidos',
+      'habilitado_gobernador',
+      'INTEGER NOT NULL DEFAULT 1',
+    );
+    await _addColumnIfMissing(
+      db,
+      'auth_partidos',
+      'habilitado_asambleista_poblacion',
+      'INTEGER NOT NULL DEFAULT 1',
+    );
+    await _addColumnIfMissing(
+      db,
+      'auth_partidos',
+      'habilitado_asambleista_distrito',
+      'INTEGER NOT NULL DEFAULT 1',
+    );
+    await _addColumnIfMissing(
+      db,
+      'auth_partidos',
+      'habilitado_concejal',
+      'INTEGER NOT NULL DEFAULT 1',
+    );
+    await _addColumnIfMissing(
+      db,
+      'auth_partidos',
+      'habilitado_alcalde',
+      'INTEGER NOT NULL DEFAULT 1',
+    );
+    await _addColumnIfMissing(
+      db,
+      'asistencia_state',
+      'hora_apertura_mesa',
+      'TEXT',
+    );
+    await _addColumnIfMissing(
+      db,
+      'asistencia_queue',
+      'hora_apertura_mesa',
+      'TEXT',
+    );
     await _addColumnIfMissing(db, 'asistencia_queue', 'latitud', 'REAL');
     await _addColumnIfMissing(db, 'asistencia_queue', 'longitud', 'REAL');
     await _addColumnIfMissing(db, 'asistencia_queue', 'presente_at', 'TEXT');
+    await _addColumnIfMissing(
+      db,
+      'auth_asistencia_delegados',
+      'recinto_nombre',
+      'TEXT',
+    );
   }
 
   Future<void> _addColumnIfMissing(
@@ -338,7 +411,8 @@ class MobileAuthLocalStore {
       final row = existing.first;
       final syncStatus = (row['sync_status'] as String?) ?? votacionSyncLocal;
       final enviadoFinal = (row['enviado_final'] as int? ?? 0) == 1;
-      final keepExisting = syncStatus != votacionSyncSynced &&
+      final keepExisting =
+          syncStatus != votacionSyncSynced &&
           !draft.enviadoFinal &&
           !enviadoFinal;
 
@@ -370,6 +444,7 @@ class MobileAuthLocalStore {
       batch.delete('auth_jefes');
       batch.delete('auth_supervisores');
       batch.delete('auth_jefe_supervisor');
+      batch.delete('auth_asistencia_delegados');
       batch.delete('auth_mesas');
       batch.delete('auth_partidos');
 
@@ -433,7 +508,8 @@ class MobileAuthLocalStore {
           'numero_mesa': mesa.numeroMesa,
           'habilitados': mesa.habilitados,
           'estado_api': mesa.estado,
-          'estado_local': mesa.estadoLocal ??
+          'estado_local':
+              mesa.estadoLocal ??
               _estadoLocalInicial(
                 mesa.estado,
                 finalizada: mesa.resultado?.etapa2 == true,
@@ -460,11 +536,53 @@ class MobileAuthLocalStore {
           'orden_municipal': partido.ordenMunicipal,
           'orden_departamental': partido.ordenDepartamental,
           'habilitado_gobernador': partido.habilitadoGobernador ? 1 : 0,
-          'habilitado_asambleista_poblacion': partido.habilitadoAsambleistaPoblacion ? 1 : 0,
-          'habilitado_asambleista_distrito': partido.habilitadoAsambleistaDistrito ? 1 : 0,
+          'habilitado_asambleista_poblacion':
+              partido.habilitadoAsambleistaPoblacion ? 1 : 0,
+          'habilitado_asambleista_distrito':
+              partido.habilitadoAsambleistaDistrito ? 1 : 0,
           'habilitado_concejal': partido.habilitadoConcejal ? 1 : 0,
           'habilitado_alcalde': partido.habilitadoAlcalde ? 1 : 0,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      for (final delegado in data.asistenciaPanel.titulares) {
+        batch.insert(
+          'auth_asistencia_delegados',
+          {
+            'mesa_id': delegado.mesaId,
+            'delegado_id': delegado.delegadoId,
+            'numero_mesa': delegado.numeroMesa,
+            'recinto_nombre': delegado.recintoNombre,
+            'tipo': 'titular',
+            'name': delegado.name,
+            'celular': delegado.celular,
+            'aviso_antes': delegado.avisoAntes ? 1 : 0,
+            'aviso_manana': delegado.avisoManana ? 1 : 0,
+            'aviso_mediodia': delegado.avisoMediodia ? 1 : 0,
+            'aviso_tarde': delegado.avisoTarde ? 1 : 0,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      for (final delegado in data.asistenciaPanel.suplentes) {
+        batch.insert(
+          'auth_asistencia_delegados',
+          {
+            'mesa_id': delegado.mesaId,
+            'delegado_id': delegado.delegadoId,
+            'numero_mesa': delegado.numeroMesa,
+            'recinto_nombre': delegado.recintoNombre,
+            'tipo': 'suplente',
+            'name': delegado.name,
+            'celular': delegado.celular,
+            'aviso_antes': delegado.avisoAntes ? 1 : 0,
+            'aviso_manana': delegado.avisoManana ? 1 : 0,
+            'aviso_mediodia': delegado.avisoMediodia ? 1 : 0,
+            'aviso_tarde': delegado.avisoTarde ? 1 : 0,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
 
       await batch.commit(noResult: true);
@@ -486,7 +604,9 @@ class MobileAuthLocalStore {
       final res = mesa.resultado;
       if (mesaId == null || res == null) continue;
 
-      final fotos = <String, String?>{for (final s in votacionFotoSlots) s: null};
+      final fotos = <String, String?>{
+        for (final s in votacionFotoSlots) s: null,
+      };
       for (final slot in votacionFotoSlots) {
         final raw = res.fotosBase64[slot];
         if (raw == null || raw.isEmpty) continue;
@@ -599,6 +719,10 @@ class MobileAuthLocalStore {
       'auth_partidos',
       orderBy: 'orden_municipal ASC, sigla ASC',
     );
+    final delegadosAsistenciaRows = await db.query(
+      'auth_asistencia_delegados',
+      orderBy: 'tipo ASC, numero_mesa ASC, name ASC',
+    );
 
     final supervisorsById = <int, MobilePersonaSimple>{};
     for (final row in supervisorRows) {
@@ -676,7 +800,8 @@ class MobileAuthLocalStore {
             iconoBase64: row['icono_base64'] as String?,
             ordenMunicipal: row['orden_municipal'] as int? ?? 0,
             ordenDepartamental: row['orden_departamental'] as int? ?? 0,
-            habilitadoGobernador: (row['habilitado_gobernador'] as int? ?? 1) == 1,
+            habilitadoGobernador:
+                (row['habilitado_gobernador'] as int? ?? 1) == 1,
             habilitadoAsambleistaPoblacion:
                 (row['habilitado_asambleista_poblacion'] as int? ?? 1) == 1,
             habilitadoAsambleistaDistrito:
@@ -685,6 +810,16 @@ class MobileAuthLocalStore {
             habilitadoAlcalde: (row['habilitado_alcalde'] as int? ?? 1) == 1,
           ),
         )
+        .toList();
+
+    final titulares = delegadosAsistenciaRows
+        .where((row) => (row['tipo'] as String?) == 'titular')
+        .map(_mapDelegadoAsistenciaRow)
+        .toList();
+
+    final suplentes = delegadosAsistenciaRows
+        .where((row) => (row['tipo'] as String?) == 'suplente')
+        .map(_mapDelegadoAsistenciaRow)
         .toList();
 
     return MobileLoginResponse(
@@ -703,6 +838,10 @@ class MobileAuthLocalStore {
       ),
       mesas: mesas,
       partidos: partidos,
+      asistenciaPanel: MobileAsistenciaPanel(
+        titulares: titulares,
+        suplentes: suplentes,
+      ),
     );
   }
 
@@ -717,6 +856,10 @@ class MobileAuthLocalStore {
     final session = sessionRows.first;
     final jefesRows = await db.query('auth_jefes');
     final supervisoresRows = await db.query('auth_supervisores');
+    final delegadosAsistenciaRows = await db.query(
+      'auth_asistencia_delegados',
+      orderBy: 'tipo ASC, numero_mesa ASC, name ASC',
+    );
 
     final user = MobileUser(
       id: session['user_id'] as int?,
@@ -751,10 +894,24 @@ class MobileAuthLocalStore {
         )
         .toList();
 
+    final titulares = delegadosAsistenciaRows
+        .where((row) => (row['tipo'] as String?) == 'titular')
+        .map(_mapDelegadoAsistenciaRow)
+        .toList();
+
+    final suplentes = delegadosAsistenciaRows
+        .where((row) => (row['tipo'] as String?) == 'suplente')
+        .map(_mapDelegadoAsistenciaRow)
+        .toList();
+
     return MobileProfileData(
       user: user,
       jefes: jefes,
       supervisores: supervisores,
+      asistenciaPanel: MobileAsistenciaPanel(
+        titulares: titulares,
+        suplentes: suplentes,
+      ),
     );
   }
 
@@ -882,6 +1039,7 @@ class MobileAuthLocalStore {
       await txn.delete('auth_jefes');
       await txn.delete('auth_supervisores');
       await txn.delete('auth_jefe_supervisor');
+      await txn.delete('auth_asistencia_delegados');
       await txn.delete('auth_mesas');
       await txn.delete('auth_partidos');
       await txn.delete('asistencia_state');
@@ -1042,7 +1200,8 @@ class MobileAuthLocalStore {
             iconoBase64: row['icono_base64'] as String?,
             ordenMunicipal: row['orden_municipal'] as int? ?? 0,
             ordenDepartamental: row['orden_departamental'] as int? ?? 0,
-            habilitadoGobernador: (row['habilitado_gobernador'] as int? ?? 1) == 1,
+            habilitadoGobernador:
+                (row['habilitado_gobernador'] as int? ?? 1) == 1,
             habilitadoAsambleistaPoblacion:
                 (row['habilitado_asambleista_poblacion'] as int? ?? 1) == 1,
             habilitadoAsambleistaDistrito:
@@ -1176,7 +1335,9 @@ class MobileAuthLocalStore {
     }).toList();
     return VotacionDraft(
       mesaId: mesaId,
-      finalizar: payload['finalizar'] == true || (row['enviado_final'] as int? ?? 0) == 1,
+      finalizar:
+          payload['finalizar'] == true ||
+          (row['enviado_final'] as int? ?? 0) == 1,
       observacion: payload['observacion']?.toString(),
       observacionGobernador: payload['observacion_gobernador']?.toString(),
       observacionAsd: payload['observacion_asambleista_distrito']?.toString(),
@@ -1209,9 +1370,11 @@ class MobileAuthLocalStore {
           payload['finalizar'] == true || payload['lock_concejal'] == true,
       lockGobernador:
           payload['finalizar'] == true || payload['lock_gobernador'] == true,
-      lockAsd: payload['finalizar'] == true ||
+      lockAsd:
+          payload['finalizar'] == true ||
           payload['lock_asambleista_distrito'] == true,
-      lockAsp: payload['finalizar'] == true ||
+      lockAsp:
+          payload['finalizar'] == true ||
           payload['lock_asambleista_poblacion'] == true,
       votos: votos,
       fotos: fotos,
@@ -1239,7 +1402,10 @@ class MobileAuthLocalStore {
     return out;
   }
 
-  Future<void> markVotacionSynced(int mesaId, {required bool finalizada}) async {
+  Future<void> markVotacionSynced(
+    int mesaId, {
+    required bool finalizada,
+  }) async {
     final db = await database;
     await db.update(
       'votacion_draft',
@@ -1315,11 +1481,13 @@ class MobileProfileData {
     required this.user,
     required this.jefes,
     required this.supervisores,
+    required this.asistenciaPanel,
   });
 
   final MobileUser user;
   final List<MobilePersonaSimple> jefes;
   final List<MobilePersonaSimple> supervisores;
+  final MobileAsistenciaPanel asistenciaPanel;
 }
 
 class RecintoMesaPoint {
@@ -1366,4 +1534,19 @@ int? _asInt(dynamic value) {
   if (value == null) return null;
   if (value is int) return value;
   return int.tryParse(value.toString());
+}
+
+MobileDelegadoAsistencia _mapDelegadoAsistenciaRow(Map<String, Object?> row) {
+  return MobileDelegadoAsistencia(
+    mesaId: row['mesa_id'] as int?,
+    numeroMesa: row['numero_mesa'] as int?,
+    recintoNombre: row['recinto_nombre'] as String?,
+    delegadoId: row['delegado_id'] as int?,
+    name: (row['name'] as String?) ?? '',
+    celular: row['celular'] as String?,
+    avisoAntes: (row['aviso_antes'] as int? ?? 0) == 1,
+    avisoManana: (row['aviso_manana'] as int? ?? 0) == 1,
+    avisoMediodia: (row['aviso_mediodia'] as int? ?? 0) == 1,
+    avisoTarde: (row['aviso_tarde'] as int? ?? 0) == 1,
+  );
 }
