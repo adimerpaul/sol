@@ -101,7 +101,8 @@ class MobileAuthLocalStore {
     ''');
     await db.execute('''
       CREATE TABLE auth_asistencia_delegados (
-        mesa_id INTEGER NOT NULL,
+        row_key TEXT PRIMARY KEY,
+        mesa_id INTEGER,
         delegado_id INTEGER,
         numero_mesa INTEGER,
         recinto_nombre TEXT,
@@ -111,8 +112,7 @@ class MobileAuthLocalStore {
         aviso_antes INTEGER NOT NULL DEFAULT 0,
         aviso_manana INTEGER NOT NULL DEFAULT 0,
         aviso_mediodia INTEGER NOT NULL DEFAULT 0,
-        aviso_tarde INTEGER NOT NULL DEFAULT 0,
-        PRIMARY KEY (mesa_id, tipo)
+        aviso_tarde INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -231,7 +231,8 @@ class MobileAuthLocalStore {
     ''');
     await db.execute('''
       CREATE TABLE IF NOT EXISTS auth_asistencia_delegados (
-        mesa_id INTEGER NOT NULL,
+        row_key TEXT PRIMARY KEY,
+        mesa_id INTEGER,
         delegado_id INTEGER,
         numero_mesa INTEGER,
         recinto_nombre TEXT,
@@ -241,10 +242,11 @@ class MobileAuthLocalStore {
         aviso_antes INTEGER NOT NULL DEFAULT 0,
         aviso_manana INTEGER NOT NULL DEFAULT 0,
         aviso_mediodia INTEGER NOT NULL DEFAULT 0,
-        aviso_tarde INTEGER NOT NULL DEFAULT 0,
-        PRIMARY KEY (mesa_id, tipo)
+        aviso_tarde INTEGER NOT NULL DEFAULT 0
       )
     ''');
+
+    await _rebuildAsistenciaDelegadosTableIfNeeded(db);
     await db.execute('''
       CREATE TABLE IF NOT EXISTS auth_mesas (
         id INTEGER PRIMARY KEY,
@@ -392,6 +394,40 @@ class MobileAuthLocalStore {
       }
     }
     return false;
+  }
+
+  Future<void> _rebuildAsistenciaDelegadosTableIfNeeded(Database db) async {
+    final info = await db.rawQuery(
+      'PRAGMA table_info(auth_asistencia_delegados)',
+    );
+    if (info.isEmpty) {
+      return;
+    }
+
+    final hasRowKey = info.any((row) => (row['name'] as String?) == 'row_key');
+    if (hasRowKey) {
+      return;
+    }
+
+    await db.transaction((txn) async {
+      await txn.execute('DROP TABLE IF EXISTS auth_asistencia_delegados');
+      await txn.execute('''
+        CREATE TABLE auth_asistencia_delegados (
+          row_key TEXT PRIMARY KEY,
+          mesa_id INTEGER,
+          delegado_id INTEGER,
+          numero_mesa INTEGER,
+          recinto_nombre TEXT,
+          tipo TEXT NOT NULL,
+          name TEXT NOT NULL,
+          celular TEXT,
+          aviso_antes INTEGER NOT NULL DEFAULT 0,
+          aviso_manana INTEGER NOT NULL DEFAULT 0,
+          aviso_mediodia INTEGER NOT NULL DEFAULT 0,
+          aviso_tarde INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+    });
   }
 
   Future<void> _mergePreloadedDraft(
@@ -546,9 +582,12 @@ class MobileAuthLocalStore {
       }
 
       for (final delegado in data.asistenciaPanel.titulares) {
+        final rowKey =
+            'titular-${delegado.mesaId ?? 0}-${delegado.delegadoId ?? 0}';
         batch.insert(
           'auth_asistencia_delegados',
           {
+            'row_key': rowKey,
             'mesa_id': delegado.mesaId,
             'delegado_id': delegado.delegadoId,
             'numero_mesa': delegado.numeroMesa,
@@ -566,9 +605,12 @@ class MobileAuthLocalStore {
       }
 
       for (final delegado in data.asistenciaPanel.suplentes) {
+        final rowKey =
+            'suplente-${delegado.delegadoId ?? 0}-${delegado.recintoNombre ?? ''}';
         batch.insert(
           'auth_asistencia_delegados',
           {
+            'row_key': rowKey,
             'mesa_id': delegado.mesaId,
             'delegado_id': delegado.delegadoId,
             'numero_mesa': delegado.numeroMesa,

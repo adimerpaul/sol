@@ -760,8 +760,15 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
 
   String? _normalizePhone(String? input) {
     if (input == null) return null;
-    final digits = input.replaceAll(RegExp(r'[^0-9]'), '');
+    var digits = input.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isEmpty) return null;
+    if (!digits.startsWith('591')) {
+      if (digits.length == 8) {
+        digits = '591$digits';
+      } else if (digits.length > 8) {
+        digits = '591${digits.substring(digits.length - 8)}';
+      }
+    }
     return digits;
   }
 

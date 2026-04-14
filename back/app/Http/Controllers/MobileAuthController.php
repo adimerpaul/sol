@@ -81,15 +81,26 @@ class MobileAuthController extends Controller
 
     private function buildAsistenciaPanel(User $user): array
     {
-        $recintosQuery = match ($user->role) {
-            'Administrador' => Recinto::query()
-                ->where('pais_id', 1)
-                ->where('departamento_id', 5),
-            'Supervisor' => Recinto::query()
-                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)),
-            'Jefe de Recinto' => $user->recintosComoJefe(),
-            default => null,
-        };
+        $jefeRecintoIds = $user->recintosComoJefe()
+            ->pluck('recintos.id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($jefeRecintoIds->isNotEmpty()) {
+            $recintosQuery = Recinto::query()
+                ->whereIn('id', $jefeRecintoIds);
+        } else {
+            $recintosQuery = match ($user->role) {
+                'Administrador' => Recinto::query()
+                    ->where('pais_id', 1)
+                    ->where('departamento_id', 5),
+                'Supervisor' => Recinto::query()
+                    ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)),
+                default => null,
+            };
+        }
 
         if (!$recintosQuery) {
             return [
@@ -139,9 +150,66 @@ class MobileAuthController extends Controller
             ->sortBy('numero_mesa')
             ->values();
 
+        $titularIds = $titulares
+            ->pluck('delegado_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $recintoIds = $recintos
+            ->pluck('id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $suplentes = User::query()
+            ->whereIn('recinto_id', $recintoIds)
+            ->whereIn('role', ['Delegado de Mesa', 'Jefe de Recinto', 'Administrador'])
+            ->when(
+                $titularIds->isNotEmpty(),
+                fn ($q) => $q->whereNotIn('id', $titularIds)
+            )
+            ->get([
+                'id',
+                'recinto_id',
+                'name',
+                'nombres',
+                'apellido_paterno',
+                'apellido_materno',
+                'celular',
+            ])
+            ->map(function ($delegado) use ($recintos) {
+                $name = $delegado->name
+                    ?? trim(
+                        ($delegado->nombres ?? '') . ' ' .
+                        ($delegado->apellido_paterno ?? '') . ' ' .
+                        ($delegado->apellido_materno ?? '')
+                    );
+
+                $recinto = $recintos->firstWhere('id', $delegado->recinto_id);
+
+                return [
+                    'mesa_id' => null,
+                    'numero_mesa' => null,
+                    'recinto_nombre' => $recinto?->nombre,
+                    'delegado_id' => $delegado->id,
+                    'name' => trim((string) $name),
+                    'celular' => $delegado->celular,
+                    'aviso_antes' => false,
+                    'aviso_manana' => false,
+                    'aviso_mediodia' => false,
+                    'aviso_tarde' => false,
+                ];
+            })
+            ->unique('delegado_id')
+            ->sortBy(['recinto_nombre', 'name'])
+            ->values();
+
         return [
             'titulares' => $titulares,
-            'suplentes' => [],
+            'suplentes' => $suplentes,
         ];
     }
 
