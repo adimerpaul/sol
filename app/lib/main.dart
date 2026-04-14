@@ -43,6 +43,8 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // const primaryOrange = Color(0xFFF57C00);
+
     return MaterialApp(
       title: 'Jacha',
       theme: ThemeData(primarySwatch: Colors.red),

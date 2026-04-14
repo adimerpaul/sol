@@ -195,6 +195,19 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       if (!mounted) return;
       setState(() {});
     } catch (_) {
+      try {
+        final reconciled = await _service.reconcileQueueWithServer();
+        _hasPending = await _localStore.hasAsistenciaPendiente();
+        final local = await _localStore.readAsistenciaState();
+        _applyState(local);
+        if (!mounted) return;
+        setState(() {});
+        if (reconciled) {
+          showSuccess(context, 'Asistencia registrada y sincronizada');
+          return;
+        }
+      } catch (_) {}
+
       if (!mounted) return;
       showError(context, 'Sin conexion. Quedo pendiente para sincronizar.');
     }
@@ -203,7 +216,9 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   Future<Position> _resolveQuickPosition() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
-      throw Exception('Active la ubicacion del telefono para registrar su mesa.');
+      throw Exception(
+        'Active la ubicacion del telefono para registrar su mesa.',
+      );
     }
 
     var permission = await Geolocator.checkPermission();
@@ -306,6 +321,14 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     try {
       final count = await _service.flushQueue();
       _hasPending = await _localStore.hasAsistenciaPendiente();
+      if (_hasPending) {
+        try {
+          await _service.reconcileQueueWithServer();
+          _hasPending = await _localStore.hasAsistenciaPendiente();
+          final local = await _localStore.readAsistenciaState();
+          _applyState(local);
+        } catch (_) {}
+      }
       await _localStore.saveAsistenciaState(
         avisoAntes: _avisoAntes,
         avisoManana: _avisoManana,
@@ -371,14 +394,21 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
             if (_avisoManana && _horaAperturaMesa != null) ...[
               const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F1F9),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.access_time, size: 18, color: Color(0xFF4E4A57)),
+                    const Icon(
+                      Icons.access_time,
+                      size: 18,
+                      color: Color(0xFF4E4A57),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -501,7 +531,9 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
-                    color: isEnabled ? const Color(0xFF3D3643) : const Color(0xFFB7ACBC),
+                    color: isEnabled
+                        ? const Color(0xFF3D3643)
+                        : const Color(0xFFB7ACBC),
                   ),
                 ),
                 if (locked || subtitle != null) ...[
@@ -510,7 +542,9 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                     locked ? 'Bloqueado' : subtitle!,
                     style: TextStyle(
                       fontSize: 14,
-                      color: locked ? const Color(0xFF8F8595) : const Color(0xFF7F7485),
+                      color: locked
+                          ? const Color(0xFF8F8595)
+                          : const Color(0xFF7F7485),
                       fontWeight: locked ? FontWeight.w600 : FontWeight.w400,
                     ),
                   ),

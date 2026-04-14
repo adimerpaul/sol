@@ -12,6 +12,8 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
+  static const _loginOrange = Color(0xFFF57C00);
+
   final _ciController = TextEditingController();
   final _vm = LoginViewModel();
   int? _selectedDay;
@@ -28,14 +30,16 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
-    // _ciController.text = '7336198';
-    // _selectedDay = 2;
-    // _selectedMonth = 4;
-    // _selectedYear = 1989;
+    _ciController.text = '7336198';
+    _selectedDay = 2;
+    _selectedMonth = 4;
+    _selectedYear = 1989;
   }
 
   String? get _fechaNacimiento {
-    if (_selectedDay == null || _selectedMonth == null || _selectedYear == null) {
+    if (_selectedDay == null ||
+        _selectedMonth == null ||
+        _selectedYear == null) {
       return null;
     }
     final yyyy = _selectedYear.toString().padLeft(4, '0');
@@ -61,16 +65,12 @@ class _LoginViewState extends State<LoginView> {
     } on PlatformException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? 'No se pudo abrir el manual'),
-        ),
+        SnackBar(content: Text(e.message ?? 'No se pudo abrir el manual')),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo abrir el manual'),
-        ),
+        const SnackBar(content: Text('No se pudo abrir el manual')),
       );
     }
   }
@@ -83,7 +83,7 @@ class _LoginViewState extends State<LoginView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF7A0012), Color(0xFFC5162E), Color(0xFFFFE2E5)],
+            colors: [Color(0xFF8C3A00), Color(0xFFF57C00), Color(0xFFFFE3C2)],
             stops: [0.0, 0.42, 1.0],
           ),
         ),
@@ -167,9 +167,11 @@ class _LoginViewState extends State<LoginView> {
                                 const SizedBox(height: 16),
                                 FilledButton(
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: const Color(0xFFF53333),
+                                    backgroundColor: _loginOrange,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
@@ -325,17 +327,15 @@ class _LoginViewState extends State<LoginView> {
         )
         .toList();
 
-    final yearItems = List.generate(
-      DateTime.now().year - 1900 + 1,
-      (i) => DateTime.now().year - i,
-    )
-        .map(
-          (y) => DropdownMenuItem<int>(
-            value: y,
-            child: Text(y.toString()),
-          ),
-        )
-        .toList();
+    final yearItems =
+        List.generate(
+              DateTime.now().year - 1900 + 1,
+              (i) => DateTime.now().year - i,
+            )
+            .map(
+              (y) => DropdownMenuItem<int>(value: y, child: Text(y.toString())),
+            )
+            .toList();
 
     final dayField = DropdownButtonFormField<int>(
       value: _selectedDay,
@@ -360,7 +360,9 @@ class _LoginViewState extends State<LoginView> {
       isExpanded: true,
       decoration: _inputDecoration(label: 'Ano', hint: 'Selecciona'),
       items: yearItems,
-      onChanged: _vm.isLoading ? null : (v) => setState(() => _selectedYear = v),
+      onChanged: _vm.isLoading
+          ? null
+          : (v) => setState(() => _selectedYear = v),
     );
 
     return LayoutBuilder(
@@ -396,10 +398,7 @@ class _LoginViewState extends State<LoginView> {
 }
 
 class _ManualButton extends StatelessWidget {
-  const _ManualButton({
-    required this.title,
-    required this.onTap,
-  });
+  const _ManualButton({required this.title, required this.onTap});
 
   final String title;
   final VoidCallback onTap;

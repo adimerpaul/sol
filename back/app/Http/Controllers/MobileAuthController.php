@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Mesa;
 use App\Models\Partido;
+use App\Models\Recinto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,6 +14,70 @@ class MobileAuthController extends Controller
     private const PARTIDOS_APP = [11, 15];
 
     private const PARTIDOS_SEGUNDA_VUELTA = [11, 15];
+
+    private function buildJerarquiaFromRecintos($mesas): array
+    {
+        $recintoIds = collect($mesas)
+            ->pluck('recinto_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($recintoIds->isEmpty()) {
+            return [
+                'jefes' => collect(),
+                'supervisores' => collect(),
+            ];
+        }
+
+        $recintos = Recinto::query()
+            ->whereIn('id', $recintoIds)
+            ->with([
+                'jefe:id,name,nombres,username,celular',
+                'jefe.supervisores:id,name,nombres,username,celular',
+            ])
+            ->get();
+
+        $jefes = $recintos
+            ->flatMap(fn ($recinto) => collect($recinto->jefe ?? []))
+            ->unique('id')
+            ->sortBy('name')
+            ->values()
+            ->map(function ($jefe) {
+                $supervisores = collect($jefe->supervisores ?? [])
+                    ->unique('id')
+                    ->sortBy('name')
+                    ->values()
+                    ->map(fn ($supervisor) => [
+                        'id' => $supervisor->id,
+                        'name' => $supervisor->name,
+                        'nombres' => $supervisor->nombres,
+                        'celular' => $supervisor->celular,
+                    ])
+                    ->values();
+
+                return [
+                    'id' => $jefe->id,
+                    'name' => $jefe->name,
+                    'nombres' => $jefe->nombres,
+                    'celular' => $jefe->celular,
+                    'supervisores' => $supervisores,
+                ];
+            })
+            ->values();
+
+        $supervisores = $jefes
+            ->flatMap(fn ($jefe) => $jefe['supervisores'])
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        return [
+            'jefes' => $jefes,
+            'supervisores' => $supervisores,
+        ];
+    }
 
     private function imagePathToBase64(?string $relativePath): ?string
     {
@@ -246,32 +311,9 @@ class MobileAuthController extends Controller
             })
             ->values();
 
-        // Jerarquia via tablas pivote:
-        // delegado -> jefe (jefe_delegado), jefe -> supervisor (supervisor_jefe)
-        // Se devuelve cada jefe con sus supervisores.
-        $jefes = $user->jefes()
-            ->select('users.id', 'users.name', 'users.nombres', 'users.celular')
-            ->get()
-            ->map(function ($jefe) {
-                $supervisores = $jefe->supervisores()
-                    ->select('users.id', 'users.name', 'users.nombres', 'users.celular')
-                    ->get();
-
-                return [
-                    'id' => $jefe->id,
-                    'name' => $jefe->name,
-                    'nombres' => $jefe->nombres,
-                    'celular' => $jefe->celular,
-                    'supervisores' => $supervisores,
-                ];
-            })
-            ->values();
-
-        // Compatibilidad: lista unica de supervisores a partir de los jefes.
-        $supervisores = $jefes
-            ->flatMap(fn ($j) => $j['supervisores'])
-            ->unique('id')
-            ->values();
+        $jerarquia = $this->buildJerarquiaFromRecintos($mesas);
+        $jefes = $jerarquia['jefes'];
+        $supervisores = $jerarquia['supervisores'];
 
         // Token Sanctum
         $token = $user->createToken('mobile')->plainTextToken;

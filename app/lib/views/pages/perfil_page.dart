@@ -1,9 +1,5 @@
-import 'dart:convert';
-
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,7 +13,6 @@ class PerfilPage extends StatefulWidget {
 }
 
 class _PerfilPageState extends State<PerfilPage> {
-
   late Future<_PerfilUiData> _future;
 
   @override
@@ -29,73 +24,16 @@ class _PerfilPageState extends State<PerfilPage> {
   Future<_PerfilUiData> _load() async {
     final profile = await MobileAuthLocalStore.instance.readProfileData();
     final package = await PackageInfo.fromPlatform();
-    final jefesRecinto = await _fetchJefesDeRecinto();
+    final jefesRecinto =
+        profile?.jefes
+            .map((j) => _JefeRecintoInfo(name: j.name, celular: j.celular))
+            .toList() ??
+        const <_JefeRecintoInfo>[];
     return _PerfilUiData(
       profile: profile,
       versionLabel: '${package.version}+${package.buildNumber}',
       jefesRecinto: jefesRecinto,
     );
-  }
-
-  /// Obtiene los jefes de recinto del delegado desde el endpoint publico.
-  /// Flujo: mesas del delegado (SQLite) -> recinto_ids -> GET /api/public/recintos-mapa -> filtrar jefes.
-  Future<List<_JefeRecintoInfo>> _fetchJefesDeRecinto() async {
-    try {
-      // 1. Obtener recinto_ids de las mesas del delegado en SQLite
-      final store = MobileAuthLocalStore.instance;
-      final db = await store.database;
-      final mesaRows = await db.query(
-        'auth_mesas',
-        columns: ['recinto_id'],
-        where: 'recinto_id IS NOT NULL',
-      );
-      final recintoIds = mesaRows
-          .map((r) => r['recinto_id'] as int?)
-          .where((id) => id != null)
-          .cast<int>()
-          .toSet();
-      if (recintoIds.isEmpty) return [];
-
-      // 2. Llamar al endpoint publico de recintos-mapa
-      final baseUrl = (dotenv.env['API_BACK'] ?? '').replaceAll('"', '').trim();
-      if (baseUrl.isEmpty) return [];
-      // La base es .../api/mobile, necesitamos .../api/public/recintos-mapa
-      final apiBase = baseUrl.replaceAll(RegExp(r'/mobile/?$'), '');
-      final url = apiBase.endsWith('/') 
-          ? '${apiBase}public/recintos-mapa'
-          : '$apiBase/public/recintos-mapa';
-
-      final response = await http.get(
-        Uri.parse(url),
-        headers: const {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != 200) return [];
-
-      final body = jsonDecode(response.body);
-      final data = (body is Map ? body['data'] : null) as List? ?? [];
-
-      // 3. Filtrar por recinto_ids del delegado y extraer jefes unicos
-      final seenIds = <int>{};
-      final result = <_JefeRecintoInfo>[];
-      for (final recinto in data) {
-        final rId = recinto['id'] as int?;
-        if (rId == null || !recintoIds.contains(rId)) continue;
-        final jefes = (recinto['jefes'] as List?) ?? [];
-        for (final jefe in jefes) {
-          final jefeId = jefe['id'] as int?;
-          if (jefeId == null || seenIds.contains(jefeId)) continue;
-          seenIds.add(jefeId);
-          result.add(_JefeRecintoInfo(
-            name: (jefe['name'] as String?) ?? '',
-            celular: jefe['celular'] as String?,
-          ));
-        }
-      }
-      return result;
-    } catch (_) {
-      return [];
-    }
   }
 
   @override
@@ -152,7 +90,9 @@ class _PerfilPageState extends State<PerfilPage> {
                 _ContactList(
                   emptyText: 'Sin jefes asignados',
                   items: data.jefesRecinto
-                      .map((j) => _ContactItem(name: j.name, celular: j.celular))
+                      .map(
+                        (j) => _ContactItem(name: j.name, celular: j.celular),
+                      )
                       .toList(),
                   onWhatsAppTap: _openWhatsApp,
                 ),
@@ -161,9 +101,7 @@ class _PerfilPageState extends State<PerfilPage> {
             const SizedBox(height: 8),
             _InfoCard(
               title: 'App',
-              children: [
-                _InfoLine(label: 'Version', value: data.versionLabel),
-              ],
+              children: [_InfoLine(label: 'Version', value: data.versionLabel)],
             ),
           ],
         );
@@ -290,7 +228,9 @@ class _WhatsAppLine extends StatelessWidget {
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: DefaultTextStyle.of(context).style.copyWith(fontSize: 13),
+                style: DefaultTextStyle.of(
+                  context,
+                ).style.copyWith(fontSize: 13),
                 children: [
                   TextSpan(text: '$label: '),
                   TextSpan(
@@ -402,7 +342,9 @@ class _ContactList extends StatelessWidget {
                   Expanded(
                     child: RichText(
                       text: TextSpan(
-                        style: DefaultTextStyle.of(context).style.copyWith(fontSize: 13),
+                        style: DefaultTextStyle.of(
+                          context,
+                        ).style.copyWith(fontSize: 13),
                         children: [
                           TextSpan(
                             text: item.name,
@@ -416,7 +358,10 @@ class _ContactList extends StatelessWidget {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
                     tooltip: 'Abrir WhatsApp',
                     onPressed: ((item.celular ?? '').trim().isEmpty)
                         ? null

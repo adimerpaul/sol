@@ -38,7 +38,7 @@ class MobileAsistenciaService {
             'Accept': 'application/json',
           },
         )
-        .timeout(const Duration(seconds: 8));
+        .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       throw StateError('No se pudo obtener asistencia');
     }
@@ -47,6 +47,41 @@ class MobileAsistenciaService {
       throw const FormatException('Respuesta invalida');
     }
     return body;
+  }
+
+  Future<bool> reconcileQueueWithServer() async {
+    final remote = await fetchAsistenciaState();
+    final state = Map<String, dynamic>.from(
+      (remote['state'] as Map?) ?? const {},
+    );
+    final queue = await _localStore.readAsistenciaQueue();
+
+    for (final item in queue) {
+      final field = item['field']?.toString() ?? '';
+      if (field.isEmpty) {
+        continue;
+      }
+
+      if (state[field] == true) {
+        await _localStore.dequeueAsistenciaField(field);
+      }
+    }
+
+    final hasPending = await _localStore.hasAsistenciaPendiente();
+    await _localStore.saveAsistenciaState(
+      avisoAntes: state['aviso_antes'] == true,
+      avisoManana: state['aviso_manana'] == true,
+      avisoMediodia: state['aviso_mediodia'] == true,
+      horaAperturaMesa: state['hora_apertura_mesa']?.toString(),
+      avisoTarde: state['aviso_tarde'] == true,
+      etapa1: false,
+      etapa2: false,
+      syncStatus: hasPending
+          ? MobileAuthLocalStore.asistenciaSyncLocal
+          : MobileAuthLocalStore.asistenciaSyncSynced,
+    );
+
+    return !hasPending;
   }
 
   Future<void> sendAsistenciaToggle({
@@ -80,7 +115,7 @@ class MobileAsistenciaService {
           },
           body: jsonEncode(payload),
         )
-        .timeout(const Duration(seconds: 8));
+        .timeout(const Duration(seconds: 15));
     if (res.statusCode < 200 || res.statusCode >= 300) {
       String message = 'Error al enviar asistencia';
       try {
@@ -118,7 +153,14 @@ class MobileAsistenciaService {
         await _localStore.dequeueAsistenciaField(field);
         ok++;
       } catch (_) {
-        // si falla, mantenemos pendiente
+        try {
+          final reconciled = await reconcileQueueWithServer();
+          if (reconciled) {
+            break;
+          }
+        } catch (_) {
+          // si falla, mantenemos pendiente
+        }
       }
     }
     return ok;
