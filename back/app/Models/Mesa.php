@@ -32,6 +32,7 @@ class Mesa extends Model implements Auditable
     public function recinto()   { return $this->belongsTo(Recinto::class); }
     public function delegado()  { return $this->belongsTo(User::class, 'delegado_id'); }
     public function delegadoSegundaVuelta() { return $this->belongsTo(User::class, 'delegado_segunda_vuelta_id'); }
+    public function asistencia() { return $this->hasOne(Asistencia::class, 'mesa_id'); }
     public function resultado() { return $this->hasOne(ResultadoMesa::class, 'mesa_id'); }
     public function resultadoSegundaVuelta() { return $this->hasOne(ResultadoMesaSegundaVuelta::class, 'mesa_id'); }
     public function aiControles() { return $this->hasMany(MesaAiControl::class, 'mesa_id'); }

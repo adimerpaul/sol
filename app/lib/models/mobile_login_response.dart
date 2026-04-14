@@ -88,6 +88,32 @@ class MobileDelegadoAsistencia {
   final bool avisoMediodia;
   final bool avisoTarde;
 
+  MobileDelegadoAsistencia copyWith({
+    int? mesaId,
+    int? numeroMesa,
+    String? recintoNombre,
+    int? delegadoId,
+    String? name,
+    String? celular,
+    bool? avisoAntes,
+    bool? avisoManana,
+    bool? avisoMediodia,
+    bool? avisoTarde,
+  }) {
+    return MobileDelegadoAsistencia(
+      mesaId: mesaId ?? this.mesaId,
+      numeroMesa: numeroMesa ?? this.numeroMesa,
+      recintoNombre: recintoNombre ?? this.recintoNombre,
+      delegadoId: delegadoId ?? this.delegadoId,
+      name: name ?? this.name,
+      celular: celular ?? this.celular,
+      avisoAntes: avisoAntes ?? this.avisoAntes,
+      avisoManana: avisoManana ?? this.avisoManana,
+      avisoMediodia: avisoMediodia ?? this.avisoMediodia,
+      avisoTarde: avisoTarde ?? this.avisoTarde,
+    );
+  }
+
   factory MobileDelegadoAsistencia.fromJson(Map<String, dynamic> json) {
     return MobileDelegadoAsistencia(
       mesaId: _asInt(json['mesa_id']),

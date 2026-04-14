@@ -115,6 +115,15 @@ class MobileAuthLocalStore {
         aviso_tarde INTEGER NOT NULL DEFAULT 0
       )
     ''');
+    await db.execute('''
+      CREATE TABLE asistencia_delegados_queue (
+        queue_key TEXT PRIMARY KEY,
+        mesa_id INTEGER NOT NULL,
+        field TEXT NOT NULL,
+        value INTEGER NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
 
     await db.execute('''
       CREATE TABLE auth_mesas (
@@ -243,6 +252,15 @@ class MobileAuthLocalStore {
         aviso_manana INTEGER NOT NULL DEFAULT 0,
         aviso_mediodia INTEGER NOT NULL DEFAULT 0,
         aviso_tarde INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS asistencia_delegados_queue (
+        queue_key TEXT PRIMARY KEY,
+        mesa_id INTEGER NOT NULL,
+        field TEXT NOT NULL,
+        value INTEGER NOT NULL,
+        updated_at TEXT NOT NULL
       )
     ''');
 
@@ -481,6 +499,7 @@ class MobileAuthLocalStore {
       batch.delete('auth_supervisores');
       batch.delete('auth_jefe_supervisor');
       batch.delete('auth_asistencia_delegados');
+      batch.delete('asistencia_delegados_queue');
       batch.delete('auth_mesas');
       batch.delete('auth_partidos');
 
@@ -1046,6 +1065,8 @@ class MobileAuthLocalStore {
     if (rowsMesas.isNotEmpty) return true;
     final rowsAsistencia = await db.query('asistencia_queue', limit: 1);
     if (rowsAsistencia.isNotEmpty) return true;
+    final rowsDelegados = await db.query('asistencia_delegados_queue', limit: 1);
+    if (rowsDelegados.isNotEmpty) return true;
     final rowsVotacion = await db.query(
       'votacion_draft',
       where: 'sync_status != ?',
@@ -1064,14 +1085,18 @@ class MobileAuthLocalStore {
     final rowsAsistencia = await db.rawQuery(
       'SELECT COUNT(*) AS c FROM asistencia_queue',
     );
+    final rowsDelegados = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM asistencia_delegados_queue',
+    );
     final rowsVotacion = await db.rawQuery(
       'SELECT COUNT(*) AS c FROM votacion_draft WHERE sync_status != ?',
       [votacionSyncSynced],
     );
     final cMesas = _asInt(rowsMesas.first['c']) ?? 0;
     final cAsistencia = _asInt(rowsAsistencia.first['c']) ?? 0;
+    final cDelegados = _asInt(rowsDelegados.first['c']) ?? 0;
     final cVotacion = _asInt(rowsVotacion.first['c']) ?? 0;
-    return cMesas + cAsistencia + cVotacion;
+    return cMesas + cAsistencia + cDelegados + cVotacion;
   }
 
   Future<void> clearSession() async {
@@ -1082,6 +1107,7 @@ class MobileAuthLocalStore {
       await txn.delete('auth_supervisores');
       await txn.delete('auth_jefe_supervisor');
       await txn.delete('auth_asistencia_delegados');
+      await txn.delete('asistencia_delegados_queue');
       await txn.delete('auth_mesas');
       await txn.delete('auth_partidos');
       await txn.delete('asistencia_state');
@@ -1195,7 +1221,62 @@ class MobileAuthLocalStore {
   Future<bool> hasAsistenciaPendiente() async {
     final db = await database;
     final rows = await db.query('asistencia_queue', limit: 1);
-    return rows.isNotEmpty;
+    if (rows.isNotEmpty) return true;
+    final delegadosRows = await db.query('asistencia_delegados_queue', limit: 1);
+    return delegadosRows.isNotEmpty;
+  }
+
+  Future<void> markDelegadoAsistenciaLocal({
+    required int mesaId,
+    required String field,
+    required bool value,
+  }) async {
+    final db = await database;
+    await db.update(
+      'auth_asistencia_delegados',
+      {field: value ? 1 : 0},
+      where: 'mesa_id = ?',
+      whereArgs: [mesaId],
+    );
+  }
+
+  Future<void> enqueueDelegadoAsistenciaChange({
+    required int mesaId,
+    required String field,
+    required bool value,
+  }) async {
+    final db = await database;
+    await db.insert('asistencia_delegados_queue', {
+      'queue_key': '$mesaId:$field',
+      'mesa_id': mesaId,
+      'field': field,
+      'value': value ? 1 : 0,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> dequeueDelegadoAsistenciaChange(int mesaId, String field) async {
+    final db = await database;
+    await db.delete(
+      'asistencia_delegados_queue',
+      where: 'queue_key = ?',
+      whereArgs: ['$mesaId:$field'],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> readDelegadoAsistenciaQueue() async {
+    final db = await database;
+    final rows = await db.query(
+      'asistencia_delegados_queue',
+      orderBy: 'updated_at ASC',
+    );
+    return rows.map((r) {
+      return {
+        'mesa_id': r['mesa_id'] as int?,
+        'field': r['field'] as String?,
+        'value': (r['value'] as int? ?? 0) == 1,
+      };
+    }).toList();
   }
 
   Future<List<MobileMesa>> readMesasLocal() async {

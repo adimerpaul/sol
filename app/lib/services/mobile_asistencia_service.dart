@@ -128,6 +128,45 @@ class MobileAsistenciaService {
     }
   }
 
+  Future<void> sendDelegadoAsistenciaToggle({
+    required int mesaId,
+    required String field,
+    required bool value,
+  }) async {
+    final token = await _localStore.readAuthToken();
+    if (token == null || token.isEmpty) {
+      throw StateError('Sin token');
+    }
+
+    final uri = Uri.parse(_buildUrl('asistencia/delegados/update'));
+    final res = await _client
+        .post(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'mesa_id': mesaId,
+            'field': field,
+            'value': value,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      String message = 'Error al enviar asistencia del delegado';
+      try {
+        final parsed = jsonDecode(res.body);
+        if (parsed is Map && parsed['message'] != null) {
+          message = parsed['message'].toString();
+        }
+      } catch (_) {}
+      throw StateError(message);
+    }
+  }
+
   Future<int> flushQueue() async {
     final queue = await _localStore.readAsistenciaQueue();
     var ok = 0;
@@ -163,6 +202,27 @@ class MobileAsistenciaService {
         }
       }
     }
+
+    final delegadosQueue = await _localStore.readDelegadoAsistenciaQueue();
+    for (final item in delegadosQueue) {
+      final mesaId = item['mesa_id'] as int?;
+      final field = item['field']?.toString() ?? '';
+      final value = item['value'] == true;
+      if (mesaId == null || field.isEmpty) continue;
+
+      try {
+        await sendDelegadoAsistenciaToggle(
+          mesaId: mesaId,
+          field: field,
+          value: value,
+        );
+        await _localStore.dequeueDelegadoAsistenciaChange(mesaId, field);
+        ok++;
+      } catch (_) {
+        // mantenemos pendiente
+      }
+    }
+
     return ok;
   }
 }

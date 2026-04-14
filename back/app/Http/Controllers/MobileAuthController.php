@@ -114,7 +114,7 @@ class MobileAuthController extends Controller
                 'mesas:id,recinto_id,numero_mesa,delegado_id',
                 'mesas.recinto:id,nombre',
                 'mesas.delegado:id,name,nombres,apellido_paterno,apellido_materno,username,celular',
-                'mesas.resultado:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,aviso_tarde',
+                'mesas.asistencia:id,mesa_id,aviso_antes,aviso_manana,aviso_mediodia,aviso_tarde',
             ])
             ->get();
 
@@ -124,7 +124,7 @@ class MobileAuthController extends Controller
                     ->filter(fn ($mesa) => !empty($mesa->delegado))
                     ->map(function ($mesa) {
                         $delegado = $mesa->delegado;
-                        $resultado = $mesa->resultado;
+                        $asistencia = $mesa->asistencia;
                         $name = $delegado->name
                             ?? trim(
                                 ($delegado->nombres ?? '') . ' ' .
@@ -139,10 +139,10 @@ class MobileAuthController extends Controller
                             'delegado_id' => $delegado->id,
                             'name' => trim((string) $name),
                             'celular' => $delegado->celular,
-                            'aviso_antes' => (bool) ($resultado->aviso_antes ?? false),
-                            'aviso_manana' => (bool) ($resultado->aviso_manana ?? false),
-                            'aviso_mediodia' => (bool) ($resultado->aviso_mediodia ?? false),
-                            'aviso_tarde' => (bool) ($resultado->aviso_tarde ?? false),
+                            'aviso_antes' => (bool) ($asistencia->aviso_antes ?? false),
+                            'aviso_manana' => (bool) ($asistencia->aviso_manana ?? false),
+                            'aviso_mediodia' => (bool) ($asistencia->aviso_mediodia ?? false),
+                            'aviso_tarde' => (bool) ($asistencia->aviso_tarde ?? false),
                         ];
                     });
             })

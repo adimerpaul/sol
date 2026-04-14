@@ -325,6 +325,78 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     });
   }
 
+  Future<void> _markDelegadoAsistencia(
+    MobileDelegadoAsistencia item,
+    String field,
+  ) async {
+    final mesaId = item.mesaId;
+    if (mesaId == null) {
+      showError(context, 'Este delegado no tiene mesa asignada.');
+      return;
+    }
+
+    final alreadyChecked = switch (field) {
+      'aviso_manana' => item.avisoManana,
+      'aviso_mediodia' => item.avisoMediodia,
+      'aviso_tarde' => item.avisoTarde,
+      _ => false,
+    };
+    if (alreadyChecked) return;
+
+    final ok = await _confirmIrreversible();
+    if (ok != true) return;
+
+    await _localStore.markDelegadoAsistenciaLocal(
+      mesaId: mesaId,
+      field: field,
+      value: true,
+    );
+    await _localStore.enqueueDelegadoAsistenciaChange(
+      mesaId: mesaId,
+      field: field,
+      value: true,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _hasPending = true;
+      _updateDelegadoLocalState(mesaId, field);
+    });
+
+    try {
+      await _service.sendDelegadoAsistenciaToggle(
+        mesaId: mesaId,
+        field: field,
+        value: true,
+      );
+      await _localStore.dequeueDelegadoAsistenciaChange(mesaId, field);
+      _hasPending = await _localStore.hasAsistenciaPendiente();
+      if (!mounted) return;
+      setState(() {});
+      showSuccess(context, 'Asistencia del delegado registrada');
+    } catch (_) {
+      if (!mounted) return;
+      showError(context, 'Sin conexion. Quedo pendiente para sincronizar.');
+    }
+  }
+
+  void _updateDelegadoLocalState(int mesaId, String field) {
+    MobileDelegadoAsistencia updateItem(MobileDelegadoAsistencia item) {
+      if (item.mesaId != mesaId) {
+        return item;
+      }
+
+      return item.copyWith(
+        avisoManana: field == 'aviso_manana' ? true : item.avisoManana,
+        avisoMediodia: field == 'aviso_mediodia' ? true : item.avisoMediodia,
+        avisoTarde: field == 'aviso_tarde' ? true : item.avisoTarde,
+      );
+    }
+
+    _delegadosTitulares = _delegadosTitulares.map(updateItem).toList();
+    _delegadosSuplentes = _delegadosSuplentes.map(updateItem).toList();
+  }
+
   Future<String?> _pickHoraApertura() async {
     final picked = await showTimePicker(
       context: context,
@@ -549,6 +621,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
           title: 'Delegados De Mesa Suplentes',
           items: _delegadosSuplentes,
           emptyText: 'No hay delegados suplentes para mostrar.',
+          showChecks: false,
         ),
       ],
     );
@@ -558,6 +631,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     required String title,
     required List<MobileDelegadoAsistencia> items,
     required String emptyText,
+    bool showChecks = true,
   }) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -591,13 +665,19 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
               style: const TextStyle(fontSize: 13, color: Color(0xFF7B6F87)),
             )
           else
-            ...items.map(_buildDelegadoCard),
+            ...items.map(
+              (item) => _buildDelegadoCard(item, showChecks: showChecks),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildDelegadoCard(MobileDelegadoAsistencia item) {
+  Widget _buildDelegadoCard(
+    MobileDelegadoAsistencia item, {
+    bool showChecks = true,
+  }) {
+    final canMark = showChecks && item.mesaId != null;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -658,23 +738,45 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildCheckChip('Mañana', item.avisoManana),
-              _buildCheckChip('Mediodía', item.avisoMediodia),
-              _buildCheckChip('Tarde', item.avisoTarde),
-            ],
-          ),
+          if (showChecks) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildCheckChip(
+                  'Mañana',
+                  item.avisoManana,
+                  enabled: canMark && !item.avisoManana,
+                  onTap: () => _markDelegadoAsistencia(item, 'aviso_manana'),
+                ),
+                _buildCheckChip(
+                  'Mediodía',
+                  item.avisoMediodia,
+                  enabled: canMark && !item.avisoMediodia,
+                  onTap: () => _markDelegadoAsistencia(item, 'aviso_mediodia'),
+                ),
+                _buildCheckChip(
+                  'Tarde',
+                  item.avisoTarde,
+                  enabled: canMark && !item.avisoTarde,
+                  onTap: () => _markDelegadoAsistencia(item, 'aviso_tarde'),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildCheckChip(String label, bool checked) {
-    return Container(
+  Widget _buildCheckChip(
+    String label,
+    bool checked, {
+    bool enabled = false,
+    VoidCallback? onTap,
+  }) {
+    final content = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: checked ? const Color(0xFFE4F7EA) : const Color(0xFFF1EDF5),
@@ -701,6 +803,19 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
             ),
           ),
         ],
+      ),
+    );
+
+    if (!enabled || onTap == null) {
+      return content;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: content,
       ),
     );
   }
