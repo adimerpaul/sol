@@ -24,6 +24,8 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   bool _syncing = false;
   bool _resolvingLocation = false;
   bool _hasPending = false;
+  bool _canUseAsistencia = true;
+  String? _asistenciaInfoMessage;
 
   bool _avisoAntes = false;
   bool _avisoManana = false;
@@ -38,9 +40,6 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   void initState() {
     super.initState();
     _init();
-    _autoSyncTimer = Timer.periodic(const Duration(seconds: 25), (_) {
-      _syncPending(silent: true);
-    });
   }
 
   @override
@@ -52,15 +51,39 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   Future<void> _init() async {
     setState(() => _loading = true);
     try {
+      final profile = await _localStore.readProfileData();
+      final mesas = await _localStore.readMesasLocal();
+      final hasMesas = mesas.isNotEmpty;
+      final role = (profile?.user.role ?? '').trim();
+
+      _canUseAsistencia = hasMesas;
+      if (!hasMesas) {
+        _asistenciaInfoMessage = role.isEmpty
+            ? 'No tiene mesas asignadas. La asistencia solo aplica a delegados con mesa.'
+            : 'Usted es $role y no tiene mesas asignadas. La asistencia solo aplica a delegados con mesa.';
+        _hasPending = false;
+      } else {
+        _asistenciaInfoMessage = null;
+        _autoSyncTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+          _syncPending(silent: true);
+        });
+      }
+
       final local = await _localStore.readAsistenciaState();
       _applyState(local);
-      _hasPending = await _localStore.hasAsistenciaPendiente();
+      if (_canUseAsistencia) {
+        _hasPending = await _localStore.hasAsistenciaPendiente();
+      }
     } catch (_) {
       // si falla algo local, dejamos defaults
     }
 
     if (mounted) {
       setState(() => _loading = false);
+    }
+
+    if (!_canUseAsistencia) {
+      return;
     }
 
     if (_hasPending) {
@@ -111,6 +134,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     required String field,
     required bool value,
   }) async {
+    if (!_canUseAsistencia) return;
     if (_lockedFields.contains(field)) return;
     if (!value) return;
 
@@ -316,6 +340,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   }
 
   Future<void> _syncPending({bool silent = false}) async {
+    if (!_canUseAsistencia) return;
     if (_syncing) return;
     setState(() => _syncing = true);
     try {
@@ -358,6 +383,53 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!_canUseAsistencia) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFFB74D)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Color(0xFFEF6C00)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Asistencia no disponible',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF8A4B00),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  _asistenciaInfoMessage ??
+                      'No tiene mesas asignadas. La asistencia no aplica para esta cuenta.',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF8A4B00),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
     }
 
     return ListView(
