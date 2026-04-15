@@ -111,6 +111,20 @@
           @update:model-value="onRecintoFilterChange"
         />
 
+        <q-select
+          v-model="selectedMesaStatus"
+          label="Estado delegado"
+          dense
+          outlined
+          clearable
+          emit-value
+          map-options
+          :options="mesaStatusOptions"
+          style="width: 220px"
+          class="q-mr-sm"
+          @update:model-value="onMesaStatusChange"
+        />
+
         <q-input v-model="filter" label="Buscar" dense outlined style="width: 260px">
           <template v-slot:append><q-icon name="search"/></template>
         </q-input>
@@ -169,6 +183,26 @@
       <template v-slot:body-cell-role="props">
         <q-td :props="props">
           <q-chip :label="props.row.role" :color="$filters.color(props.row.role)" text-color="white" dense size="14px"/>
+        </q-td>
+      </template>
+
+      <template v-slot:body-cell-mesa_status="props">
+        <q-td :props="props">
+          <q-chip
+            v-if="props.row.mesa_status"
+            :color="mesaStatusColor(props.row.mesa_status)"
+            text-color="white"
+            dense
+            size="13px"
+          >
+            <q-icon
+              :name="mesaStatusIcon(props.row.mesa_status)"
+              size="14px"
+              class="q-mr-xs"
+            />
+            {{ props.row.mesa_status }}
+          </q-chip>
+          <span v-else class="text-grey-5">—</span>
         </q-td>
       </template>
 
@@ -547,6 +581,11 @@ export default {
       selectedRecintoId: null,
       filterRecintoOptions: [],
       loadingFilterRecintos: false,
+      selectedMesaStatus: null,
+      mesaStatusOptions: [
+        { label: 'Asignadas', value: 'asignado' },
+        { label: 'Pendiente', value: 'pendiente' }
+      ],
       pagination: {
         sortBy: 'id',
         descending: true,
@@ -580,6 +619,7 @@ export default {
         { name: 'recinto_nombre', label: 'Recinto', align: 'left', field: row => row.recinto_nombre || row.recinto?.nombre || '-' },
         // { name: 'avatar', label: 'Avatar', align: 'left', field: row => row.avatar },
         { name: 'role', label: 'Rol', align: 'left', field: 'role' },
+        { name: 'mesa_status', label: 'Estado Mesa', align: 'center', field: 'mesa_status' },
         // { name: 'ci_files', label: 'Docs', align: 'left', field: row => row.id },
         {
           name: 'permissions',
@@ -638,6 +678,24 @@ export default {
   },
 
   methods: {
+    mesaStatusColor (status) {
+      const map = {
+        'Asignado': 'positive',
+        'Pendiente': 'orange',
+        'Sin mesa': 'negative'
+      }
+      return map[status] || 'grey-6'
+    },
+
+    mesaStatusIcon (status) {
+      const map = {
+        'Asignado': 'check_circle',
+        'Pendiente': 'schedule',
+        'Sin mesa': 'cancel'
+      }
+      return map[status] || 'help_outline'
+    },
+
     buildRecintoLabel (recinto = {}) {
       const ubicacion = [
         recinto?.localidad?.nombre,
@@ -695,7 +753,8 @@ export default {
         sortBy: pagination.sortBy || 'id',
         descending: pagination.descending,
         search: this.filter || undefined,
-        recinto_id: this.selectedRecintoId || undefined
+        recinto_id: this.selectedRecintoId || undefined,
+        mesa_status: this.selectedMesaStatus || undefined
       }
     },
 
@@ -735,6 +794,10 @@ export default {
     },
 
     onRecintoFilterChange () {
+      this.usersGet({ page: 1 })
+    },
+
+    onMesaStatusChange () {
       this.usersGet({ page: 1 })
     },
 
@@ -939,7 +1002,12 @@ export default {
     async printUsers(type) {
       this.loading = true
       try {
+        const params = {}
+        if (this.selectedRecintoId) params.recinto_id = this.selectedRecintoId
+        if (this.selectedMesaStatus) params.mesa_status = this.selectedMesaStatus
+        if (this.filter) params.search = this.filter
         const res = await this.$axios.get(`users/print/${type}`, {
+          params,
           responseType: 'blob'
         })
         const blob = new Blob([res.data], { type: 'application/pdf' })
@@ -1007,6 +1075,8 @@ export default {
           Celular: u.celular ?? '',
           Bloque: u.bloque ?? '',
           Rol: u.role ?? '',
+          'Estado Mesa': u.mesa_status || (u.role === 'Delegado de Mesa' ? 'Sin info' : ''),
+          'Mesas asignadas': u.mesas_asignadas_count ?? '',
           'Registrado por': u.creator_name || u.creator_username || '',
           Recinto: u.recinto_nombre || u.recinto?.nombre || ''
         }))
@@ -1025,6 +1095,8 @@ export default {
             { label: 'Celular', value: 'Celular' },
             { label: 'Bloque', value: 'Bloque' },
             { label: 'Rol', value: 'Rol' },
+            { label: 'Estado Mesa', value: 'Estado Mesa' },
+            { label: 'Mesas asignadas', value: 'Mesas asignadas' },
             { label: 'Registrado por', value: 'Registrado por' },
             { label: 'Recinto', value: 'Recinto' }
           ],
@@ -1084,12 +1156,14 @@ export default {
     },
 
     async fetchUsersForExport (type) {
+      const isDelegados = String(type || '').toLowerCase() === 'delegados'
       const res = await this.$axios.get('users', {
         params: {
-          sortBy: this.pagination.sortBy || 'id',
-          descending: this.pagination.descending,
+          sortBy: isDelegados ? 'recinto_nombre' : (this.pagination.sortBy || 'id'),
+          descending: isDelegados ? false : this.pagination.descending,
           search: this.filter || undefined,
           recinto_id: this.selectedRecintoId || undefined,
+          mesa_status: this.selectedMesaStatus || undefined,
           paginate: false
         }
       })

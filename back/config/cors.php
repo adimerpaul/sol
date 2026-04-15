@@ -20,6 +20,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
+        '*',
         'http://localhost:9000',
         'http://localhost',
         'https://jacha.tuprogam.com',

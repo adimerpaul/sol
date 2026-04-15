@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 class ReportesController extends Controller
 {
     private int $MUNICIPIO_ID = 191;
+    private int $DEPARTAMENTO_ID = 5;
 
     private array $JEFE_ROLES = [
         'Jefe de recinto',
@@ -72,6 +73,16 @@ class ReportesController extends Controller
     public function mesasLibres(Request $request)
     {
         return response()->json($this->buildMesasLibresRows($this->resolveFilters($request)));
+    }
+
+    public function provinciasSinDelegado(Request $request)
+    {
+        return response()->json($this->buildProvinciasSinDelegadoRows($this->resolveFilters($request)));
+    }
+
+    public function provinciasConDelegado(Request $request)
+    {
+        return response()->json($this->buildProvinciasConDelegadoRows($this->resolveFilters($request)));
     }
 
     public function exportDelegadosAsignados(Request $request)
@@ -158,6 +169,26 @@ class ReportesController extends Controller
         );
     }
 
+    public function exportProvinciasSinDelegado(Request $request)
+    {
+        return $this->streamCsv(
+            $this->buildProvinciasSinDelegadoRows($this->resolveFilters($request)),
+            'provincias_sin_delegado.csv',
+            ['Provincia', 'Municipio', 'Recinto', 'Numero de Mesa'],
+            ['provincia', 'municipio', 'recinto', 'numero_mesa']
+        );
+    }
+
+    public function exportProvinciasConDelegado(Request $request)
+    {
+        return $this->streamCsv(
+            $this->buildProvinciasConDelegadoRows($this->resolveFilters($request)),
+            'provincias_con_delegado.csv',
+            ['Provincia', 'Municipio', 'Recinto', 'Numero de Mesa', 'Delegado'],
+            ['provincia', 'municipio', 'recinto', 'numero_mesa', 'delegado']
+        );
+    }
+
     private function buildDataPayload(array $filters): array
     {
         return [
@@ -167,6 +198,8 @@ class ReportesController extends Controller
             'jef_libres' => $this->buildJefesLibresRows($filters),
             'rec_sin_jefe' => $this->buildRecintosSinJefeRows($filters),
             'mesas_libres' => $this->buildMesasLibresRows($filters),
+            'prov_sin_delegado' => $this->buildProvinciasSinDelegadoRows($filters),
+            'prov_con_delegado' => $this->buildProvinciasConDelegadoRows($filters),
         ];
     }
 
@@ -198,6 +231,16 @@ class ReportesController extends Controller
     private function buildMesasLibresRows(array $filters): array
     {
         return $this->mesasLibresQuery($filters)->get()->map(fn ($row) => (array) $row)->all();
+    }
+
+    private function buildProvinciasSinDelegadoRows(array $filters): array
+    {
+        return $this->provinciasSinDelegadoQuery($filters)->get()->map(fn ($row) => (array) $row)->all();
+    }
+
+    private function buildProvinciasConDelegadoRows(array $filters): array
+    {
+        return $this->provinciasConDelegadoQuery($filters)->get()->map(fn ($row) => (array) $row)->all();
     }
 
     private function delegadosAsignadosQuery(array $filters): Builder
@@ -399,6 +442,62 @@ class ReportesController extends Controller
         return $query
             ->orderBy('r.nombre')
             ->orderBy('m.numero_mesa');
+    }
+
+    private function provinciasSinDelegadoQuery(array $filters): Builder
+    {
+        $query = DB::table('departamentos as d')
+            ->join('provincias as p', 'd.id', '=', 'p.departamento_id')
+            ->join('municipios as mu', 'p.id', '=', 'mu.provincia_id')
+            ->join('recintos as r', 'mu.id', '=', 'r.municipio_id')
+            ->join('mesas as me', 'r.id', '=', 'me.recinto_id')
+            ->select(
+                'p.nombre as provincia',
+                'mu.nombre as municipio',
+                'r.nombre as recinto',
+                'me.numero_mesa as numero_mesa'
+            )
+            ->where('d.id', $this->DEPARTAMENTO_ID)
+            ->where('mu.id', '!=', $this->MUNICIPIO_ID)
+            ->whereNull('me.delegado_id')
+            ->whereNull('me.deleted_at');
+
+        $this->applyRecintoFilter($query, $filters, 'r.id');
+
+        return $query
+            ->orderBy('p.nombre')
+            ->orderBy('mu.nombre')
+            ->orderBy('r.nombre')
+            ->orderBy('me.numero_mesa');
+    }
+
+    private function provinciasConDelegadoQuery(array $filters): Builder
+    {
+        $query = DB::table('departamentos as d')
+            ->join('provincias as p', 'd.id', '=', 'p.departamento_id')
+            ->join('municipios as mu', 'p.id', '=', 'mu.provincia_id')
+            ->join('recintos as r', 'mu.id', '=', 'r.municipio_id')
+            ->join('mesas as me', 'r.id', '=', 'me.recinto_id')
+            ->leftJoin('users as u', 'me.delegado_id', '=', 'u.id')
+            ->select(
+                'p.nombre as provincia',
+                'mu.nombre as municipio',
+                'r.nombre as recinto',
+                'me.numero_mesa as numero_mesa',
+                'u.name as delegado'
+            )
+            ->where('d.id', $this->DEPARTAMENTO_ID)
+            ->where('mu.id', '!=', $this->MUNICIPIO_ID)
+            ->whereNotNull('me.delegado_id')
+            ->whereNull('me.deleted_at');
+
+        $this->applyRecintoFilter($query, $filters, 'r.id');
+
+        return $query
+            ->orderBy('p.nombre')
+            ->orderBy('mu.nombre')
+            ->orderBy('r.nombre')
+            ->orderBy('me.numero_mesa');
     }
 
     private function resolveFilters(Request $request): array

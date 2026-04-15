@@ -135,6 +135,11 @@ class User extends Authenticatable implements Auditable
         return $this->belongsTo(Recinto::class, 'recinto_id');
     }
 
+    public function mesasComoDelegado()
+    {
+        return $this->hasMany(Mesa::class, 'delegado_id');
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');

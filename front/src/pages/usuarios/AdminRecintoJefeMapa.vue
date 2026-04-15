@@ -45,6 +45,39 @@
                 </q-list>
               </q-btn-dropdown>
 
+              <q-btn-dropdown
+                color="green-8"
+                icon="table_view"
+                label="Excel"
+                no-caps
+                :disable="loading"
+                :loading="exportingExcel"
+              >
+                <q-list>
+                  <q-item clickable v-close-popup @click="exportExcel('mesas-sin-delegado')">
+                    <q-item-section avatar><q-icon name="groups" color="green-8" /></q-item-section>
+                    <q-item-section>
+                      <q-item-label>Mesas sin delegado</q-item-label>
+                      <q-item-label caption>Incluye jefe de recinto y celulares</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="exportExcel('recintos-sin-jefe')">
+                    <q-item-section avatar><q-icon name="domain_disabled" color="green-8" /></q-item-section>
+                    <q-item-section>
+                      <q-item-label>Recintos sin jefe</q-item-label>
+                      <q-item-label caption>Resumen por recinto y mesas faltantes</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="exportExcel('jefes-mesas-delegados')">
+                    <q-item-section avatar><q-icon name="badge" color="green-8" /></q-item-section>
+                    <q-item-section>
+                      <q-item-label>Jefes, mesas y delegados</q-item-label>
+                      <q-item-label caption>Formato agrupado por jefe de recinto</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
+
               <q-btn
                 color="positive"
                 icon="person_add"
@@ -545,6 +578,7 @@ export default {
       focusRecinto: null,
       loading: false,
       printing: false,
+      exportingExcel: false,
       delegadoDialog: false,
       savingDelegado: false,
       delegadoForm: this.emptyDelegadoForm(),
@@ -973,6 +1007,158 @@ export default {
         this.$alert?.error(e.response?.data?.message || 'No se pudo crear el delegado')
       } finally {
         this.savingDelegado = false
+      }
+    },
+
+    async exportExcel (type) {
+      this.exportingExcel = true
+      try {
+        const { Excel } = await import('src/addons/Excel')
+        let data = []
+        let title = ''
+
+        if (type === 'mesas-sin-delegado') {
+          title = 'Mesas_sin_delegado'
+          const content = []
+          this.recintos.forEach(recinto => {
+            const jefes = recinto.jefe || []
+            const jefeNombres = jefes.map(j => j.name).filter(Boolean).join(', ') || 'Sin jefe asignado'
+            const jefeCelulares = jefes.map(j => j.celular).filter(Boolean).join(', ') || 'Sin celular'
+            
+            const mesas = recinto.mesas || []
+            mesas.forEach(mesa => {
+              if (!mesa.delegado_id) {
+                content.push({
+                  Recinto: recinto.nombre,
+                  Provincia: recinto.provincia_nombre,
+                  Municipio: recinto.municipio_nombre,
+                  Localidad: recinto.localidad_nombre,
+                  'Mesa número': mesa.numero_mesa,
+                  Estado: mesa.estado || 'PENDIENTE',
+                  Jefes: jefeNombres,
+                  Celulares: jefeCelulares
+                })
+              }
+            })
+          })
+          data = [{
+            sheet: 'Mesas Sin Delegado',
+            columns: [
+              { label: 'Provincia', value: 'Provincia' },
+              { label: 'Municipio', value: 'Municipio' },
+              { label: 'Localidad', value: 'Localidad' },
+              { label: 'Recinto', value: 'Recinto' },
+              { label: 'Mesa número', value: 'Mesa número' },
+              { label: 'Estado', value: 'Estado' },
+              { label: 'Jefes', value: 'Jefes' },
+              { label: 'Celulares', value: 'Celulares' }
+            ],
+            content
+          }]
+        } else if (type === 'recintos-sin-jefe') {
+          title = 'Recintos_sin_jefe'
+          const content = this.recintos
+            .filter(r => !r.jefe?.length)
+            .map(r => ({
+              Recinto: r.nombre,
+              Provincia: r.provincia_nombre,
+              Municipio: r.municipio_nombre,
+              Localidad: r.localidad_nombre,
+              'Mesas totales': r.mesas_total,
+              'Mesas asignadas': r.mesas_asignadas,
+              'Mesas faltantes': r.mesas_faltan
+            }))
+          data = [{
+            sheet: 'Recintos Sin Jefe',
+            columns: [
+              { label: 'Provincia', value: 'Provincia' },
+              { label: 'Municipio', value: 'Municipio' },
+              { label: 'Localidad', value: 'Localidad' },
+              { label: 'Recinto', value: 'Recinto' },
+              { label: 'Mesas totales', value: 'Mesas totales' },
+              { label: 'Mesas asignadas', value: 'Mesas asignadas' },
+              { label: 'Mesas faltantes', value: 'Mesas faltantes' }
+            ],
+            content
+          }]
+        } else if (type === 'jefes-mesas-delegados') {
+          title = 'Jefes_mesas_delegados'
+          const content = []
+          this.recintos.forEach(recinto => {
+            const jefes = recinto.jefe?.length ? recinto.jefe : [{ name: 'Sin jefe', celular: '', super_jefe: false }]
+            
+            jefes.forEach(jefe => {
+              const mesas = recinto.mesas || []
+              if (mesas.length === 0) {
+                content.push({
+                  'Jefe Nombre': jefe.name,
+                  'Jefe Celular': jefe.celular,
+                  'Super Jefe': jefe.super_jefe ? 'Sí' : 'No',
+                  Recinto: recinto.nombre,
+                  Provincia: recinto.provincia_nombre,
+                  Municipio: recinto.municipio_nombre,
+                  Localidad: recinto.localidad_nombre,
+                  'Mesa Número': '',
+                  'Delegado Nombre': '',
+                  'Delegado Celular': '',
+                  'Estado Mesa': ''
+                })
+              } else {
+                mesas.forEach(mesa => {
+                  content.push({
+                    'Jefe Nombre': jefe.name,
+                    'Jefe Celular': jefe.celular,
+                    'Super Jefe': jefe.super_jefe ? 'Sí' : 'No',
+                    Recinto: recinto.nombre,
+                    Provincia: recinto.provincia_nombre,
+                    Municipio: recinto.municipio_nombre,
+                    Localidad: recinto.localidad_nombre,
+                    'Mesa Número': mesa.numero_mesa,
+                    'Delegado Nombre': mesa.delegado ? mesa.delegado.name : 'Sin delegado',
+                    'Delegado Celular': mesa.delegado ? mesa.delegado.celular : '',
+                    'Estado Mesa': mesa.estado || 'PENDIENTE'
+                  })
+                })
+              }
+            })
+          })
+          
+          content.sort((a, b) => {
+            if (a['Jefe Nombre'] < b['Jefe Nombre']) return -1;
+            if (a['Jefe Nombre'] > b['Jefe Nombre']) return 1;
+            return 0;
+          });
+
+          data = [{
+            sheet: 'Jefes y Mesas',
+            columns: [
+              { label: 'Jefe Nombre', value: 'Jefe Nombre' },
+              { label: 'Jefe Celular', value: 'Jefe Celular' },
+              { label: 'Super Jefe', value: 'Super Jefe' },
+              { label: 'Provincia', value: 'Provincia' },
+              { label: 'Municipio', value: 'Municipio' },
+              { label: 'Localidad', value: 'Localidad' },
+              { label: 'Recinto', value: 'Recinto' },
+              { label: 'Mesa Número', value: 'Mesa Número' },
+              { label: 'Delegado Nombre', value: 'Delegado Nombre' },
+              { label: 'Delegado Celular', value: 'Delegado Celular' },
+              { label: 'Estado Mesa', value: 'Estado Mesa' }
+            ],
+            content
+          }]
+        }
+
+        if (data.length > 0 && data[0].content.length > 0) {
+          Excel.export(data, `${title}_${new Date().toISOString().slice(0, 10)}`)
+          this.$alert.success('Excel generado correctamente')
+        } else {
+          this.$alert.info('No hay información para exportar con los filtros actuales')
+        }
+      } catch (e) {
+        console.error(e)
+        this.$alert.error('No se pudo generar el Excel')
+      } finally {
+        this.exportingExcel = false
       }
     },
 

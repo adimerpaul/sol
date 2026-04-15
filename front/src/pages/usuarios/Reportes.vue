@@ -156,6 +156,22 @@
             <q-badge color="brown" rounded>{{ mesasLibres.length }}</q-badge>
           </div>
         </q-tab>
+
+        <q-tab name="prov_sin_delegado" class="rounded-tab">
+          <div class="row items-center no-wrap q-gutter-xs">
+            <q-icon name="wrong_location" />
+            <span>Provincias - Sin delegado</span>
+            <q-badge color="red-8" rounded>{{ provSinDelegado.length }}</q-badge>
+          </div>
+        </q-tab>
+
+        <q-tab name="prov_con_delegado" class="rounded-tab">
+          <div class="row items-center no-wrap q-gutter-xs">
+            <q-icon name="where_to_vote" />
+            <span>Provincias - Con delegado</span>
+            <q-badge color="green-8" rounded>{{ provConDelegado.length }}</q-badge>
+          </div>
+        </q-tab>
       </q-tabs>
 
       <q-separator />
@@ -292,6 +308,50 @@
             />
           </PanelReporte>
         </q-tab-panel>
+
+        <q-tab-panel name="prov_sin_delegado" class="q-pa-none">
+          <PanelReporte
+            titulo="Provincias - Mesas sin delegado"
+            icono="wrong_location"
+            color="red-8"
+            :loading="loading"
+            :loading-export="loadingExport.prov_sin_delegado"
+            @export="exportar('prov_sin_delegado')"
+          >
+            <q-table
+              flat
+              dense
+              :rows="provSinDelegado"
+              :columns="colsProvSinDelegado"
+              row-key="prov_key"
+              :pagination="pagination"
+              no-data-label="Sin datos"
+              rows-per-page-label="Filas"
+            />
+          </PanelReporte>
+        </q-tab-panel>
+
+        <q-tab-panel name="prov_con_delegado" class="q-pa-none">
+          <PanelReporte
+            titulo="Provincias - Mesas con delegado asignado"
+            icono="where_to_vote"
+            color="green-8"
+            :loading="loading"
+            :loading-export="loadingExport.prov_con_delegado"
+            @export="exportar('prov_con_delegado')"
+          >
+            <q-table
+              flat
+              dense
+              :rows="provConDelegado"
+              :columns="colsProvConDelegado"
+              row-key="prov_key"
+              :pagination="pagination"
+              no-data-label="Sin datos"
+              rows-per-page-label="Filas"
+            />
+          </PanelReporte>
+        </q-tab-panel>
       </q-tab-panels>
     </q-card>
   </q-page>
@@ -350,6 +410,8 @@ const loadingExport = ref({
   jef_libres: false,
   rec_sin_jefe: false,
   mesas_libres: false,
+  prov_sin_delegado: false,
+  prov_con_delegado: false,
 })
 
 const filtros = reactive({
@@ -379,6 +441,8 @@ const delegadosLib = ref([])
 const jefesLib = ref([])
 const recintos = ref([])
 const mesasLibres = ref([])
+const provSinDelegado = ref([])
+const provConDelegado = ref([])
 
 const pagination = { rowsPerPage: 15 }
 
@@ -440,6 +504,21 @@ const colsMesasLibres = [
   { name: 'estado', label: 'Estado', field: 'estado', align: 'center', sortable: true },
 ]
 
+const colsProvSinDelegado = [
+  { name: 'provincia', label: 'Provincia', field: 'provincia', align: 'left', sortable: true },
+  { name: 'municipio', label: 'Municipio', field: 'municipio', align: 'left', sortable: true },
+  { name: 'recinto', label: 'Recinto', field: 'recinto', align: 'left', sortable: true },
+  { name: 'numero_mesa', label: 'Mesa', field: 'numero_mesa', align: 'center', sortable: true },
+]
+
+const colsProvConDelegado = [
+  { name: 'provincia', label: 'Provincia', field: 'provincia', align: 'left', sortable: true },
+  { name: 'municipio', label: 'Municipio', field: 'municipio', align: 'left', sortable: true },
+  { name: 'recinto', label: 'Recinto', field: 'recinto', align: 'left', sortable: true },
+  { name: 'numero_mesa', label: 'Mesa', field: 'numero_mesa', align: 'center', sortable: true },
+  { name: 'delegado', label: 'Delegado', field: 'delegado', align: 'left', sortable: true },
+]
+
 function buildParams () {
   const params = {}
 
@@ -488,6 +567,8 @@ async function cargar () {
     jefesLib.value = data.data?.jef_libres || []
     recintos.value = data.data?.rec_sin_jefe || []
     mesasLibres.value = data.data?.mesas_libres || []
+    provSinDelegado.value = data.data?.prov_sin_delegado || []
+    provConDelegado.value = data.data?.prov_con_delegado || []
   } catch {
     proxy.$alert.error('Error al cargar los reportes.')
   } finally {
@@ -503,38 +584,159 @@ function limpiarFiltros () {
   cargar()
 }
 
-const exportEndpoints = {
-  del_asignados: '/reportes/export/delegados-asignados',
-  jef_asignados: '/reportes/export/jefes-asignados',
-  del_libres: '/reportes/export/delegados-libres',
-  jef_libres: '/reportes/export/jefes-libres',
-  rec_sin_jefe: '/reportes/export/recintos-sin-jefe',
-  mesas_libres: '/reportes/export/mesas-libres',
-}
-
-const exportFilenames = {
-  del_asignados: 'delegados_asignados.csv',
-  jef_asignados: 'jefes_asignados.csv',
-  del_libres: 'delegados_libres.csv',
-  jef_libres: 'jefes_libres.csv',
-  rec_sin_jefe: 'recintos_sin_jefe.csv',
-  mesas_libres: 'mesas_libres.csv',
+const exportConfigs = {
+  del_asignados: {
+    data: () => delegadosAsig.value,
+    filename: 'delegados_asignados',
+    sheet: 'Delegados Asignados',
+    columns: [
+      { label: 'Nro', value: 'nro_recinto' },
+      { label: 'Recinto', value: 'recinto' },
+      { label: 'Mesa', value: 'numero_mesa' },
+      { label: 'Nombres', value: 'nombres' },
+      { label: 'Ap. Paterno', value: 'apellido_paterno' },
+      { label: 'Ap. Materno', value: 'apellido_materno' },
+      { label: 'CI', value: 'ci' },
+      { label: 'Fecha Nac.', value: 'fecha_nacimiento' },
+      { label: 'Celular', value: 'celular' },
+      { label: 'Bloque', value: 'bloque' },
+      { label: 'Reg. por', value: 'registrado_por' },
+      { label: 'Reg. en', value: 'registrado_en_fecha' },
+    ],
+  },
+  jef_asignados: {
+    data: () => jefesAsig.value,
+    filename: 'jefes_asignados',
+    sheet: 'Jefes Asignados',
+    columns: [
+      { label: 'Nro', value: 'nro_recinto' },
+      { label: 'Recinto', value: 'recinto' },
+      { label: 'Nombres', value: 'nombres' },
+      { label: 'Ap. Paterno', value: 'apellido_paterno' },
+      { label: 'Ap. Materno', value: 'apellido_materno' },
+      { label: 'CI', value: 'ci' },
+      { label: 'Fecha Nac.', value: 'fecha_nacimiento' },
+      { label: 'Celular', value: 'celular' },
+      { label: 'Bloque', value: 'bloque' },
+      { label: 'Reg. por', value: 'registrado_por' },
+      { label: 'Reg. en', value: 'registrado_en_fecha' },
+      { label: 'Tipo', value: 'tipo_jefe' },
+    ],
+  },
+  del_libres: {
+    data: () => delegadosLib.value,
+    filename: 'delegados_libres',
+    sheet: 'Delegados Libres',
+    columns: [
+      { label: 'Nro', value: 'nro_recinto' },
+      { label: 'Recinto', value: 'recinto' },
+      { label: 'Nombres', value: 'nombres' },
+      { label: 'Ap. Paterno', value: 'apellido_paterno' },
+      { label: 'Ap. Materno', value: 'apellido_materno' },
+      { label: 'CI', value: 'ci' },
+      { label: 'Fecha Nac.', value: 'fecha_nacimiento' },
+      { label: 'Celular', value: 'celular' },
+      { label: 'Bloque', value: 'bloque' },
+      { label: 'Reg. por', value: 'registrado_por' },
+      { label: 'Reg. en', value: 'registrado_en_fecha' },
+      { label: 'Estado', value: 'estado' },
+    ],
+  },
+  jef_libres: {
+    data: () => jefesLib.value,
+    filename: 'jefes_libres',
+    sheet: 'Jefes Libres',
+    columns: [
+      { label: 'Nro', value: 'nro_recinto' },
+      { label: 'Recinto', value: 'recinto' },
+      { label: 'Nombres', value: 'nombres' },
+      { label: 'Ap. Paterno', value: 'apellido_paterno' },
+      { label: 'Ap. Materno', value: 'apellido_materno' },
+      { label: 'CI', value: 'ci' },
+      { label: 'Fecha Nac.', value: 'fecha_nacimiento' },
+      { label: 'Celular', value: 'celular' },
+      { label: 'Bloque', value: 'bloque' },
+      { label: 'Reg. por', value: 'registrado_por' },
+      { label: 'Reg. en', value: 'registrado_en_fecha' },
+      { label: 'Estado', value: 'estado' },
+    ],
+  },
+  rec_sin_jefe: {
+    data: () => recintos.value,
+    filename: 'recintos_sin_jefe',
+    sheet: 'Recintos Sin Jefe',
+    columns: [
+      { label: 'Nro', value: 'nro_recinto' },
+      { label: 'ID Recinto', value: 'id_recinto' },
+      { label: 'Recinto', value: 'recinto' },
+    ],
+  },
+  mesas_libres: {
+    data: () => mesasLibres.value,
+    filename: 'mesas_libres',
+    sheet: 'Mesas Libres',
+    columns: [
+      { label: 'Nro', value: 'nro_recinto' },
+      { label: 'Recinto', value: 'recinto' },
+      { label: 'Mesa', value: 'numero_mesa' },
+      { label: 'Estado', value: 'estado' },
+    ],
+  },
+  prov_sin_delegado: {
+    data: () => provSinDelegado.value,
+    filename: 'provincias_sin_delegado',
+    sheet: 'Prov. Sin Delegado',
+    columns: [
+      { label: 'Provincia', value: 'provincia' },
+      { label: 'Municipio', value: 'municipio' },
+      { label: 'Recinto', value: 'recinto' },
+      { label: 'Mesa', value: 'numero_mesa' },
+    ],
+  },
+  prov_con_delegado: {
+    data: () => provConDelegado.value,
+    filename: 'provincias_con_delegado',
+    sheet: 'Prov. Con Delegado',
+    columns: [
+      { label: 'Provincia', value: 'provincia' },
+      { label: 'Municipio', value: 'municipio' },
+      { label: 'Recinto', value: 'recinto' },
+      { label: 'Mesa', value: 'numero_mesa' },
+      { label: 'Delegado', value: 'delegado' },
+    ],
+  },
 }
 
 async function exportar (tipo) {
   loadingExport.value[tipo] = true
   try {
-    const response = await proxy.$axios.get(exportEndpoints[tipo], {
-      params: buildParams(),
-      responseType: 'blob',
+    const config = exportConfigs[tipo]
+    if (!config) throw new Error('Tipo no válido')
+
+    const rows = config.data()
+    if (!rows.length) {
+      proxy.$alert.error('No hay datos para exportar')
+      return
+    }
+
+    const { Excel } = await import('src/addons/Excel')
+    const content = rows.map(row => {
+      const obj = {}
+      for (const col of config.columns) {
+        obj[col.label] = row[col.value] ?? ''
+      }
+      return obj
     })
 
-    const url = URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.download = exportFilenames[tipo]
-    link.click()
-    URL.revokeObjectURL(url)
+    const data = [{
+      sheet: config.sheet,
+      columns: config.columns.map(c => ({ label: c.label, value: c.label })),
+      content,
+    }]
+
+    const date = new Date().toISOString().slice(0, 10)
+    Excel.export(data, `${config.filename}_${date}`)
+    proxy.$alert.success('Excel generado')
   } catch {
     proxy.$alert.error('Error al exportar.')
   } finally {

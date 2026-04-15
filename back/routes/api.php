@@ -168,6 +168,10 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('reportes/export/jefes-libres', [ReportesController::class, 'exportJefesLibres']);
     Route::get('reportes/export/recintos-sin-jefe', [ReportesController::class, 'exportRecintosSinJefe']);
     Route::get('reportes/export/mesas-libres', [ReportesController::class, 'exportMesasLibres']);
+    Route::get('reportes/provincias-sin-delegado', [ReportesController::class, 'provinciasSinDelegado']);
+    Route::get('reportes/provincias-con-delegado', [ReportesController::class, 'provinciasConDelegado']);
+    Route::get('reportes/export/provincias-sin-delegado', [ReportesController::class, 'exportProvinciasSinDelegado']);
+    Route::get('reportes/export/provincias-con-delegado', [ReportesController::class, 'exportProvinciasConDelegado']);
 
 });
 Route::prefix('mobile')->group(function () {

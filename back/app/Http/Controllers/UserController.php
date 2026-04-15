@@ -131,6 +131,22 @@ class UserController extends Controller
         $user->creator_username = $user->creator?->username;
         $user->jerarquia = $this->buildDelegadoJerarquiaPayload($user);
 
+        // Compute mesa assignment status for Delegados
+        if ((string) ($user->role ?? '') === 'Delegado de Mesa') {
+            $mesasCount = $user->mesas_como_delegado_count ?? $user->mesasComoDelegado()->count();
+            if ($mesasCount > 0) {
+                $user->mesa_status = 'Asignado';
+            } elseif (filled($user->numero_mesa)) {
+                $user->mesa_status = 'Pendiente';
+            } else {
+                $user->mesa_status = 'Sin mesa';
+            }
+            $user->mesas_asignadas_count = $mesasCount;
+        } else {
+            $user->mesa_status = null;
+            $user->mesas_asignadas_count = null;
+        }
+
         return $user;
     }
 
@@ -182,6 +198,40 @@ class UserController extends Controller
         $query->where('users.recinto_id', (int) $recintoId);
     }
 
+    private function applyMesaStatusFilter($query, ?string $status): void
+    {
+        if (!$status || !in_array($status, ['asignado', 'pendiente', 'sin_mesa'], true)) {
+            return;
+        }
+
+        // All mesa_status filters only apply to Delegado de Mesa
+        $query->where('users.role', 'Delegado de Mesa');
+
+        if ($status === 'asignado') {
+            // Delegados that appear as delegado_id in at least one mesa
+            $query->whereExists(function ($sub) {
+                $sub->select(\DB::raw(1))
+                    ->from('mesas')
+                    ->whereColumn('mesas.delegado_id', 'users.id')
+                    ->whereNull('mesas.deleted_at');
+            });
+        } elseif ($status === 'pendiente') {
+            // Delegados that do NOT appear as delegado_id in any mesa
+            $query->whereNotExists(function ($sub) {
+                $sub->select(\DB::raw(1))
+                    ->from('mesas')
+                    ->whereColumn('mesas.delegado_id', 'users.id')
+                    ->whereNull('mesas.deleted_at');
+            });
+        } elseif ($status === 'sin_mesa') {
+            // Delegados with no numero_mesa in their user profile
+            $query->where(function ($qq) {
+                $qq->whereNull('users.numero_mesa')
+                   ->orWhere('users.numero_mesa', '');
+            });
+        }
+    }
+
     private function applyIndexSorting($query, string $sortBy, bool $descending): void
     {
         $direction = $descending ? 'desc' : 'asc';
@@ -210,9 +260,13 @@ class UserController extends Controller
 
         if ($sortBy === 'recinto_nombre') {
             $query
-                ->leftJoin('recintos', 'recintos.id', '=', 'users.recinto_id')
-                ->select('users.*')
-                ->orderBy('recintos.nombre', $direction)
+                ->orderBy(
+                    \DB::table('recintos')
+                        ->select('nombre')
+                        ->whereColumn('recintos.id', 'users.recinto_id')
+                        ->limit(1),
+                    $direction
+                )
                 ->orderBy('users.id', 'desc');
 
             return;
@@ -229,6 +283,9 @@ class UserController extends Controller
 
     public function printByType(Request $request, string $type)
     {
+        ini_set('memory_limit', '2048M');
+        ini_set('max_execution_time', 300);
+        
         $actor = $request->user();
 
         $rolesMap = [
@@ -255,6 +312,10 @@ class UserController extends Controller
         if (is_array($selectedRoles)) {
             $q->whereIn('role', $selectedRoles);
         }
+
+        $this->applyRecintoFilter($q, $request->query('recinto_id'));
+        $this->applyMesaStatusFilter($q, $request->query('mesa_status'));
+        $this->applyIndexSearch($q, (string) $request->query('search', ''));
 
         $users = $q->get()->map(function ($u) {
             return [
@@ -405,13 +466,14 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $actor = $request->user();
-        $q = User::query()->where('id', '!=', 0);
+        $q = User::query()->where('users.id', '!=', 0);
 
         if (!$this->isAdmin($actor)) {
             $q->where('created_by', $actor->id);
         }
 
         $this->applyRecintoFilter($q, $request->query('recinto_id'));
+        $this->applyMesaStatusFilter($q, $request->query('mesa_status'));
         $this->applyIndexSearch($q, (string) $request->query('search', ''));
 
         $q
@@ -425,7 +487,8 @@ class UserController extends Controller
                         'supervisores:id,name,username,celular',
                         'recintosComoJefe:id,nombre',
                     ]),
-            ]);
+            ])
+            ->withCount('mesasComoDelegado');
 
         $sortBy = (string) $request->query('sortBy', 'id');
         $descending = filter_var($request->query('descending', true), FILTER_VALIDATE_BOOLEAN);
