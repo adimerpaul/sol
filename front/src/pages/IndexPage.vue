@@ -596,7 +596,11 @@ L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2xUrl, iconUrl: markerIco
 
 const FALLBACK_COLORS = ['#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#e53935', '#00897b']
 const CATEGORY_DEFS = [
-  { key: 'gobernador', label: 'Gobernador', valueField: 'votos_gobernador' }
+  { key: 'alcalde', label: 'Alcalde', valueField: 'votos_alcalde' },
+  { key: 'concejal', label: 'Concejal', valueField: 'votos_concejal' },
+  { key: 'gobernador', label: 'Gobernador', valueField: 'votos_gobernador' },
+  { key: 'asambleista_distrito', label: 'Asambleista por Territorio', valueField: 'votos_asambleista_distrito' },
+  { key: 'asambleista_poblacion', label: 'Asambleista por Poblacion', valueField: 'votos_asambleista_poblacion' }
 ]
 
 export default {
@@ -608,7 +612,7 @@ export default {
       loadingMap: false,
       votosValidosTotal: 0,
       categorias: {},
-      categoryRankings: { gobernador: [] },
+      categoryRankings: { alcalde: [], concejal: [], gobernador: [], asambleista_distrito: [], asambleista_poblacion: [] },
       mesas: { total: 0, con_resultado: 0, faltantes: 0 },
       mapViewerOpen: false,
       mesasViewerOpen: false,
@@ -919,7 +923,11 @@ export default {
       this.votosValidosTotal = Number(data?.votos_validos_total || 0)
       this.categorias = data?.categorias || {}
       this.categoryRankings = {
-        gobernador: Array.isArray(data?.categorias?.gobernador?.ranking) ? data.categorias.gobernador.ranking : []
+        alcalde: Array.isArray(data?.categorias?.alcalde?.ranking) ? data.categorias.alcalde.ranking : [],
+        concejal: Array.isArray(data?.categorias?.concejal?.ranking) ? data.categorias.concejal.ranking : [],
+        gobernador: Array.isArray(data?.categorias?.gobernador?.ranking) ? data.categorias.gobernador.ranking : [],
+        asambleista_distrito: Array.isArray(data?.categorias?.asambleista_distrito?.ranking) ? data.categorias.asambleista_distrito.ranking : [],
+        asambleista_poblacion: Array.isArray(data?.categorias?.asambleista_poblacion?.ranking) ? data.categorias.asambleista_poblacion.ranking : []
       }
       this.mesas = {
         total: Number(data?.mesas?.total || 0),

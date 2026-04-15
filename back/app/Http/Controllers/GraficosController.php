@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Mesa;
 use App\Models\Recinto;
-use App\Models\ResultadoMesaSegundaVuelta;
+use App\Models\ResultadoMesa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -13,20 +13,44 @@ class GraficosController extends Controller
 {
     private const PATRIA_PARTIDO_ID = 11;
     private const JACHA_PARTIDO_ID = 15;
-    private const SEGUNDA_VUELTA_PARTIDO_IDS = [
+    private const DASHBOARD_PARTIDO_IDS = [
         self::PATRIA_PARTIDO_ID,
         self::JACHA_PARTIDO_ID,
     ];
     private const CATEGORY_FIELDS = [
+        'alcalde' => 'votos_alcalde',
+        'concejal' => 'votos_concejal',
         'gobernador' => 'votos_gobernador',
+        'asambleista_distrito' => 'votos_asambleista_distrito',
+        'asambleista_poblacion' => 'votos_asambleista_poblacion',
     ];
     private const CATEGORY_MESA_LABELS = [
+        'alcalde' => 'Alcalde',
+        'concejal' => 'Concejal',
         'gobernador' => 'Gobernador',
+        'asambleista_distrito' => 'Asambleista por territorio',
+        'asambleista_poblacion' => 'Asambleista por poblacion',
     ];
     private const CATEGORY_RESULT_FIELDS = [
+        'alcalde' => [
+            'detalle' => 'votos_alcalde',
+            'resumen' => ['blancos_alcalde', 'nulos_alcalde', 'papeletas_no_utilizadas_alcalde'],
+        ],
+        'concejal' => [
+            'detalle' => 'votos_concejal',
+            'resumen' => ['blancos_concejal', 'nulos_concejal', 'papeletas_no_utilizadas_concejal'],
+        ],
         'gobernador' => [
             'detalle' => 'votos_gobernador',
-            'resumen' => ['blancos', 'nulos', 'papeletas_no_utilizadas'],
+            'resumen' => ['blancos_gobernador', 'nulos_gobernador', 'papeletas_no_utilizadas_gobernador'],
+        ],
+        'asambleista_distrito' => [
+            'detalle' => 'votos_asambleista_distrito',
+            'resumen' => ['blancos_asambleista_distrito', 'nulos_asambleista_distrito', 'papeletas_no_utilizadas_asambleista_distrito'],
+        ],
+        'asambleista_poblacion' => [
+            'detalle' => 'votos_asambleista_poblacion',
+            'resumen' => ['blancos_asambleista_poblacion', 'nulos_asambleista_poblacion', 'papeletas_no_utilizadas_asambleista_poblacion'],
         ],
     ];
 
@@ -48,19 +72,19 @@ class GraficosController extends Controller
             ->when($scope['provincia_id'], fn ($q) => $q->where('provincia_id', $scope['provincia_id']))
             ->when($scope['municipio_id'], fn ($q) => $q->where('municipio_id', $scope['municipio_id']))
             ->when($scope['localidad_id'], fn ($q) => $q->where('localidad_id', $scope['localidad_id']))
-            ->when($scope['delegado_id'], fn ($q) => $q->where('delegado_segunda_vuelta_id', $scope['delegado_id']));
+            ->when($scope['delegado_id'], fn ($q) => $q->where('delegado_id', $scope['delegado_id']));
     }
 
     private function partidoTotals(array $scope)
     {
         return DB::table('partidos as p')
-            ->whereIn('p.id', self::SEGUNDA_VUELTA_PARTIDO_IDS)
-            ->leftJoin('resultado_mesa_segunda_vuelta_detalles as d', function ($join) {
+            ->whereIn('p.id', self::DASHBOARD_PARTIDO_IDS)
+            ->leftJoin('resultado_mesa_detalles as d', function ($join) {
                 $join->on('d.partido_id', '=', 'p.id')
                     ->whereNull('d.deleted_at');
             })
-            ->leftJoin('resultados_mesa_segunda_vuelta as r', function ($join) {
-                $join->on('r.id', '=', 'd.resultado_mesa_segunda_vuelta_id')
+            ->leftJoin('resultados_mesa as r', function ($join) {
+                $join->on('r.id', '=', 'd.resultado_mesa_id')
                     ->whereNull('r.deleted_at');
             })
             ->leftJoin('mesas as m', function ($join) use ($scope) {
@@ -78,7 +102,7 @@ class GraficosController extends Controller
                     $join->where('m.localidad_id', '=', $scope['localidad_id']);
                 }
                 if (!empty($scope['delegado_id'])) {
-                    $join->where('m.delegado_segunda_vuelta_id', '=', $scope['delegado_id']);
+                    $join->where('m.delegado_id', '=', $scope['delegado_id']);
                 }
             })
             ->whereNull('p.deleted_at')
@@ -88,22 +112,41 @@ class GraficosController extends Controller
                 p.sigla,
                 p.nombre,
                 p.color,
+                COALESCE(SUM(CASE WHEN m.id IS NOT NULL THEN d.votos_alcalde ELSE 0 END), 0) as votos_alcalde,
+                COALESCE(SUM(CASE WHEN m.id IS NOT NULL THEN d.votos_concejal ELSE 0 END), 0) as votos_concejal,
                 COALESCE(SUM(CASE WHEN m.id IS NOT NULL THEN d.votos_gobernador ELSE 0 END), 0) as votos_gobernador
+                ,COALESCE(SUM(CASE WHEN m.id IS NOT NULL THEN d.votos_asambleista_distrito ELSE 0 END), 0) as votos_asambleista_distrito
+                ,COALESCE(SUM(CASE WHEN m.id IS NOT NULL THEN d.votos_asambleista_poblacion ELSE 0 END), 0) as votos_asambleista_poblacion
             ")
             ->get()
             ->map(function ($r) {
+                $alcalde = (int) ($r->votos_alcalde ?? 0);
+                $concejal = (int) ($r->votos_concejal ?? 0);
                 $gobernador = (int) ($r->votos_gobernador ?? 0);
+                $asd = (int) ($r->votos_asambleista_distrito ?? 0);
+                $asp = (int) ($r->votos_asambleista_poblacion ?? 0);
 
                 return [
                     'id' => (int) $r->id,
                     'sigla' => (string) ($r->sigla ?? ''),
                     'nombre' => (string) ($r->nombre ?? ''),
                     'color' => $r->color ?: null,
+                    'votos_alcalde' => $alcalde,
+                    'votos_concejal' => $concejal,
                     'votos_gobernador' => $gobernador,
-                    'votos_validos' => $gobernador,
+                    'votos_asambleista_distrito' => $asd,
+                    'votos_asambleista_poblacion' => $asp,
+                    'votos_validos' => $alcalde + $concejal + $gobernador + $asd + $asp,
                 ];
             })
             ->values();
+    }
+
+    private function filterDashboardDetalles($detalles)
+    {
+        return collect($detalles ?? [])->filter(function ($detalle) {
+            return in_array((int) ($detalle?->partido_id ?? 0), self::DASHBOARD_PARTIDO_IDS, true);
+        })->values();
     }
 
     private function buildSummaryPayload(array $scope): array
@@ -121,7 +164,7 @@ class GraficosController extends Controller
 
         $mesasBase = $this->applyMesaScope(Mesa::query(), $scope);
         $mesasTotal = (int) (clone $mesasBase)->count();
-        $mesasConResultado = (int) ResultadoMesaSegundaVuelta::query()
+        $mesasConResultado = (int) ResultadoMesa::query()
             ->whereHas('mesa', fn ($q) => $this->applyMesaScope($q, $scope))
             ->where(function ($query) {
                 $this->applyResultadoConDatosConstraint($query);
@@ -144,7 +187,7 @@ class GraficosController extends Controller
     private function buildMesaProgressPayload(array $scope): array
     {
         $mesasTotal = (int) $this->applyMesaScope(Mesa::query(), $scope)->count();
-        $mesasRealizadas = (int) ResultadoMesaSegundaVuelta::query()
+        $mesasRealizadas = (int) ResultadoMesa::query()
             ->whereHas('mesa', fn ($q) => $this->applyMesaScope($q, $scope))
             ->where(function ($query) {
                 $this->applyResultadoConDatosConstraint($query);
@@ -154,7 +197,7 @@ class GraficosController extends Controller
 
         $categorias = collect(self::CATEGORY_RESULT_FIELDS)
             ->map(function ($config, $key) use ($scope, $mesasTotal) {
-                $mesasCategoria = (int) ResultadoMesaSegundaVuelta::query()
+                $mesasCategoria = (int) ResultadoMesa::query()
                     ->whereHas('mesa', fn ($q) => $this->applyMesaScope($q, $scope))
                     ->where(function ($query) use ($config) {
                         foreach ($config['resumen'] as $column) {
@@ -199,7 +242,11 @@ class GraficosController extends Controller
                 ->orWhere('total_blancos', '>', 0)
                 ->orWhere('total_nulos', '>', 0)
                 ->orWhereHas('detalles', function ($dq) {
-                    $dq->where('votos_gobernador', '>', 0);
+                    $dq->where('votos_gobernador', '>', 0)
+                        ->orWhere('votos_asambleista_distrito', '>', 0)
+                        ->orWhere('votos_asambleista_poblacion', '>', 0)
+                        ->orWhere('votos_concejal', '>', 0)
+                        ->orWhere('votos_alcalde', '>', 0);
                 });
         });
     }
@@ -227,7 +274,11 @@ class GraficosController extends Controller
         }
 
         return collect($resultado->detalles ?? [])->contains(function ($detalle) {
-            return (int) ($detalle->votos_gobernador ?? 0) > 0;
+            return (int) ($detalle->votos_gobernador ?? 0) > 0
+                || (int) ($detalle->votos_asambleista_distrito ?? 0) > 0
+                || (int) ($detalle->votos_asambleista_poblacion ?? 0) > 0
+                || (int) ($detalle->votos_concejal ?? 0) > 0
+                || (int) ($detalle->votos_alcalde ?? 0) > 0;
         });
     }
 
@@ -259,7 +310,7 @@ class GraficosController extends Controller
 
     private function resolveMesaCategoryWinners($detalles): array
     {
-        $rows = collect($detalles ?? []);
+        $rows = $this->filterDashboardDetalles($detalles);
         $winners = [];
 
         foreach (self::CATEGORY_FIELDS as $category => $field) {
@@ -330,7 +381,7 @@ class GraficosController extends Controller
 
     private function buildMesaPayload(Mesa $mesa): array
     {
-        $resultado = $mesa->resultadoSegundaVuelta;
+        $resultado = $mesa->resultado;
         $hasVotes = $this->resultadoTieneDatos($resultado);
         $mesaWinners = $this->resolveMesaCategoryWinners($resultado?->detalles ?? []);
         $winnerSummary = collect($mesaWinners)
@@ -340,7 +391,11 @@ class GraficosController extends Controller
                 }
 
                 $label = match ($category) {
+                    'alcalde' => 'Alcalde',
+                    'concejal' => 'Concejal',
                     'gobernador' => 'Gobernador',
+                    'asambleista_distrito' => 'Asam. Territorio',
+                    'asambleista_poblacion' => 'Asam. Poblacion',
                     default => ucfirst((string) $category),
                 };
 
@@ -357,7 +412,7 @@ class GraficosController extends Controller
             ->filter()
             ->values();
 
-        $detalles = collect($resultado?->detalles ?? [])
+        $detalles = $this->filterDashboardDetalles($resultado?->detalles ?? [])
             ->map(function ($detalle) {
                 return [
                     'partido_id' => $detalle->partido_id,
@@ -368,18 +423,22 @@ class GraficosController extends Controller
                     'icono_url' => !empty($detalle->partido?->icono)
                         ? rtrim((string) config('app.url'), '/') . '/../images/partidos/' . ltrim((string) $detalle->partido->icono, '/')
                         : null,
+                    'votos_alcalde' => (int) ($detalle->votos_alcalde ?? 0),
+                    'votos_concejal' => (int) ($detalle->votos_concejal ?? 0),
                     'votos_gobernador' => (int) ($detalle->votos_gobernador ?? 0),
+                    'votos_asambleista_distrito' => (int) ($detalle->votos_asambleista_distrito ?? 0),
+                    'votos_asambleista_poblacion' => (int) ($detalle->votos_asambleista_poblacion ?? 0),
                 ];
             })
-            ->sortByDesc('votos_gobernador')
+            ->sortByDesc('votos_alcalde')
             ->values();
 
         return [
             'id' => $mesa->id,
             'numero_mesa' => $mesa->numero_mesa,
-            'estado' => $hasVotes ? 'REALIZADO' : ($mesa->estado_segunda_vuelta ?: 'PENDIENTE'),
-            'delegado_id' => $mesa->delegado_segunda_vuelta_id,
-            'delegado' => $this->buildDelegadoPayload($mesa->delegadoSegundaVuelta),
+            'estado' => $hasVotes ? 'REALIZADO' : ($mesa->estado ?: 'PENDIENTE'),
+            'delegado_id' => $mesa->delegado_id,
+            'delegado' => $this->buildDelegadoPayload($mesa->delegado),
             'tiene_resultado' => $hasVotes,
             'resultado' => $resultado ? [
                 'id' => $resultado->id,
@@ -435,7 +494,7 @@ class GraficosController extends Controller
         $mesasFaltantes = max(0, $mesasPayload->count() - $mesasConResultado);
         $isComplete = $mesasPayload->count() > 0 && $mesasFaltantes === 0;
         $detalles = $mesas
-            ->flatMap(fn ($mesa) => collect($mesa->resultadoSegundaVuelta?->detalles ?? []))
+            ->flatMap(fn ($mesa) => $this->filterDashboardDetalles($mesa->resultado?->detalles ?? []))
             ->values();
 
         $winners = [];
@@ -482,16 +541,16 @@ class GraficosController extends Controller
             ->with([
                 'mesas' => function ($q) use ($scope) {
                     $this->applyMesaScope($q, $scope)
-                        ->select('id', 'recinto_id', 'numero_mesa', 'delegado_segunda_vuelta_id', 'estado_segunda_vuelta')
+                        ->select('id', 'recinto_id', 'numero_mesa', 'delegado_id', 'estado')
                         ->orderBy('numero_mesa')
                         ->with([
-                            'delegadoSegundaVuelta:id,name,username,celular,foto_personal,ci_anverso,ci_reverso',
-                            'delegadoSegundaVuelta.jefes:id,name,username,celular',
-                            'delegadoSegundaVuelta.jefes.supervisores:id,name,username,celular',
-                            'resultadoSegundaVuelta:id,mesa_id,registrado_por,total_votos,total_validos,total_blancos,total_nulos,blancos,nulos,papeletas_no_utilizadas,observacion,foto_pizarra,foto_acta,updated_at',
-                            'resultadoSegundaVuelta.registradoPor:id,name,username',
-                            'resultadoSegundaVuelta.detalles:id,resultado_mesa_segunda_vuelta_id,partido_id,votos_gobernador',
-                            'resultadoSegundaVuelta.detalles.partido:id,sigla,nombre,color,icono',
+                            'delegado:id,name,username,celular,foto_personal,ci_anverso,ci_reverso',
+                            'delegado.jefes:id,name,username,celular',
+                            'delegado.jefes.supervisores:id,name,username,celular',
+                            'resultado:id,mesa_id,registrado_por,total_votos,total_validos,total_blancos,total_nulos,observacion,foto1,foto2,foto3,foto4,foto5,foto6,foto7,foto8,foto9,foto10,updated_at',
+                            'resultado.registradoPor:id,name,username',
+                            'resultado.detalles:id,resultado_mesa_id,partido_id,votos_alcalde,votos_concejal,votos_gobernador,votos_asambleista_distrito,votos_asambleista_poblacion',
+                            'resultado.detalles.partido:id,sigla,nombre,color,icono',
                         ]);
                 },
             ])
