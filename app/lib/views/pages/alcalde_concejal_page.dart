@@ -276,9 +276,18 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     }
   }
 
+  int _specialPartyRank(Map<String, dynamic> partido) {
+    const order = {11: 1, 15: 2};
+    return order[_toInt(partido['id']) ?? -1] ?? 999;
+  }
+
   List<Map<String, dynamic>> _partidosSortedBy(String orderField) {
     final list = _partidos.map((e) => Map<String, dynamic>.from(e)).toList();
     list.sort((a, b) {
+      final specialA = _specialPartyRank(a);
+      final specialB = _specialPartyRank(b);
+      if (specialA != specialB) return specialA.compareTo(specialB);
+
       final oa = _toInt(a[orderField]) ?? 0;
       final ob = _toInt(b[orderField]) ?? 0;
       if (oa != ob) return oa.compareTo(ob);
