@@ -76,6 +76,9 @@ class UserController extends Controller
         ] : null;
         $data['creator_name'] = $user->creator?->name;
         $data['creator_username'] = $user->creator?->username;
+        $data['asistencia'] = (bool) $user->asistencia;
+        $data['asistencia_at'] = $user->asistencia_at?->toIso8601String();
+        $data['asistencia_by'] = $user->asistencia_by;
 
         return $data;
     }
@@ -130,6 +133,7 @@ class UserController extends Controller
         $user->creator_name = $user->creator?->name;
         $user->creator_username = $user->creator?->username;
         $user->jerarquia = $this->buildDelegadoJerarquiaPayload($user);
+        $user->asistencia = (bool) $user->asistencia;
 
         // Compute mesa assignment status for Delegados
         if ((string) ($user->role ?? '') === 'Delegado de Mesa') {
@@ -293,6 +297,7 @@ class UserController extends Controller
             'supervisores' => ['Supervisor'],
             'jefes' => ['Jefe de Recinto'],
             'delegados' => ['Delegado de Mesa'],
+            'asistentes' => null,
         ];
 
         $normalized = strtolower(trim($type));
@@ -313,6 +318,10 @@ class UserController extends Controller
             $q->whereIn('role', $selectedRoles);
         }
 
+        if ($normalized === 'asistentes') {
+            $q->where('asistencia', true);
+        }
+
         $this->applyRecintoFilter($q, $request->query('recinto_id'));
         $this->applyMesaStatusFilter($q, $request->query('mesa_status'));
         $this->applyIndexSearch($q, (string) $request->query('search', ''));
@@ -331,6 +340,8 @@ class UserController extends Controller
                 'bloque' => $u->bloque,
                 'role' => $u->role,
                 'recinto_nombre' => $u->recinto?->nombre,
+                'asistencia' => (bool) $u->asistencia,
+                'asistencia_at' => $u->asistencia_at?->format('d/m/Y H:i'),
             ];
         })->values();
 
@@ -339,6 +350,7 @@ class UserController extends Controller
             'supervisores' => 'Supervisores',
             'jefes' => 'Jefes de Recinto',
             'delegados' => 'Delegados de Mesa',
+            'asistentes' => 'Asistentes',
             default => 'Todos los Usuarios',
         };
 
@@ -561,9 +573,27 @@ class UserController extends Controller
                 'max:120',
                 Rule::unique('users', 'username')->ignore($user->id),
             ],
+            'asistencia' => 'nullable|boolean',
         ]);
 
         $user->username = trim((string) $data['username']);
+
+        if (array_key_exists('asistencia', $data)) {
+            $markAsistencia = (bool) $data['asistencia'];
+
+            if ((bool) $user->asistencia && !$markAsistencia) {
+                return response()->json([
+                    'message' => 'La asistencia ya fue marcada y no se puede desbloquear',
+                ], 422);
+            }
+
+            if ($markAsistencia && !(bool) $user->asistencia) {
+                $user->asistencia = true;
+                $user->asistencia_at = now();
+                $user->asistencia_by = $actor->id;
+            }
+        }
+
         $user->save();
 
         return response()->json([

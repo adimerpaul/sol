@@ -46,6 +46,10 @@
               <q-item-section avatar><q-icon name="how_to_reg" /></q-item-section>
               <q-item-section><q-item-label>Delegados de Mesa</q-item-label></q-item-section>
             </q-item>
+            <q-item clickable v-close-popup @click="printUsers('asistentes')">
+              <q-item-section avatar><q-icon name="check_circle" /></q-item-section>
+              <q-item-section><q-item-label>Asistentes</q-item-label></q-item-section>
+            </q-item>
           </q-list>
         </q-btn-dropdown>
 
@@ -177,6 +181,20 @@
             <q-img :src="`${$url}/../images/${props.row.avatar}`" width="40px" height="40px" v-if="props.row.avatar"/>
             <q-icon name="person" size="40px" v-else/>
           </q-avatar>
+        </q-td>
+      </template>
+
+      <template v-slot:body-cell-username="props">
+        <q-td :props="props">
+          <div class="text-weight-medium">{{ props.row.username || '-' }}</div>
+          <q-checkbox
+            :model-value="Boolean(props.row.asistencia)"
+            class="q-mt-xs"
+            size="sm"
+            label="Asistencia"
+            :disable="Boolean(props.row.asistencia) || loading"
+            @update:model-value="markAsistencia(props.row, $event)"
+          />
         </q-td>
       </template>
 
@@ -978,6 +996,34 @@ export default {
       this.dialogUsername = true
     },
 
+    async markAsistencia(row, value) {
+      if (!value) {
+        return
+      }
+
+      const nombreCompleto = [row?.nombres, row?.apellido_paterno, row?.apellido_materno]
+        .filter(Boolean)
+        .join(' ') || row?.name || row?.username || 'este usuario'
+
+      this.$alert.dialog(`Se va a marcar asistencia de ${nombreCompleto}. Esta accion no se puede deshacer.`)
+        .onOk(async () => {
+          this.loading = true
+          try {
+            await this.$axios.patch(`users/${row.id}/username`, {
+              username: row.username,
+              asistencia: true
+            })
+            row.asistencia = true
+            this.$alert.success('Asistencia marcada')
+            this.usersGet()
+          } catch (e) {
+            this.$alert.error(e.response?.data?.message || 'No se pudo marcar asistencia')
+          } finally {
+            this.loading = false
+          }
+        })
+    },
+
     async saveUsername() {
       if (!this.usernameForm.username) {
         this.$alert.error('Ingrese username')
@@ -1035,6 +1081,10 @@ export default {
 
       if (!type || type === 'todos') return rows || []
 
+      if (String(type).toLowerCase() === 'asistentes') {
+        return (rows || []).filter(u => Boolean(u.asistencia))
+      }
+
       const role = roleMap[String(type).toLowerCase()]
       if (!role) return rows || []
 
@@ -1047,7 +1097,8 @@ export default {
         jefes: 'Jefes de Recinto',
         supervisores: 'Supervisores',
         administradores: 'Administradores',
-        delegados: 'Delegados de Mesa'
+        delegados: 'Delegados de Mesa',
+        asistentes: 'Asistentes'
       }
       return labels[String(type || '').toLowerCase()] || 'Todos'
     },
@@ -1075,6 +1126,7 @@ export default {
           Celular: u.celular ?? '',
           Bloque: u.bloque ?? '',
           Rol: u.role ?? '',
+          Asistencia: u.asistencia ? 'Si' : 'No',
           'Estado Mesa': u.mesa_status || (u.role === 'Delegado de Mesa' ? 'Sin info' : ''),
           'Mesas asignadas': u.mesas_asignadas_count ?? '',
           'Registrado por': u.creator_name || u.creator_username || '',
@@ -1095,6 +1147,7 @@ export default {
             { label: 'Celular', value: 'Celular' },
             { label: 'Bloque', value: 'Bloque' },
             { label: 'Rol', value: 'Rol' },
+            { label: 'Asistencia', value: 'Asistencia' },
             { label: 'Estado Mesa', value: 'Estado Mesa' },
             { label: 'Mesas asignadas', value: 'Mesas asignadas' },
             { label: 'Registrado por', value: 'Registrado por' },

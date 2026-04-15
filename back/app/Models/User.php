@@ -23,6 +23,7 @@ class User extends Authenticatable implements Auditable
      */
     protected $fillable = [
         'created_by',
+        'asistencia_by',
         'recinto_id',
         'numero_mesa',
         'nombres',
@@ -39,6 +40,8 @@ class User extends Authenticatable implements Auditable
 
         'name',        // si aún lo usas
         'username',
+        'asistencia',
+        'asistencia_at',
         'role',
         'avatar',
         'email',
@@ -69,6 +72,8 @@ class User extends Authenticatable implements Auditable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'asistencia' => 'boolean',
+            'asistencia_at' => 'datetime',
 //            'fecha_nacimiento' => 'date',
         ];
     }

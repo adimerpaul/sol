@@ -80,6 +80,7 @@
         <th style="width: 86px;">Nacimiento</th>
         <th style="width: 88px;">Celular</th>
         <th style="width: 105px;">Rol</th>
+        <th style="width: 84px;">Asistencia</th>
         <th style="width: 120px;">Bloque</th>
         <th style="width: 120px;">Recinto</th>
     </tr>
@@ -95,12 +96,18 @@
             <td>{{ $u['fecha_nacimiento'] ?: '-' }}</td>
             <td>{{ $u['celular'] ?: '-' }}</td>
             <td>{{ $u['role'] ?: '-' }}</td>
+            <td>
+                {{ !empty($u['asistencia']) ? 'Si' : 'No' }}
+                @if(!empty($u['asistencia']) && !empty($u['asistencia_at']))
+                    <br><span style="font-size: 9px; color: #475569;">{{ $u['asistencia_at'] }}</span>
+                @endif
+            </td>
             <td>{{ $u['bloque'] ?: '-' }}</td>
             <td>{{ $u['recinto_nombre'] ?: '-' }}</td>
         </tr>
     @empty
         <tr>
-            <td colspan="8" style="text-align:center;">No hay datos para este filtro</td>
+            <td colspan="9" style="text-align:center;">No hay datos para este filtro</td>
         </tr>
     @endforelse
     </tbody>
