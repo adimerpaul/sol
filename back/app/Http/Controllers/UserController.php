@@ -79,6 +79,9 @@ class UserController extends Controller
         $data['asistencia'] = (bool) $user->asistencia;
         $data['asistencia_at'] = $user->asistencia_at?->toIso8601String();
         $data['asistencia_by'] = $user->asistencia_by;
+        $data['credencial_entregada'] = (bool) $user->credencial_entregada;
+        $data['credencial_entregada_at'] = $user->credencial_entregada_at?->toIso8601String();
+        $data['credencial_entregada_by'] = $user->credencial_entregada_by;
 
         return $data;
     }
@@ -574,6 +577,7 @@ class UserController extends Controller
                 Rule::unique('users', 'username')->ignore($user->id),
             ],
             'asistencia' => 'nullable|boolean',
+            'credencial_entregada' => 'nullable|boolean',
         ]);
 
         $user->username = trim((string) $data['username']);
@@ -591,6 +595,22 @@ class UserController extends Controller
                 $user->asistencia = true;
                 $user->asistencia_at = now();
                 $user->asistencia_by = $actor->id;
+            }
+        }
+
+        if (array_key_exists('credencial_entregada', $data)) {
+            $markCredencial = (bool) $data['credencial_entregada'];
+
+            if ((bool) $user->credencial_entregada && !$markCredencial) {
+                return response()->json([
+                    'message' => 'La credencial ya fue marcada como entregada y no se puede desbloquear',
+                ], 422);
+            }
+
+            if ($markCredencial && !(bool) $user->credencial_entregada) {
+                $user->credencial_entregada = true;
+                $user->credencial_entregada_at = now();
+                $user->credencial_entregada_by = $actor->id;
             }
         }
 

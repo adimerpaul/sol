@@ -42,6 +42,9 @@ class User extends Authenticatable implements Auditable
         'username',
         'asistencia',
         'asistencia_at',
+        'credencial_entregada',
+        'credencial_entregada_at',
+        'credencial_entregada_by',
         'role',
         'avatar',
         'email',
@@ -74,6 +77,8 @@ class User extends Authenticatable implements Auditable
             'password' => 'hashed',
             'asistencia' => 'boolean',
             'asistencia_at' => 'datetime',
+            'credencial_entregada' => 'boolean',
+            'credencial_entregada_at' => 'datetime',
 //            'fecha_nacimiento' => 'date',
         ];
     }

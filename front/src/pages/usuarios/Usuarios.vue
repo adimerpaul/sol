@@ -224,6 +224,29 @@
         </q-td>
       </template>
 
+      <template v-slot:body-cell-credencial_entregada="props">
+        <q-td :props="props">
+          <div class="row items-center no-wrap q-gutter-sm">
+            <q-checkbox
+              :model-value="Boolean(props.row.credencial_entregada)"
+              size="sm"
+              color="positive"
+              keep-color
+              :disable="credencialDisabled(props.row)"
+              @update:model-value="markCredencialEntregada(props.row, $event)"
+            />
+            <div>
+              <div class="text-weight-medium">
+                {{ props.row.credencial_entregada ? 'Entregada' : 'Pendiente' }}
+              </div>
+              <div class="text-caption text-grey-7">
+                {{ credencialCaption(props.row) }}
+              </div>
+            </div>
+          </div>
+        </q-td>
+      </template>
+
       <template v-slot:body-cell-created_by="props">
         <q-td :props="props">
           <div class="text-weight-medium">
@@ -599,6 +622,7 @@ export default {
       selectedRecintoId: null,
       filterRecintoOptions: [],
       loadingFilterRecintos: false,
+      credencialLoadingId: null,
       selectedMesaStatus: null,
       mesaStatusOptions: [
         { label: 'Asignadas', value: 'asignado' },
@@ -638,6 +662,7 @@ export default {
         // { name: 'avatar', label: 'Avatar', align: 'left', field: row => row.avatar },
         { name: 'role', label: 'Rol', align: 'left', field: 'role' },
         { name: 'mesa_status', label: 'Estado Mesa', align: 'center', field: 'mesa_status' },
+        { name: 'credencial_entregada', label: 'Credencial', align: 'left', field: 'credencial_entregada' },
         // { name: 'ci_files', label: 'Docs', align: 'left', field: row => row.id },
         {
           name: 'permissions',
@@ -712,6 +737,50 @@ export default {
         'Sin mesa': 'cancel'
       }
       return map[status] || 'help_outline'
+    },
+
+    credencialDisabled (row) {
+      if (this.loading) return true
+      if (this.credencialLoadingId === row?.id) return true
+      return Boolean(row?.credencial_entregada)
+    },
+
+    credencialCaption (row) {
+      if (row?.credencial_entregada) return 'Registro bloqueado'
+      return 'Marcar una sola vez'
+    },
+
+    markCredencialEntregada (row, value) {
+      if (!value) {
+        this.$alert.warning('La credencial no se puede desmarcar una vez registrada')
+        return
+      }
+
+      if (row?.credencial_entregada) {
+        return
+      }
+
+      const nombreCompleto = [row?.nombres, row?.apellido_paterno, row?.apellido_materno]
+        .filter(Boolean)
+        .join(' ') || row?.name || row?.username || 'este delegado'
+
+      this.$alert.dialog(`Se va a marcar la credencial como entregada para ${nombreCompleto}. Esta accion no se puede deshacer.`)
+        .onOk(async () => {
+          this.credencialLoadingId = row.id
+          try {
+            await this.$axios.patch(`users/${row.id}/username`, {
+              username: row.username,
+              credencial_entregada: true
+            })
+            row.credencial_entregada = true
+            this.$alert.success('Credencial marcada como entregada')
+            this.usersGet()
+          } catch (e) {
+            this.$alert.error(e.response?.data?.message || 'No se pudo marcar la credencial')
+          } finally {
+            this.credencialLoadingId = null
+          }
+        })
     },
 
     buildRecintoLabel (recinto = {}) {
