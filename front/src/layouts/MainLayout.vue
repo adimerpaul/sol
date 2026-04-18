@@ -350,6 +350,24 @@
 
         <q-item
           dense
+          to="/reportes-por-municipio"
+          exact
+          clickable
+          class="menu-item"
+          active-class="menu-active"
+          v-close-popup
+          v-if="canPermission(PERM.REPORTES_POR_MUNICIPIO)"
+        >
+          <q-item-section avatar>
+            <q-icon name="summarize" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Reportes por municipio</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item
+          dense
           to="/mi-perfil"
           exact
           clickable
@@ -409,7 +427,8 @@ const PERM = {
   JERARQUIA_USUARIOS: 'Jerarquia Usuarios',
   MAPA_ASIGNAR_JEFES: 'Mapa Asignar Jefes',
   SUPERADMIN_MESAS: 'SuperAdmin Mesas',
-  CONTROL_IA_MESAS: 'Control IA Mesas'
+  CONTROL_IA_MESAS: 'Control IA Mesas',
+  REPORTES_POR_MUNICIPIO: 'Reportes por Municipio'
 }
 
 const leftDrawerOpen = ref(false)

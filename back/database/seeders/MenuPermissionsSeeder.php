@@ -24,6 +24,7 @@ class MenuPermissionsSeeder extends Seeder
             'Jerarquia Usuarios',
             'Mapa Asignar Jefes',
             'SuperAdmin Mesas',
+            'Reportes por Municipio',
         ];
 
         $permissions = collect($permissionNames)

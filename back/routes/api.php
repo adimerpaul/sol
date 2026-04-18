@@ -21,6 +21,7 @@ use App\Http\Controllers\MesaAiControlController;
 use App\Http\Controllers\SuperAdminMesasController;
 use App\Http\Controllers\SuperAdminMesasSegundaVueltaController;
 use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\ReporteMunicipioController;
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
 //})->middleware('auth:sanctum');
@@ -172,6 +173,11 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('reportes/provincias-con-delegado', [ReportesController::class, 'provinciasConDelegado']);
     Route::get('reportes/export/provincias-sin-delegado', [ReportesController::class, 'exportProvinciasSinDelegado']);
     Route::get('reportes/export/provincias-con-delegado', [ReportesController::class, 'exportProvinciasConDelegado']);
+
+    Route::get('reportes-municipio/bootstrap', [ReporteMunicipioController::class, 'bootstrap']);
+    Route::get('reportes-municipio/municipios', [ReporteMunicipioController::class, 'municipios']);
+    Route::get('reportes-municipio/detalle', [ReporteMunicipioController::class, 'detalle']);
+    Route::get('reportes-municipio/pdf', [ReporteMunicipioController::class, 'pdf']);
 
 });
 Route::prefix('mobile')->group(function () {
