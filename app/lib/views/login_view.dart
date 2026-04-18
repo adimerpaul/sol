@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/manual_pdf_service.dart';
 import '../viewmodels/login_view_model.dart';
@@ -99,6 +101,41 @@ class _LoginViewState extends State<LoginView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _ManualButton(
+                              title: 'Manual de usuario',
+                              onTap: () async {
+                                final uri = Uri.parse('https://drive.google.com/file/d/1MqEnQmof3xnqgEE_Tw9-jg8t5vUe6yrf/view');
+                                if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                                  // ignore
+                                }
+                              },
+                            ),
+                            _ManualButton(
+                              title: 'Video Tutorial',
+                              onTap: () async {
+                                final uri = Uri.parse('https://drive.google.com/file/d/1Lnia1rUUGpVygHsVo4i1-71uynfjgmca/view');
+                                if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                                  // ignore
+                                }
+                              },
+                            ),
+                            _ManualButton(
+                              title: 'Manual del\nProceso de Voto',
+                              onTap: () async {
+                                final uri = Uri.parse('https://drive.google.com/file/d/1vB4WMPbMHSZ_K2kO_eQPrE2qFxE09ozq/view');
+                                if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                                  // ignore
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
                         Card(
                           elevation: 10,
                           shadowColor: const Color(0x40220000),
@@ -266,6 +303,21 @@ class _LoginViewState extends State<LoginView> {
                               ],
                             ),
                           ),
+                        ),
+                        const SizedBox(height: 20),
+                        FutureBuilder<PackageInfo>(
+                          future: PackageInfo.fromPlatform(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) return const SizedBox();
+                            return Text(
+                              'Versión ${snapshot.data!.version}', // +${snapshot.data!.buildNumber}' si deseas
+                              style: const TextStyle(
+                                color: Color(0xFF8C3A00),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

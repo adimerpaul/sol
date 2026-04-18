@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -735,6 +736,12 @@ class _AlcaldeConcejalPageState extends State<AlcaldeConcejalPage> {
     );
 
     if (finalImagePath == null) return; // El usuario canceló o retrocedió
+
+    if (source == ImageSource.camera) {
+      try {
+        await Gal.putImage(finalImagePath);
+      } catch (_) {}
+    }
 
     final dir = await _getVotacionCacheDir();
     final mesa = _mesaId ?? 0;
