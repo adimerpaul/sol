@@ -7,6 +7,7 @@ use Carbon\CarbonImmutable;
 use App\Services\SocketEmitter;
 use App\Models\Mesa;
 use App\Models\Partido;
+use App\Models\Recinto;
 use App\Models\ResultadoMesa;
 use App\Models\ResultadoMesaDetalle;
 use App\Models\User;
@@ -49,6 +50,7 @@ class SuperAdminMesasController extends Controller
     {
         return response()->json([
             'mesas' => $this->buildMesasIndexPayload($request, true),
+            'recinto_jefe' => $this->buildSelectedRecintoJefePayload($request),
             'geo' => [
                 'provincias' => DB::table('provincias')
                     ->select('id', 'nombre', 'departamento_id')
@@ -70,6 +72,59 @@ class SuperAdminMesasController extends Controller
             'recintos' => $this->buildRecintosOptionsPayload($request),
             'delegados' => $this->buildDelegadosOptionsPayload(),
         ]);
+    }
+
+    private function buildSelectedRecintoJefePayload(Request $request): ?array
+    {
+        $recintoId = $request->get('recinto_id');
+
+        if (empty($recintoId)) {
+            return null;
+        }
+
+        $recinto = Recinto::query()
+            ->with([
+                'jefe' => function ($query) {
+                    $query->select('users.id', 'users.name', 'users.username', 'users.celular')
+                        ->orderByDesc('recinto_jefe.super_jefe')
+                        ->orderBy('users.name');
+                },
+            ])
+            ->find($recintoId);
+
+        if (!$recinto) {
+            return null;
+        }
+
+        $jefes = collect($recinto->jefe ?? [])
+            ->map(function ($jefe) {
+                return [
+                    'id' => $jefe->id,
+                    'name' => $jefe->name,
+                    'username' => $jefe->username,
+                    'celular' => $jefe->celular,
+                    'super_jefe' => (bool) ($jefe->pivot->super_jefe ?? false),
+                ];
+            })
+            ->values();
+
+        $principal = $jefes->sortByDesc(fn ($jefe) => $jefe['super_jefe'])->first();
+
+        if (!$principal) {
+            return [
+                'recinto_id' => (int) $recinto->id,
+                'recinto_nombre' => $recinto->nombre,
+                'principal' => null,
+                'jefes' => [],
+            ];
+        }
+
+        return [
+            'recinto_id' => (int) $recinto->id,
+            'recinto_nombre' => $recinto->nombre,
+            'principal' => $principal,
+            'jefes' => $jefes->all(),
+        ];
     }
 
     public function index(Request $request)

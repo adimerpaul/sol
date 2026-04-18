@@ -182,6 +182,18 @@
 
       <q-separator />
 
+      <q-card-section v-if="selectedRecintoJefe?.principal" class="q-py-sm">
+        <div class="text-caption text-primary">
+          {{ selectedRecintoJefe.principal.super_jefe ? 'Superjefe de recinto' : 'Jefe de recinto' }}:
+          <span class="text-weight-medium">{{ selectedRecintoJefe.principal.name || selectedRecintoJefe.principal.username || 'Sin nombre' }}</span>
+          · Cel: {{ selectedRecintoJefe.principal.celular || 'Sin celular' }}
+        </div>
+        <div v-if="(selectedRecintoJefe.jefes || []).length > 1" class="text-caption text-grey-7">
+          Jefes asignados:
+          {{ (selectedRecintoJefe.jefes || []).map(j => `${j.name || j.username || 'Sin nombre'}${j.super_jefe ? ' (super)' : ''}`).join(' · ') }}
+        </div>
+      </q-card-section>
+
       <!-- CHIPS -->
       <q-card-section class="q-pt-sm q-pb-none">
         <div class="row items-center q-col-gutter-sm">
@@ -1053,6 +1065,7 @@ export default {
       backendTotal: 0,
       backendLast: 1,
       showAll: false,
+      selectedRecintoJefe: null,
 
       filters: {
         provincia_id: null,
@@ -1374,6 +1387,7 @@ export default {
       const delegadosBase = this.buildDelegadosOptions()
       this.delegadosOptFiltered = delegadosBase
       this.delegadosAsignarOptFiltered = delegadosBase
+      this.selectedRecintoJefe = payload?.recinto_jefe || null
 
       this.applyMesasResponse(payload?.mesas || {})
     },
