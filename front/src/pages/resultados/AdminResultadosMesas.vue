@@ -2127,9 +2127,35 @@ export default {
 
     getImageUrl (path) {
       if (!path) return null
-      if (path.startsWith('http')) return path
-      const baseUrl = this.$url.split('/api')[0] || this.$url
-      return baseUrl + (path.startsWith('/') ? '' : '/') + path
+
+      const rawPath = String(path).trim()
+      if (!rawPath) return null
+
+      const currentOrigin = window.location?.origin || ''
+      const apiUrl = new URL(this.$url, currentOrigin || window.location.href)
+      const apiBasePath = apiUrl.pathname.replace(/\/api\/?$/, '')
+      const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`
+
+      if (/^https?:\/\//i.test(rawPath)) {
+        try {
+          const absoluteUrl = new URL(rawPath)
+          const preferredOrigin = currentOrigin || apiUrl.origin
+
+          if (absoluteUrl.host === window.location.host || absoluteUrl.host === apiUrl.host) {
+            return `${preferredOrigin}${absoluteUrl.pathname}${absoluteUrl.search}${absoluteUrl.hash}`
+          }
+
+          if (window.location.protocol === 'https:' && absoluteUrl.protocol === 'http:') {
+            absoluteUrl.protocol = 'https:'
+          }
+
+          return absoluteUrl.toString()
+        } catch {
+          return rawPath
+        }
+      }
+
+      return `${apiUrl.origin}${apiBasePath}${normalizedPath}`
     },
 
     // preview: primero archivo local, si no hay -> foto server
