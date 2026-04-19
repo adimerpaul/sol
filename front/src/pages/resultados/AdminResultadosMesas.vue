@@ -1257,7 +1257,22 @@ export default {
     },
 
     partidosGobernador () {
-      return this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_gobernador), 'orden_departamental')
+      const partidos = this.sortPartidosBy((this.partidos || []).filter(p => !!p.habilitado_gobernador), 'orden_departamental')
+      const prioridadGobernador = {
+        11: 0,
+        15: 1
+      }
+
+      return partidos.slice().sort((a, b) => {
+        const prioridadA = prioridadGobernador[Number(a?.id)]
+        const prioridadB = prioridadGobernador[Number(b?.id)]
+
+        if (prioridadA !== undefined || prioridadB !== undefined) {
+          return (prioridadA ?? Number.MAX_SAFE_INTEGER) - (prioridadB ?? Number.MAX_SAFE_INTEGER)
+        }
+
+        return 0
+      })
     },
 
     sumVotos () {
