@@ -306,7 +306,7 @@
                 >
                   <q-img
                     v-if="item.icono"
-                    :src="getImageUrl('images/partidos/' + item.icono)"
+                    :src="partidoImageUrl(item)"
                     class="ganador-icono"
                   />
                   <q-icon v-else name="flag" size="12px" color="grey-6" class="ganador-icono-fallback" />
@@ -531,11 +531,11 @@
 
               <!-- FOTOS (compacto tipo Usuarios) -->
               <q-card flat bordered class="q-mt-sm">
-                <q-card-section class="text-weight-bold">Fotos (2)</q-card-section>
+                <q-card-section class="text-weight-bold">Fotos</q-card-section>
                 <q-separator />
                 <q-card-section class="q-pt-sm">
                   <div class="row q-col-gutter-sm">
-                    <div v-for="n in 2" :key="n" class="col-6">
+                    <div v-for="n in visibleFotoSlots" :key="n" class="col-6">
                       <q-card flat bordered class="q-pa-xs relative-position foto-card">
                         <input
                           :id="`foto-input-${n}`"
@@ -574,7 +574,6 @@
                           @click="clearFoto(n)"
                           style="z-index: 1000; right: 40px;"
                         />
-<!--                        <pre>{{fotoPreview(n)}}</pre>-->
                         <q-img
                           v-if="fotoPreview(n)"
                           :src="fotoPreview(n)"
@@ -616,7 +615,7 @@
                         <div v-for="p in partidosGobernador" :key="'gob_'+p.id" class="row items-center q-col-gutter-sm q-mb-xs">
                           <div class="col-12 col-md-7 row items-center">
                             <div v-if="p.icono" class="q-mr-sm">
-                              <q-img :src="getImageUrl('images/partidos/' + p.icono)" style="width:26px; height:26px;" />
+                              <q-img :src="partidoImageUrl(p)" style="width:26px; height:26px;" />
                             </div>
                             <q-badge outline :style="{ borderColor: p.color || '#999', color: p.color || '#111' }">
                               {{ p.sigla }}
@@ -1288,6 +1287,22 @@ export default {
     },
 
     sumGobernador () { return this.sumByKey('votos_gobernador') },
+
+    visibleFotoSlots () {
+      const slots = []
+
+      for (let n = 1; n <= 10; n += 1) {
+        const key = `foto${n}`
+        const hasLocalPhoto = !!this.fotos?.[key]
+        const hasServerPhoto = !!this.fotosServer?.[`${key}_url`]
+
+        if (n <= 2 || hasLocalPhoto || hasServerPhoto) {
+          slots.push(n)
+        }
+      }
+
+      return slots
+    },
 
     sumTotal () {
       const b = Number(this.resForm.blancos_gobernador || 0)
@@ -2158,6 +2173,21 @@ export default {
       return `${apiUrl.origin}${apiBasePath}${normalizedPath}`
     },
 
+    getBackendOrigin () {
+      const currentOrigin = window.location?.origin || ''
+      const apiUrl = new URL(this.$url, currentOrigin || window.location.href)
+      return `${apiUrl.origin}${apiUrl.pathname.replace(/\/api\/?$/, '')}`
+    },
+
+    partidoImageUrl (partido) {
+      if (!partido) return null
+      if (partido.icono) {
+        return `${this.getBackendOrigin()}/images/partidos/${partido.icono}`
+      }
+      if (partido.icono_url) return this.getImageUrl(partido.icono_url)
+      return null
+    },
+
     // preview: primero archivo local, si no hay -> foto server
     fotoPreview (n) {
       const key = `foto${n}`
@@ -2309,9 +2339,9 @@ export default {
           this.resForm.observacion = r.observacion || ''
           this.resForm.observacion_gobernador = r.observacion_gobernador || ''
 
-          // fotos existentes
-          this.fotosServer.foto1_url = r.foto1_url || null
-          this.fotosServer.foto2_url = r.foto2_url || null
+          for (let n = 1; n <= 10; n += 1) {
+            this.fotosServer[`foto${n}_url`] = r[`foto${n}_url`] || null
+          }
 
           const det = r.detalles || []
           det.forEach(d => {
@@ -2488,7 +2518,7 @@ export default {
 
         this.$alert.success(`Delegado creado${created.username ? `: ${created.username}` : ''}`)
         this.delegadoDialog = false
-        
+
         try {
           await this.refresh() // Recargar para obtener el nuevo usuario en las opciones
         } catch (refreshErr) {
