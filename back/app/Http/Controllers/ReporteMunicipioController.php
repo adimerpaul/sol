@@ -98,6 +98,32 @@ class ReporteMunicipioController extends Controller
             ], 422));
         }
 
+        $usuariosPorRecinto = DB::table('users')
+            ->select(
+                'id',
+                'recinto_id',
+                'name',
+                'username',
+                'celular',
+                'nombres',
+                'apellido_paterno',
+                'apellido_materno'
+            )
+            ->whereNull('deleted_at')
+            ->whereNotNull('recinto_id')
+            ->whereIn('recinto_id', function ($query) use ($data) {
+                $query->from('recintos')
+                    ->select('id')
+                    ->where('municipio_id', (int) $data['municipio_id'])
+                    ->whereNotNull('id_original')
+                    ->whereNull('deleted_at');
+            })
+            ->orderBy('nombres')
+            ->orderBy('apellido_paterno')
+            ->orderBy('apellido_materno')
+            ->get()
+            ->groupBy('recinto_id');
+
         $rows = DB::table('recintos as r')
             ->join('localidades as l', 'l.id', '=', 'r.localidad_id')
             ->leftJoin('mesas as me', function ($join) {
@@ -105,6 +131,7 @@ class ReporteMunicipioController extends Controller
                     ->whereNull('me.deleted_at');
             })
             ->select(
+                'r.id as recinto_id',
                 'l.nombre as localidad',
                 'r.nombre as recinto_nombre',
                 DB::raw('COUNT(me.id) as total_mesas'),
@@ -114,20 +141,47 @@ class ReporteMunicipioController extends Controller
             ->whereNotNull('r.id_original')
             ->whereNull('r.deleted_at')
             ->whereNull('l.deleted_at')
-            ->groupBy('l.nombre', 'r.nombre')
+            ->groupBy('r.id', 'l.nombre', 'r.nombre')
             ->orderByDesc(DB::raw('COUNT(me.id)'))
             ->orderBy('l.nombre')
             ->orderBy('r.nombre')
             ->get()
             ->values()
-            ->map(function ($row, $index) use ($municipio) {
+            ->map(function ($row, $index) use ($municipio, $usuariosPorRecinto) {
+                $usuarios = collect($usuariosPorRecinto->get($row->recinto_id, []))
+                    ->map(function ($user) {
+                        $nombre = trim((string) ($user->name ?: implode(' ', array_filter([
+                            $user->nombres,
+                            $user->apellido_paterno,
+                            $user->apellido_materno,
+                        ]))));
+
+                        return [
+                            'id' => (int) $user->id,
+                            'nombre' => $nombre !== '' ? $nombre : ($user->username ?: 'Sin nombre'),
+                            'username' => $user->username,
+                            'celular' => $user->celular,
+                        ];
+                    })
+                    ->values();
+
                 return [
                     'nro' => $index + 1,
+                    'recinto_id' => (int) $row->recinto_id,
                     'municipio' => $municipio->municipio_nombre,
                     'localidad' => $row->localidad,
                     'recinto_nombre' => $row->recinto_nombre,
                     'total_mesas' => (int) $row->total_mesas,
                     'total_habilitados' => (int) $row->total_habilitados,
+                    'usuarios_asignados' => $usuarios->all(),
+                    'usuarios_asignados_texto' => $usuarios->map(function ($usuario) {
+                        $parts = [$usuario['nombre']];
+                        if (!empty($usuario['celular'])) {
+                            $parts[] = $usuario['celular'];
+                        }
+
+                        return implode(' · ', $parts);
+                    })->implode(' | '),
                 ];
             })
             ->all();
@@ -148,6 +202,7 @@ class ReporteMunicipioController extends Controller
             'rows' => $rows,
             'totals' => [
                 'recintos' => count($rows),
+                'usuarios_asignados' => collect($rows)->sum(fn ($row) => count($row['usuarios_asignados'] ?? [])),
                 'mesas' => collect($rows)->sum('total_mesas'),
                 'habilitados' => collect($rows)->sum('total_habilitados'),
             ],

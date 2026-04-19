@@ -83,19 +83,25 @@
 
       <div class="q-pa-md">
         <div class="row q-col-gutter-md q-mb-md">
-          <div class="col-12 col-sm-4">
+          <div class="col-12 col-sm-3">
             <q-card flat bordered class="summary-card">
               <div class="text-caption text-grey-7">Recintos</div>
               <div class="text-h5 text-weight-bold">{{ totals.recintos }}</div>
             </q-card>
           </div>
-          <div class="col-12 col-sm-4">
+          <div class="col-12 col-sm-3">
+            <q-card flat bordered class="summary-card">
+              <div class="text-caption text-grey-7">Usuarios asignados</div>
+              <div class="text-h5 text-weight-bold">{{ totals.usuarios_asignados }}</div>
+            </q-card>
+          </div>
+          <div class="col-12 col-sm-3">
             <q-card flat bordered class="summary-card">
               <div class="text-caption text-grey-7">Mesas</div>
               <div class="text-h5 text-weight-bold">{{ totals.mesas }}</div>
             </q-card>
           </div>
-          <div class="col-12 col-sm-4">
+          <div class="col-12 col-sm-3">
             <q-card flat bordered class="summary-card">
               <div class="text-caption text-grey-7">Inscritos o habilitados</div>
               <div class="text-h5 text-weight-bold">{{ formatNumber(totals.habilitados) }}</div>
@@ -136,7 +142,23 @@
           :loading="loadingDetalle"
           no-data-label="Sin datos para mostrar"
           rows-per-page-label="Filas"
-        />
+        >
+          <template v-slot:body-cell-usuarios_asignados_texto="props">
+            <q-td :props="props" class="usuarios-cell">
+              <div v-if="(props.row.usuarios_asignados || []).length">
+                <div
+                  v-for="usuario in props.row.usuarios_asignados"
+                  :key="usuario.id"
+                  class="text-caption q-mb-xs"
+                >
+                  <span class="text-weight-medium">{{ usuario.nombre }}</span>
+                  <span class="text-grey-7"> · {{ usuario.celular || 'Sin celular' }}</span>
+                </div>
+              </div>
+              <span v-else class="text-grey-6">Sin usuarios asignados</span>
+            </q-td>
+          </template>
+        </q-table>
       </div>
     </q-card>
   </q-page>
@@ -167,6 +189,7 @@ const municipio = ref(null)
 const rows = ref([])
 const totals = reactive({
   recintos: 0,
+  usuarios_asignados: 0,
   mesas: 0,
   habilitados: 0,
 })
@@ -176,6 +199,12 @@ const columns = [
   { name: 'municipio', label: 'Municipio', field: 'municipio', align: 'left', sortable: true },
   { name: 'localidad', label: 'Localidad', field: 'localidad', align: 'left', sortable: true },
   { name: 'recinto_nombre', label: 'Nombre de Recinto', field: 'recinto_nombre', align: 'left', sortable: true },
+  {
+    name: 'usuarios_asignados_texto',
+    label: 'Usuarios asignados',
+    field: row => row.usuarios_asignados_texto || 'Sin usuarios asignados',
+    align: 'left',
+  },
   { name: 'total_mesas', label: '# Mesas', field: 'total_mesas', align: 'center', sortable: true },
   {
     name: 'total_habilitados',
@@ -200,6 +229,7 @@ function resetDetalle () {
   municipio.value = null
   rows.value = []
   totals.recintos = 0
+  totals.usuarios_asignados = 0
   totals.mesas = 0
   totals.habilitados = 0
 }
@@ -279,6 +309,7 @@ async function cargarDetalle () {
     municipio.value = data.municipio || null
     rows.value = data.rows || []
     totals.recintos = data.totals?.recintos || 0
+    totals.usuarios_asignados = data.totals?.usuarios_asignados || 0
     totals.mesas = data.totals?.mesas || 0
     totals.habilitados = data.totals?.habilitados || 0
   } catch (error) {
@@ -332,5 +363,10 @@ onMounted(bootstrap)
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.usuarios-cell {
+  min-width: 280px;
+  white-space: normal;
 }
 </style>

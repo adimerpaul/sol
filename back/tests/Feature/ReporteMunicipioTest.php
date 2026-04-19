@@ -131,6 +131,41 @@ it('returns recinto aggregates for the selected municipio', function () {
         ],
     ]);
 
+    DB::table('users')->insert([
+        [
+            'name' => 'Juan Perez',
+            'nombres' => 'Juan',
+            'apellido_paterno' => 'Perez',
+            'apellido_materno' => 'Lopez',
+            'ci' => 'REP-MUN-USER-1',
+            'fecha_nacimiento' => '1990-01-01',
+            'bloque' => 'Jacha',
+            'username' => 'juan-perez',
+            'role' => 'Delegado de Mesa',
+            'password' => bcrypt('secret123'),
+            'celular' => '77711111',
+            'recinto_id' => 10,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ],
+        [
+            'name' => 'Maria Quispe',
+            'nombres' => 'Maria',
+            'apellido_paterno' => 'Quispe',
+            'apellido_materno' => 'Mamani',
+            'ci' => 'REP-MUN-USER-2',
+            'fecha_nacimiento' => '1991-02-02',
+            'bloque' => 'Jacha',
+            'username' => 'maria-quispe',
+            'role' => 'Jefe de Recinto',
+            'password' => bcrypt('secret123'),
+            'celular' => '77722222',
+            'recinto_id' => 11,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ],
+    ]);
+
     $admin = createReporteMunicipioAdmin();
     Sanctum::actingAs($admin);
 
@@ -140,13 +175,18 @@ it('returns recinto aggregates for the selected municipio', function () {
         ->assertJsonPath('provincia.nombre', 'Cercado')
         ->assertJsonPath('municipio.nombre', 'Paria')
         ->assertJsonPath('totals.recintos', 2)
+        ->assertJsonPath('totals.usuarios_asignados', 2)
         ->assertJsonPath('totals.mesas', 3)
         ->assertJsonPath('totals.habilitados', 730)
         ->assertJsonCount(2, 'rows')
         ->assertJsonPath('rows.0.recinto_nombre', 'UE Central Paria')
         ->assertJsonPath('rows.0.total_mesas', 2)
         ->assertJsonPath('rows.0.total_habilitados', 550)
+        ->assertJsonPath('rows.0.usuarios_asignados.0.nombre', 'Juan Perez')
+        ->assertJsonPath('rows.0.usuarios_asignados.0.celular', '77711111')
         ->assertJsonPath('rows.1.recinto_nombre', 'UE Soracachi Norte')
         ->assertJsonPath('rows.1.total_mesas', 1)
-        ->assertJsonPath('rows.1.total_habilitados', 180);
+        ->assertJsonPath('rows.1.total_habilitados', 180)
+        ->assertJsonPath('rows.1.usuarios_asignados.0.nombre', 'Maria Quispe')
+        ->assertJsonPath('rows.1.usuarios_asignados.0.celular', '77722222');
 });

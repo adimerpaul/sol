@@ -93,6 +93,10 @@
             <td><strong>Provincia:</strong> {{ $provincia['nombre'] }}</td>
             <td class="text-right"><strong>Usuario:</strong> {{ $generatedBy }}</td>
         </tr>
+        <tr>
+            <td><strong>Usuarios asignados:</strong> {{ $totals['usuarios_asignados'] }}</td>
+            <td class="text-right"></td>
+        </tr>
     </table>
 
     <table class="report">
@@ -101,7 +105,8 @@
             <th style="width: 44px;">N°</th>
             <th style="width: 95px;">Municipio</th>
             <th style="width: 115px;">Localidad</th>
-            <th>Nombre de Recinto</th>
+            <th style="width: 150px;">Nombre de Recinto</th>
+            <th>Usuarios asignados</th>
             <th style="width: 58px;"># Mesas</th>
             <th style="width: 92px;">Inscritos o habilitados</th>
         </tr>
@@ -113,17 +118,19 @@
                 <td>{{ $row['municipio'] }}</td>
                 <td>{{ $row['localidad'] }}</td>
                 <td>{{ $row['recinto_nombre'] }}</td>
+                <td>{{ $row['usuarios_asignados_texto'] ?: 'Sin usuarios asignados' }}</td>
                 <td class="text-center">{{ $row['total_mesas'] }}</td>
                 <td class="text-right">{{ number_format($row['total_habilitados'], 0, ',', '.') }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="6" class="text-center">Sin datos para el municipio seleccionado.</td>
+                <td colspan="7" class="text-center">Sin datos para el municipio seleccionado.</td>
             </tr>
         @endforelse
         <tr>
             <td colspan="3" class="totals-label text-center">Totales</td>
             <td class="totals-label">{{ $totals['recintos'] }} recintos</td>
+            <td class="totals-label">{{ $totals['usuarios_asignados'] }} usuarios</td>
             <td class="totals-label text-center">{{ $totals['mesas'] }}</td>
             <td class="totals-label text-right">{{ number_format($totals['habilitados'], 0, ',', '.') }}</td>
         </tr>
