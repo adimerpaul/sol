@@ -1,5 +1,18 @@
 <template>
   <div class="map-wrapper">
+    <q-btn
+      class="map-expand-btn"
+      icon="open_in_full"
+      round
+      dense
+      unelevated
+      color="primary"
+      text-color="white"
+      @click="openExpandedMap"
+    >
+      <q-tooltip>Ver mapa grande</q-tooltip>
+    </q-btn>
+
     <l-map
       style="height: 520px"
       v-model:zoom="zoom"
@@ -66,6 +79,88 @@
     <div class="text-caption text-grey-7 q-mt-sm">
       Tip: haz click en un marcador para seleccionar el recinto.
     </div>
+
+    <q-dialog v-model="expandedMap" maximized transition-show="slide-up" transition-hide="slide-down">
+      <q-card class="map-dialog-card">
+        <q-btn
+          class="map-dialog-close-btn"
+          icon="close"
+          round
+          size="md"
+          unelevated
+          color="negative"
+          text-color="white"
+          @click="expandedMap = false"
+        >
+          <q-tooltip>Cerrar mapa</q-tooltip>
+        </q-btn>
+
+        <q-card-section class="q-pa-none map-dialog-section">
+          <l-map
+            class="map-dialog-canvas"
+            v-model:zoom="dialogZoom"
+            :center="dialogCenter"
+            :use-global-leaflet="false"
+            :options="{ attributionControl: false }"
+            ref="dialogMapRef"
+          >
+            <l-control-layers position="topright" />
+
+            <l-tile-layer
+              layer-type="base"
+              name="Google Calle"
+              url="https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}"
+              :max-zoom="21"
+              :visible="true"
+            />
+            <l-tile-layer
+              layer-type="base"
+              name="Google Satélite"
+              url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+              :max-zoom="21"
+              :visible="false"
+            />
+            <l-tile-layer
+              layer-type="base"
+              name="Google Híbrido"
+              url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+              :max-zoom="21"
+              :visible="false"
+            />
+
+            <l-marker
+              v-for="r in visibleMarkers"
+              :key="`dialog-${r.id}`"
+              :lat-lng="[r._lat, r._lng]"
+              :icon="iconFor(r)"
+              @click="selectRecinto(r)"
+            >
+              <l-popup>
+                <div style="min-width: 240px">
+                  <div class="text-weight-bold">{{ r.nombre }}</div>
+
+                  <div class="text-caption q-mt-xs">
+                    Lat: {{ r._lat }}<br />
+                    Lng: {{ r._lng }}
+                  </div>
+
+                  <div class="q-mt-xs">
+                    <span v-if="r.jefe?.length" class="text-positive">
+                      Jefes:
+                      {{ r.jefe.map(j => `${j.name} (${j.celular || j.username})`).join(', ') }}
+                    </span>
+                    <span v-else class="text-negative">Sin jefe asignado</span>
+                  </div>
+                  <div class="q-mt-xs">
+                    Mesas: {{ r.mesas_total || 0 }} · Asignadas: {{ r.mesas_asignadas || 0 }}
+                  </div>
+                </div>
+              </l-popup>
+            </l-marker>
+          </l-map>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -96,7 +191,10 @@ L.Icon.Default.mergeOptions({
 })
 
 const mapRef = ref(null)
+const dialogMapRef = ref(null)
 const zoom = ref(props.zoomInit)
+const dialogZoom = ref(props.zoomInit)
+const expandedMap = ref(false)
 
 function toNum (v) {
   const n = parseFloat(String(v ?? '').trim())
@@ -128,6 +226,18 @@ const centerComputed = computed(() => {
     return [visibleMarkers.value[0]._lat, visibleMarkers.value[0]._lng]
   }
   return props.center
+})
+
+const dialogCenter = computed(() => {
+  const leaflet = mapRef.value?.leafletObject
+  if (leaflet) {
+    const center = leaflet.getCenter()
+    if (center) {
+      return [center.lat, center.lng]
+    }
+  }
+
+  return centerComputed.value
 })
 
 function selectRecinto (r) {
@@ -179,6 +289,15 @@ async function fitBoundsFrom (list) {
   }
 }
 
+function openExpandedMap () {
+  const leaflet = mapRef.value?.leafletObject
+  if (leaflet) {
+    dialogZoom.value = leaflet.getZoom()
+  }
+
+  expandedMap.value = true
+}
+
 /** ✅ cuando llegan markers -> encuadrar */
 watch(
   () => props.markers,
@@ -202,8 +321,67 @@ watch(
   },
   { deep: true }
 )
+
+watch(expandedMap, async (isOpen) => {
+  if (!isOpen) return
+
+  await nextTick()
+
+  const sourceMap = mapRef.value?.leafletObject
+  const targetMap = dialogMapRef.value?.leafletObject
+  if (!targetMap) return
+
+  targetMap.invalidateSize()
+
+  if (!sourceMap) return
+
+  const center = sourceMap.getCenter()
+  dialogZoom.value = sourceMap.getZoom()
+
+  if (center) {
+    targetMap.setView([center.lat, center.lng], dialogZoom.value, { animate: false })
+  }
+})
 </script>
 
 <style scoped>
-.map-wrapper { width: 100%; }
+.map-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.map-canvas {
+  height: 520px;
+}
+
+.map-expand-btn {
+  position: absolute;
+  top: 12px;
+  right: 56px;
+  z-index: 1200;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.map-dialog-card {
+  position: relative;
+  background: #fff;
+}
+
+.map-dialog-section {
+  height: 100vh;
+}
+
+.map-dialog-canvas {
+  height: 100%;
+}
+
+.map-dialog-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1200;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
 </style>
